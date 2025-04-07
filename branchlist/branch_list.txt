@@ -1,3 +1,4 @@
+Generator_weight, Generator, Float_t, single
 HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ, trigger, Bool_t, single
 HLT_IsoMu24, trigger, Bool_t, single
 HLT_IsoTkMu24, trigger, Bool_t, single
@@ -62,6 +63,8 @@ Jet_pt, jet, Float_t, vector
 Jet_phi, jet, Float_t, vector
 Jet_eta, jet, Float_t, vector
 Jet_mass, jet, Float_t, vector
+Jet_jetId, jet, Int_t, vector
+Jet_puId, jet, Int_t, vector
 Jet_area, jet, Float_t, vector
 Jet_btagCSVV2, jet, Float_t, vector
 Jet_btagDeepB, jet, Float_t, vector

@@ -84,10 +84,15 @@ private:
     void SetObjectVariable();
     void MCSF();
     void MCSFApply();
+    void GenWeightApply();
     void NumPVCount();
     void LeptonSelector(); //(muon & electron)
     void LeptonOrder(); // Lepton (muon & electron)
-    bool ThirdLeptonVeto(); // Lepton (muon & electron)
+    
+    // 수정된 함수 선언: bool 리턴 타입에서 void로 변경
+    void SelectVetoMuons();
+    void SelectVetoElectrons();
+
     //void CorrectedMuonCollection(); // Muon  
     void MakeMuonCollection(); // Muon  
     void MakeElecCollection(); // Electron 
@@ -95,29 +100,38 @@ private:
     void MakeJetCollection(); // Jet 
     bool JetCleaning(TLorentzVector* jet_);
     TLorentzVector JERSmearing(TLorentzVector* jet, int idx_, TString op_);
+    void bJetSelector();
     void METDefiner();
+    void JetOrder();
 
     //
-    bool NumIsoLeptons();
+    bool NumIsoLeptons(int nNLepsCut);
+    bool ThirdLeptonVeto(); // Lepton (muon & electron)
+    bool MuonVeto(); // Lepton (muon & electron)
+    bool ElectronVeto(); // Lepton (muon & electron)
     bool LeptonsPtAddtional();
     bool DiLeptonMassCut();
+    bool ZVetoCut();
+    bool NumJetCut(std::vector<int> v_jets);
+    bool METCut(TLorentzVector met);
+    bool NumbJetCut(std::vector<int> v_jets);
 
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> triggerList;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> noiseFilters;
-    std::vector<int> v_lep_idx_temp;
-    std::vector<int> v_muon_idx_temp;
-    std::vector<int> v_electron_idx_temp;
+    //std::vector<int> v_lep_idx_temp;
+    //std::vector<int> v_muon_idx_temp;
+    //std::vector<int> v_electron_idx_temp;
 
     TLorentzVector Lep1; // 
     TLorentzVector Lep2; //
     TLorentzVector Lep; // 
     TLorentzVector AnLep; //
     TLorentzVector Met; // 
+    TLorentzVector Jet1; // 
+    TLorentzVector Jet2; // 
 
-    // 
-    TTreeReaderArray<float>* leptons_iso;
-    TTreeReaderArray<bool>   *leptons_Id;
-
+    // Generator //
+    TTreeReaderArray<Float_t>* Gen_Weight;
     // muons //
     TTreeReaderArray<Float_t>* muons_pt;
     TTreeReaderArray<Float_t>* muons_eta;
@@ -127,6 +141,7 @@ private:
     TTreeReaderArray<float>* muonsveto_iso;
     TTreeReaderArray<bool>   *muons_Id;
     TTreeReaderArray<bool>   *muonsveto_Id;
+    std::vector<TLorentzVector> pre_muons;
     std::vector<TLorentzVector> muons;
     std::vector<TLorentzVector> muonsveto;
     TLorentzVector TMuon;
@@ -143,6 +158,7 @@ private:
     TTreeReaderArray<Bool_t>*  elecs_mvaId;
     TTreeReaderArray<Int_t>*   elecsveto_scbId;
     TTreeReaderArray<Bool_t>*  elecsveto_mvaId;
+    std::vector<TLorentzVector> pre_elecs;
     std::vector<TLorentzVector> elecs;
     std::vector<TLorentzVector> elecsveto;
 
@@ -151,8 +167,11 @@ private:
     TTreeReaderArray<Float_t>* jets_eta;
     TTreeReaderArray<Float_t>* jets_phi;
     TTreeReaderArray<Float_t>* jets_M;
-    TTreeReaderArray<Bool_t>*  jets_Id;
+    //TTreeReaderArray<Bool_t>*  jets_Id;
+    TTreeReaderArray<Int_t>*  jets_Id;
+    TTreeReaderArray<Int_t>*  jets_puId;
     TTreeReaderArray<Float_t>* jets_btag;
+    std::vector<TLorentzVector> pre_jets;
     std::vector<TLorentzVector> jets;
     bool dojer;
 
@@ -166,14 +185,17 @@ private:
     // index vector for object (muon, electron, jet)
     std::vector<int> v_lepton_idx; // Indecies of lepton
     std::vector<int> v_muon_idx; // Indecies of muon
+    std::vector<int> v_vetomuon_idx; // Indecies of veto muon
     std::vector<int> v_electron_idx; // Indecies of electron
+    std::vector<int> v_vetoelectron_idx; // Indecies of veto muon
     std::vector<int> v_jet_idx;  // Indecies of jet
+    std::vector<int> v_bjet_idx;  // Indecies of jet
 
     //JetCleanning information from config.
-    TString muiso_type;
-    TString muId;
-    TString eliso_type;
-    TString elId;
+    TString veto_muoniso_type;
+    TString veto_muonid;
+    TString veto_eleciso_type;
+    TString veto_elecid;
 
     double pi;
 
@@ -185,8 +207,6 @@ private:
     std::vector<std::string> trigName; // trigger 
 
     // lepton variables
-    TString lepisotype;
-    TString lepId;
 
     //Muon Type for MuEl - channel.
     TString MuonIsoType;
@@ -246,19 +266,17 @@ private:
     double lep_eff;
 
     //Kinetic Variables                                                                                                               
-    double lep_pt;
-    double lep_eta;
-    double lepisocut;                                                                                                                 
     int    n_elep_Id;                                                                                                                 
     double el_id_1;                                                                                                                   
     double el_id_2;                                                                                                                   
     
     double muon_pt;
     double muon_eta;
-    double muonisocut;                                                                                                                
+    double muon_isocut;                                                                                                                
+    double veto_muoniso_cut;                                                                                                                
     double elec_pt;
     double elec_eta;
-    double elecisocut;
+    double elec_isocut;
     int    n_elec_Id;
 
 
@@ -306,4 +324,3 @@ private:
 };
 
 #endif // ANALYSIS_H
-

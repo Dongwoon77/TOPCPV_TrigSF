@@ -139,8 +139,6 @@ void Analysis::SetVariables() {
     num_sleptrig = SSBConfReader->Size( "singleleptrigger" );
 
     ///
-    lepId = SSBConfReader->GetText( "ID_type" );
-    lepisotype = SSBConfReader->GetText( "Iso_type" );
 
     for(int i =0; i < num_dleptrig; ++i)
     {
@@ -172,16 +170,21 @@ void Analysis::SetVariables() {
        noiseFilters[tmpnoisefl] = DeepCopy<bool>( boolSingles[tmpnoisefl]);
        //std::cout << "test "<< std::endl;
     }
+    // Kinematic cut variables for Object 
+    muon_pt     = SSBConfReader->GetNumber( "MuonPt_cut"     );// Muon pT Cut 
+    muon_eta    = SSBConfReader->GetNumber( "MuonEta_cut"    );// Muon Eta Cut 
+    muon_isocut  = SSBConfReader->GetNumber( "MuonIso_cut" );// 
 
-    // Lep Infor ( Di Muon or Di Electron )
-    lepisotype = SSBConfReader->GetText( "Iso_type" );
-    lepId      = SSBConfReader->GetText( "Lep_ID"   );
-    
-    // Muon Infor for Only MuEl channel
+    elec_pt     = SSBConfReader->GetNumber( "ElecPt_cut"     );
+    elec_eta    = SSBConfReader->GetNumber( "ElecEta_cut"    );
+    elec_isocut  = SSBConfReader->GetNumber( "ElecIso_cut" );
+
+
+    // Muon Infor. ID  ISO // 
     MuonIsoType = SSBConfReader->GetText( "MuonIso_type" );
     MuonId      = SSBConfReader->GetText( "Muon_ID"      );
     
-    // Electron Infor Only for MuEl channel
+    // Electron ID ISO // 
     ElecIsoType = SSBConfReader->GetText( "ElecIso_type" );
     ElecId      = SSBConfReader->GetText( "Elec_ID"      );  
     // Jet Infor
@@ -189,62 +192,59 @@ void Analysis::SetVariables() {
     JetbTag    = SSBConfReader->GetText("Jet_btag");
  
     
-    // Kinematic variables for Object //(not MuEl)
-    lep_pt     = SSBConfReader->GetNumber( "Lep_pt"  );
-    lep_eta    = SSBConfReader->GetNumber( "Lep_eta" );
-    lepisocut  = SSBConfReader->GetNumber( "Iso_cut" );
+    // Kinematic variables for Object 
     jet_pt     = SSBConfReader->GetNumber( "Jet_pt"  );
     jet_eta    = SSBConfReader->GetNumber( "Jet_eta" );
     met_cut    = SSBConfReader->GetNumber( "MET_cut" );
  
-    // Kinematic variables for Object (MuEl)
-    muon_pt     = SSBConfReader->GetNumber( "Muon_pt"     );
-    muon_eta    = SSBConfReader->GetNumber( "Muon_eta"    );
-    muonisocut  = SSBConfReader->GetNumber( "MuonIso_cut" );
-    elec_pt     = SSBConfReader->GetNumber( "Elec_pt"     );
-    elec_eta    = SSBConfReader->GetNumber( "Elec_eta"    );
-    elecisocut  = SSBConfReader->GetNumber( "ElecIso_cut" );
-
-    muiso_type = SSBConfReader->GetText( "Muiso_for_Jetcleanning" );
-    muId       = SSBConfReader->GetText( "Muid_for_Jetcleanning"  );
-    eliso_type = SSBConfReader->GetText( "Eliso_for_Jetcleanning" );
-    elId       = SSBConfReader->GetText( "Elid_for_Jetcleanning"  );
+    veto_muoniso_type = SSBConfReader->GetText( "VetoMuonIso" );
+    veto_muoniso_cut  = SSBConfReader->GetNumber( "VetoMuonIsocut" );
+    veto_muonid       = SSBConfReader->GetText( "VetoMuonId"  );
+    veto_eleciso_type = SSBConfReader->GetText( "VetoElecIso" );
+    veto_elecid       = SSBConfReader->GetText( "VetoElecId"  );
 
     dojer = SSBConfReader->GetBool("DoJER");
-    JetEnSys    = SSBConfReader->GetText("JESsys"); // Getting Jet Energy Systematic Type ...
-    JetResSys   = SSBConfReader->GetText("JERsys"); // Getting Jet Smearing Systematic Type ... 
-       
-    BTagSFSys    = SSBConfReader->GetText( "BtaggingSFSys"        );
-    BTagEffSys   = SSBConfReader->GetText( "BtaggingEffSys"       );
-       
-    MetSys    = SSBConfReader->GetText("METsys"); // Getting Jet Energy Systematic Type ...
-    LepIdSFSys   = SSBConfReader->GetText( "LepIDSFSys"           );
-    LepIsoSFSys  = SSBConfReader->GetText( "LepIsoSFSys"          );
-    LepRecoSFSys  = SSBConfReader->GetText( "LepRecoSFSys"        );
-    LepTrackSFSys  = SSBConfReader->GetText( "LepTrackSFSys"      );
-    PDFSys         = SSBConfReader->GetNumber( "PDFSys"           );
-    FactRenoSys    = SSBConfReader->GetNumber( "FactRenoSys"      );
-    FragmentSys  = SSBConfReader->GetText( "FragmentSys"          );
-    DecayTableSys  = SSBConfReader->GetText( "DecayTableSys"      );
-    PileUpMCFile = SSBConfReader->GetText( "PileUpMCFileName"     );
-    PileUpDATAFile = SSBConfReader->GetText( "PileUpDATAFileName" );
-    PileUpSys    = SSBConfReader->GetText( "PileUpSys"            );
-    L1PreFireSys    = SSBConfReader->GetText( "L1PreFireSys"            );
-    TopPtSys    = SSBConfReader->GetText(  "TopPtSys"             );
- 
+
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
     //SetObjectVariable();
 }
 
 void Analysis::SetObjectVariable() {
-    std::cout << "!!! SetObjectVariable start!!!" << std::endl;
-    // Lepton Kinematic //
+    //std::cout << "!!! SetObjectVariable start!!!" << std::endl;
+    // Leptons //
     // muon //
     muons_pt  = floatVectors["Muon_pt"].get(); 
     muons_eta = floatVectors["Muon_eta"].get(); 
     muons_phi = floatVectors["Muon_phi"].get();
     muons_M   = floatVectors["Muon_mass"].get();
+    
+    muons_Id  = boolVectors["Muon_looseId"].get();
+    muons_iso = floatVectors["Muon_pfRelIso03_all"].get();
+
+    /// Muon ID
+    if      (TString(MuonId).Contains( "Loose"  ) )  { muons_Id = boolVectors["Muon_looseId"].get(); }
+    else if (TString(MuonId).Contains( "Medium"  ) ) { muons_Id = boolVectors["Muon_mediumId"].get(); }
+    else if (TString(MuonId).Contains( "Tight"  ) )  { muons_Id = boolVectors["Muon_tightId"].get(); }
+    else { std::cout << "Muon ID Error" << std::endl; }
+
+    if (TString(MuonIsoType).Contains("PFIsodbeta03")) {
+        if (floatVectors["Muon_pfRelIso03_all"] == nullptr) {
+            std::cerr << "Error: Muon_pfRelIso03_all branch not initialized!" << std::endl;
+            return;
+        }
+        muons_iso = floatVectors["Muon_pfRelIso03_all"].get();
+    
+    } else if (TString(MuonIsoType).Contains("PFIsodbeta04")) {
+        if (floatVectors["Muon_pfRelIso04_all"] == nullptr) {
+            std::cerr << "Error: Muon_pfRelIso04_all branch not initialized!" << std::endl;
+            return;
+        }
+        muons_iso = floatVectors["Muon_pfRelIso04_all"].get();
+    } else {
+            std::cerr << "Muon Iso type Error" << std::endl;
+            return;
+    }
 
     // electron //
     elecs_pt  = floatVectors["Electron_pt"].get();
@@ -252,172 +252,45 @@ void Analysis::SetObjectVariable() {
     elecs_phi = floatVectors["Electron_phi"].get();
     elecs_M   = floatVectors["Electron_mass"].get();
 
-    ///////////////////////
-    /// Case of Di-Muon ///
-    ///////////////////////
-    if (TString(Decaymode).Contains("dimuon")) {
-        if (TString(lepisotype).Contains("PFIsodbeta03")) {
-            if (floatVectors["Muon_pfRelIso03_all"] == nullptr) {
-                std::cerr << "Error: Muon_pfRelIso03_all branch not initialized!" << std::endl;
-                return;
-            }
-            leptons_iso = floatVectors["Muon_pfRelIso03_all"].get();
-            muons_iso = floatVectors["Muon_pfRelIso03_all"].get();
-        } else if (TString(lepisotype).Contains("PFIsodbeta04")) {
-            if (floatVectors["Muon_pfRelIso04_all"] == nullptr) {
-                std::cerr << "Error: Muon_pfRelIso04_all branch not initialized!" << std::endl;
-                return;
-            }
-            leptons_iso = floatVectors["Muon_pfRelIso04_all"].get();
-            muons_iso = floatVectors["Muon_pfRelIso04_all"].get();
-        } else {
-            std::cerr << "Muon Iso type Error" << std::endl;
-            return;
-        }
-
-        if (leptons_iso != nullptr) {
-            std::cout << "At ObjSetup leptons_iso size: " << leptons_iso->GetSize() << std::endl;
-        } else {
-            std::cerr << "Error: leptons_iso is null after assignment!" << std::endl;
-        }
-        
-        if (muons_iso != nullptr) {
-            std::cout << "muons_iso size: " << muons_iso->GetSize() << std::endl;
-        } else {
-            std::cerr << "Error: muons_iso is null after assignment!" << std::endl;
-        }
-
-
-        /// Muon ID
-        if      (TString(lepId).Contains( "Loose"  ) )  { leptons_Id = boolVectors["Muon_looseId"].get();  muons_Id = boolVectors["Muon_looseId"].get(); }
-        else if (TString(lepId).Contains( "Medium"  ) ) { leptons_Id = boolVectors["Muon_mediumId"].get(); muons_Id = boolVectors["Muon_mediumId"].get();}
-        else if (TString(lepId).Contains( "Tight"  ) )  { leptons_Id = boolVectors["Muon_tightId"].get();  muons_Id = boolVectors["Muon_tightId"].get(); }
-        else { std::cout << "Muon ID Error" << std::endl; }
-
-        if (leptons_Id != nullptr) {
-            std::cout << "leptons_Id size: " << leptons_Id->GetSize() << std::endl;
-        } else {
-            std::cerr << "Error: leptons_Id is null after assignment!" << std::endl;
-        }
-        
-        if (muons_Id != nullptr) {
-            std::cout << "muons_Id size: " << muons_Id->GetSize() << std::endl;
-        } else {
-            std::cerr << "Error: muons_Id is null after assignment!" << std::endl;
-        }
+    //elecs_iso = 
+    if (TString(ElecIsoType).Contains("PFIsoRho03")) {
+        elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
+    } else if (TString(ElecIsoType).Contains("PFIsoRho04")) {
+        elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
+        std::cerr << "No PFIsoRho04 in NanoAOD..." << std::endl;
+    } else {
+        std::cerr << "Electron Iso type Error" << std::endl;
     }
 
-    ///////////////////////////
-    /// Case of Di-Electron ///
-    ///////////////////////////
-    else if (TString(Decaymode).Contains("dielec")) {
-        /// Electron iso type
-        if (TString(lepisotype).Contains("PFIsoRho03")) {
-            leptons_iso = floatVectors["Electron_pfRelIso03_all"].get();
-            elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
-        } else if (TString(lepisotype).Contains("PFIsoRho04")) {
-            leptons_iso = floatVectors["Electron_pfRelIso03_all"].get();
-            elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
-            std::cerr << "No PFIsoRho04 in NanoAOD..." << std::endl;
-        } else {
-            std::cerr << "Electron Iso type Error" << std::endl;
-        }
+    /// Electron iso type
 
-        /// Electron ID
-        elecs_scbId = intVectors["Electron_cutBased"].get();
-        if (TString(lepId).Contains("SCBLoose")) {
-            //elecIdVariant = intVectors["Electron_cutBased"].get();
-            eleid_scbcut = 2;
-        } else if (TString(lepId).Contains("SCBMedium")) {
-            eleid_scbcut = 3;
-        } else if (TString(lepId).Contains("SCVTight")) {
-            eleid_scbcut = 4;
-        } else if (TString(lepId).Contains("SCBVeto")) {
-            eleid_scbcut = 1;
-        } else if (TString(lepId).Contains("MVALoose")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
-            eleid_scbcut = 2;
-        } else if (TString(lepId).Contains("MVAMedium")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP90"].get();
-            eleid_scbcut = 3;
-        } else if (TString(lepId).Contains("MVATight")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP80"].get();
-            eleid_scbcut = 4;
-        } else if (TString(lepId).Contains("MVAVeto")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
-            eleid_scbcut = 1;
-        } else {
-            std::cerr << "Electron ID Error" << std::endl;
-        }
-
+    /// Electron ID
+    elecs_scbId = intVectors["Electron_cutBased"].get();
+    if (TString(ElecId).Contains("SCBLoose")) {
+        //elecIdVariant = intVectors["Electron_cutBased"].get();
+        eleid_scbcut = 2;
+    } else if (TString(ElecId).Contains("SCBMedium")) {
+        eleid_scbcut = 3;
+    } else if (TString(ElecId).Contains("SCBTight")) {
+        eleid_scbcut = 4;
+    } else if (TString(ElecId).Contains("SCBVeto")) {
+        eleid_scbcut = 1;
+    } else if (TString(ElecId).Contains("MVALoose")) {
+        elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
+        eleid_scbcut = 2;
+    } else if (TString(ElecId).Contains("MVAMedium")) {
+        elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP90"].get();
+        eleid_scbcut = 3;
+    } else if (TString(ElecId).Contains("MVATight")) {
+        elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP80"].get();
+        eleid_scbcut = 4;
+    } else if (TString(ElecId).Contains("MVAVeto")) {
+        elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
+        eleid_scbcut = 1;
+    } else {
+        std::cerr << "Electron ID Error" << std::endl;
     }
 
-    ////////////////////
-    /// Case of MuEl ///
-    ////////////////////
-    else if (TString(Decaymode).Contains("muel")) {
-        /// Muon iso type
-        if (TString(MuonIsoType).Contains("PFIsodbeta03")) {
-            muons_iso = floatVectors["Muon_pfRelIso03_all"].get();
-        } else if (TString(MuonIsoType).Contains("PFIsodbeta04")) {
-            muons_iso = floatVectors["Muon_pfRelIso04_all"].get();
-        } else {
-            std::cerr << "Muon Iso type Error in MuEl case" << std::endl;
-        }
-
-        /// Muon ID
-        if (TString(MuonId).Contains("Loose")) {
-            muons_Id = boolVectors["Muon_tightId"].get();
-        } else if (TString(MuonId).Contains("Tight")) {
-            muons_Id = boolVectors["Muon_isTight"].get();
-        } else {
-            std::cerr << "Muon ID Error in MuEl case" << std::endl;
-        }
-
-        if (TString(ElecIsoType).Contains("PFIsoRho03")) {
-            elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
-        } else if (TString(ElecIsoType).Contains("PFIsoRho04")) {
-            elecs_iso = floatVectors["Electron_pfRelIso03_all"].get();
-            std::cerr << "No PFIsoRho04 in NanoAOD..." << std::endl;
-        } else {
-            std::cerr << "Electron Iso type Error" << std::endl;
-        }
-
-        /// Electron ID
-        elecs_scbId = intVectors["Electron_cutBased"].get();
-        if (TString(ElecId).Contains("SCBLoose")) {
-            //elecIdVariant = intVectors["Electron_cutBased"].get();
-            eleid_scbcut = 2;
-        } else if (TString(ElecId).Contains("SCBMedium")) {
-            eleid_scbcut = 3;
-        } else if (TString(ElecId).Contains("SCVTight")) {
-            eleid_scbcut = 4;
-        } else if (TString(ElecId).Contains("SCBVeto")) {
-            eleid_scbcut = 1;
-        } else if (TString(ElecId).Contains("MVALoose")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
-            eleid_scbcut = 2;
-        } else if (TString(ElecId).Contains("MVAMedium")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP90"].get();
-            eleid_scbcut = 3;
-        } else if (TString(ElecId).Contains("MVATight")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP80"].get();
-            eleid_scbcut = 4;
-        } else if (TString(ElecId).Contains("MVAVeto")) {
-            elecs_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
-            eleid_scbcut = 1;
-        } else {
-            std::cerr << "Electron ID Error" << std::endl;
-        }
-
-    }
-
-    /////////////////////////////
-    /// Default Error Handling //
-    /////////////////////////////
-    else {
-        std::cerr << "Error: Unknown Decaymode!" << std::endl;
-    }
 
     //////////////////////////////////////////////////////////////////////
     /// Set leptons for veto lepton (jet cleaning & third lepton veto) ///
@@ -425,13 +298,13 @@ void Analysis::SetObjectVariable() {
     ////////////////////////
     /// Muon information ///
     ////////////////////////
-    if (TString(muiso_type).Contains("PFIsodbeta03")) {
+    if (TString(veto_muoniso_type).Contains("PFIsodbeta03")) {
         if (floatVectors["Muon_pfRelIso03_all"] == nullptr) {
             std::cerr << "Error: Muon_pfRelIso03_all branch not initialized!" << std::endl;
             return;
         }
         muonsveto_iso = floatVectors["Muon_pfRelIso03_all"].get();
-    } else if (TString(muiso_type).Contains("PFIsodbeta04")) {
+    } else if (TString(veto_muoniso_type).Contains("PFIsodbeta04")) {
         if (floatVectors["Muon_pfRelIso04_all"] == nullptr) {
             std::cerr << "Error: Muon_pfRelIso04_all branch not initialized!" << std::endl;
             return;
@@ -444,21 +317,19 @@ void Analysis::SetObjectVariable() {
 
     
     if (muonsveto_iso != nullptr) {
-        std::cout << "muonsveto_iso size: " << muonsveto_iso->GetSize() << std::endl;
+        //std::cout << "muonsveto_iso size: " << muonsveto_iso->GetSize() << std::endl;
     } else {
         std::cerr << "Error: muonsveto_iso is null after assignment!" << std::endl;
     }
 
 
     /// Muon ID
-    if      (TString(muId).Contains( "Loose"  ) )  { muonsveto_Id = boolVectors["Muon_looseId"].get(); }
-    else if (TString(muId).Contains( "Medium"  ) ) { muonsveto_Id = boolVectors["Muon_mediumId"].get();}
-    else if (TString(muId).Contains( "Tight"  ) )  { muonsveto_Id = boolVectors["Muon_tightId"].get(); }
+    if      (TString(veto_muonid).Contains( "Loose"  ) )  { muonsveto_Id = boolVectors["Muon_looseId"].get(); }
+    else if (TString(veto_muonid).Contains( "Medium"  ) ) { muonsveto_Id = boolVectors["Muon_mediumId"].get();}
+    else if (TString(veto_muonid).Contains( "Tight"  ) )  { muonsveto_Id = boolVectors["Muon_tightId"].get(); }
     else { std::cout << "Muon ID Error" << std::endl; }
     
-    if (muonsveto_Id != nullptr) {
-        std::cout << "muonsveto_Id size: " << muonsveto_Id->GetSize() << std::endl;
-    } else {
+    if (muonsveto_Id == nullptr) {
         std::cerr << "Error: muonsveto_Id is null after assignment!" << std::endl;
     }
 
@@ -470,52 +341,50 @@ void Analysis::SetObjectVariable() {
     if (!intVectors["Electron_cutBased"].get()) {std::cerr <<"Error:  Electron_cutBased !! is nullptr! ub Electron information" <<std::endl;}
     if (!elecsveto_scbId) std::cerr << "Error: elecsveto_scbId is nullptr! ub Electron information " << std::endl;
 
-    if (TString(elId).Contains("SCBLoose")) {
+    if (TString(veto_elecid).Contains("SCBLoose")) {
         //elecIdVariant = intVectors["Electron_cutBased"].get();
         elevetoid_scbcut = 2;
-    } else if (TString(elId).Contains("SCBMedium")) {
+    } else if (TString(veto_elecid).Contains("SCBMedium")) {
         elevetoid_scbcut = 3;
-    } else if (TString(elId).Contains("SCVTight")) {
+    } else if (TString(veto_elecid).Contains("SCVTight")) {
         elevetoid_scbcut = 4;
-    } else if (TString(elId).Contains("SCBVeto")) {
+    } else if (TString(veto_elecid).Contains("SCBVeto")) {
         elevetoid_scbcut = 1;
-    } else if (TString(elId).Contains("MVALoose")) {
+    } else if (TString(veto_elecid).Contains("MVALoose")) {
         elecsveto_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
         elevetoid_scbcut = 2;
-    } else if (TString(elId).Contains("MVAMedium")) {
+    } else if (TString(veto_elecid).Contains("MVAMedium")) {
         elecsveto_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP90"].get();
         elevetoid_scbcut = 3;
-    } else if (TString(elId).Contains("MVATight")) {
+    } else if (TString(veto_elecid).Contains("MVATight")) {
         elecsveto_mvaId = boolVectors["Electron_mvaFall17V2Iso_WP80"].get();
         elevetoid_scbcut = 4;
-    } else if (TString(elId).Contains("MVAVeto")) {
+    } else if (TString(veto_elecid).Contains("MVAVeto")) {
         elecsveto_mvaId = boolVectors["Electron_mvaFall17V2Iso_WPL"].get();
         elevetoid_scbcut = 1;
     } else {
-        std::cerr << "Electron ID in veto selection Error " << elId << std::endl;
+        std::cerr << "Electron ID in veto selection Error " << veto_elecid << std::endl;
     }
 
-    if (TString(eliso_type).Contains("PFIsoRho03")) {
+    if (TString(veto_eleciso_type).Contains("PFIsoRho03")) {
         if (floatVectors.find("Electron_pfRelIso03_all") != floatVectors.end()) {
             auto* ptr = floatVectors["Electron_pfRelIso03_all"].get();
             if (ptr) {
                 elecsveto_iso = ptr;
-                std::cout << "in sele.... elecsveto_iso .. " << std::endl;
+                //std::cout << "in sele.... elecsveto_iso .. " << std::endl;
             } else {
                 std::cerr << "Error: 'Electron_pfRelIso03_all' is a null unique_ptr." << std::endl;
             }
         } else {
             std::cerr << "Error: 'Electron_pfRelIso03_all' not found in floatVectors." << std::endl;
         }
-    } else if (TString(eliso_type).Contains("PFIsoRho04")) {
+    } else if (TString(veto_eleciso_type).Contains("PFIsoRho04")) {
         std::cerr << "No PFIsoRho04 in NanoAOD..." << std::endl;
     } else {
         std::cerr << "Electron Iso type Error" << std::endl;
     }
 
-    if (elecsveto_iso != nullptr) {
-        std::cout << "elecsveto_iso size: " << elecsveto_iso->GetSize() << std::endl;
-    } else {
+    if (elecsveto_iso == nullptr) {
         std::cerr << "Error: elecsveto_iso is null after assignment!" << std::endl;
     }
 
@@ -528,7 +397,8 @@ void Analysis::SetObjectVariable() {
     jets_eta = floatVectors["Jet_eta"].get(); 
     jets_phi = floatVectors["Jet_phi"].get();
     jets_M   = floatVectors["Jet_mass"].get();
-    jets_Id = boolVectors["Jet_jetId"].get();
+    jets_Id = intVectors["Jet_jetId"].get();
+    jets_puId = intVectors["Jet_puId"].get();// for Run 2 50 GeV Jets have to pass PUID //
 
     if (RunPeriod.Contains("2016")) {
         if      (JetId == "PFLoose") { jet_id = 1; } // Loose ID
@@ -575,7 +445,7 @@ void Analysis::SetObjectVariable() {
 //    std::cout << " met_pt : " << met_pt << std::endl; 
 //    std::cout << " met_phi : " << met_phi << std::endl; 
 
-    std::cout << "End of SetObjectVariable !" << std::endl;
+    //std::cout << "End of SetObjectVariable !" << std::endl;
 }
 
 
@@ -589,8 +459,9 @@ void Analysis::Loop() {
 
     Long64_t nEntries = chain->GetEntries();
     fReader.Restart(); // Reset the reader to the beginning
-    evt_weight_ = 1;
-    MCSFApply();
+
+    MCSF();
+
     for (Long64_t ientry = 0; ientry < ((NumEvt == -1 || NumEvt > nEntries) ? nEntries : NumEvt); ++ientry) {
     // 루프 내용
 
@@ -599,11 +470,18 @@ void Analysis::Loop() {
             std::cerr << "Error: Failed to read entry " << ientry << std::endl;
             break;
         }
+        evt_weight_ = 1.;
+        MCSFApply();
+
+        GenWeightApply();
+
         SetObjectVariable(); //
         LeptonSelector(); 
 
         LeptonOrder();
         JetSelector(); 
+        JetOrder(); 
+        bJetSelector(); 
         METDefiner();
 
         //if (i > 100) break; //%lld supports Long64_t
@@ -621,28 +499,113 @@ void Analysis::Loop() {
         if (intSingles["PV_npvsGood"] && **intSingles["PV_npvsGood"] < 1) {
             continue;
         }
-        std::cout << "**intSingles[PV_npvsGood] : " << **intSingles["PV_npvsGood"] <<std::endl;
-        std::cout << "evt_weight_ : " << evt_weight_ << std::endl;
-        FillHisto( h_Num_PV[0]    , **intSingles["PV_npvsGood"] , evt_weight_ );
 
+        //std::cout << "**intSingles[PV_npvsGood] : " << **intSingles["PV_npvsGood"] <<std::endl;
+        //std::cout << "evt_weight_ : " << evt_weight_ << std::endl;
+        FillHisto( h_Num_PV[0]    , **intSingles["PV_npvsGood"] , evt_weight_ );
+        if ( NumIsoLeptons(2) == false ) {continue;}
+
+        if (ThirdLeptonVeto() == false ) {continue;}
+        //std::cout << "after ThirdLeptons : " << std::endl;
         if (LeptonsPtAddtional() == false ) {continue;}
-        if ( DiLeptonMassCut() == false ) {continue;}
+        if (DiLeptonMassCut() == false) {continue;}
         /// Step 1 ///
-        
+        //std::cout << "? evet weight " << evt_weight_ << std::endl;
  
         FillHisto( h_DiLepMass[1], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
-        //FillHisto( h_Num_PV[1], num_pv, evt_weight_ );
-        FillHisto( h_Lep1pt[1] , (Lep1).Pt()  , evt_weight_ );
-        FillHisto( h_Lep1eta[1], (Lep1).Eta() , evt_weight_ );
-        FillHisto( h_Lep1phi[1], (Lep1).Phi() , evt_weight_ );
-        FillHisto( h_Lep2pt[1] , (Lep2).Pt()  , evt_weight_ );
-        FillHisto( h_Lep2eta[1], (Lep2).Eta() , evt_weight_ );
-        FillHisto( h_Lep2phi[1], (Lep2).Phi() , evt_weight_ );
-        FillHisto( h_METpt[1]   , Met.Pt()  , evt_weight_ );
-        FillHisto( h_METphi[1]  , Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_PV[1],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[1] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[1],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[1],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[1] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[1],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[1],    (Lep2).Phi() , evt_weight_ );
+        FillHisto( h_METpt[1]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[1]  ,   Met.Phi()  , evt_weight_ );
         FillHisto( h_Num_Jets[1]  , v_jet_idx.size(), evt_weight_ );
         //FillHisto( h_Num_bJets[1], nbtagged, evt_weight_ );
-       
+
+        if (ZVetoCut() == false) {continue;}
+
+        FillHisto( h_DiLepMass[2], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[2],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[2] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[2],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[2],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[2] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[2],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[2],    (Lep2).Phi() , evt_weight_ );
+        FillHisto( h_METpt[2]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[2]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );      
+
+        if (NumJetCut(v_jet_idx) == false) {continue;}
+
+        FillHisto( h_DiLepMass[3], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[3],     num_pv, evt_weight_ );
+
+        FillHisto( h_Lep1pt[3] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[3],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[3],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[3] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[3],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[3],    (Lep2).Phi() , evt_weight_ );
+
+        FillHisto( h_Jet1pt[3] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[3],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[3],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[3] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[3],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[3],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[3]  , v_jet_idx.size(), evt_weight_ );      
+
+        FillHisto( h_METpt[3]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[3]  ,   Met.Phi()  , evt_weight_ );
+
+        if (METCut(Met) == false) {continue;}
+
+        FillHisto( h_DiLepMass[4], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[4],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[4] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[4],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[4],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[4] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[4],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[4],    (Lep2).Phi() , evt_weight_ );
+
+        FillHisto( h_Jet1pt[4] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[4],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[4],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[4] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[4],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[4],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[4]  , v_jet_idx.size(), evt_weight_ );      
+
+        FillHisto( h_METpt[4]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[4]  ,   Met.Phi()  , evt_weight_ );
+
+        if (NumbJetCut(v_bjet_idx) == false) {continue;}
+
+        FillHisto( h_DiLepMass[5], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[5],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[5] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[5],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[5],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[5] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[5],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[5],    (Lep2).Phi() , evt_weight_ );
+
+        FillHisto( h_Jet1pt[5] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[5],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[5],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[5] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[5],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[5],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ );      
+
+        FillHisto( h_METpt[5]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[5]  ,   Met.Phi()  , evt_weight_ );
+
 
     }// end of event iteration //
     std::cout << "End Loop !!" << std::endl;
@@ -771,6 +734,8 @@ bool Analysis::Trigger()
          }
          else { std::cout << "Check out Decaymode in 2018-Trigger()" << std::endl; }
       }
+
+
       else {/// 2016 (AVP, NonAPV) && 2017 
          if ( TString(FileName_).Contains( "Single") ) {
             seltrigName = SLtrigName;
@@ -802,7 +767,7 @@ bool Analysis::Trigger()
    //cout << "ispassselTrig_ : " << ispassselTrig_ << " ispassvetoTrig_ : " << ispassvetoTrig_ << "trigger : " << trigpass << endl; 
    return trigpass;
 }
-TString Analysis::SetInputFileName( std::string inname )
+/*TString Analysis::SetInputFileName( std::string inname )
 {  
    TString inputName = inname;
    char unsco_ = '_';
@@ -813,6 +778,45 @@ TString Analysis::SetInputFileName( std::string inname )
       inputName.Remove(0,unscoIndex+1);
    }
    //cout << "inputName : " << inputName << endl;
+   return inputName; 
+}
+*/
+TString Analysis::SetInputFileName(std::string inname)
+{  
+   TString inputName = inname;
+   
+   // Remove file extension
+   if (inputName.Contains(".")) {
+      Size_t dotIndex = inputName.Last('.');
+      inputName.Remove(dotIndex, inputName.Length());
+   }
+   
+   // Remove directory path if present
+   if (inputName.Contains("/")) {
+      Size_t slashIndex = inputName.Last('/');
+      inputName.Remove(0, slashIndex+1);
+   }
+   
+   // Remove numeric pattern after the last underscore
+   Size_t last_underscore = inputName.Last('_');
+   if (last_underscore != kNPOS) {
+      TString suffix = inputName(last_underscore+1, inputName.Length()-last_underscore-1);
+      // Check if the suffix consists only of digits
+      bool is_numeric = true;
+      for (Int_t i = 0; i < suffix.Length(); i++) {
+         if (!isdigit(suffix[i])) {
+            is_numeric = false;
+            break;
+         }
+      }
+      // If the suffix is numeric, remove it
+      if (is_numeric) {
+         inputName.Remove(last_underscore, inputName.Length()-last_underscore);
+      }
+   }
+   
+   std::cout << "Original input: " << inname << ", processed name: " << inputName << std::endl;
+   
    return inputName; 
 }
 
@@ -879,14 +883,11 @@ void Analysis::MCSF()
 // Apply MC SF To Event //
 void Analysis::MCSFApply()
 {
-    MCSF();
     evt_weight_beforemcsf_ =1; // Initailize evt_weight_beforemcsf_ //
     evt_weight_beforemcsf_ = evt_weight_; // keep event weight //
      
-    if ( !TString(FileName_).Contains( "Data") ){ evt_weight_ = evt_weight_*mc_sf_; std::cout <<  "evt_weight_ : "<< evt_weight_ << " mc_sf_ : "  << mc_sf_  << std::endl; 
-    } // apply MC scale factor // 
+    if ( !TString(FileName_).Contains( "Data") ){ evt_weight_ = evt_weight_*mc_sf_; } // apply MC scale factor // 
     else {evt_weight_ = 1;}
-    std::cout << "SK MC SF : " << evt_weight_<< std::endl;
 }
 
 // Safely create a TLorentzVector
@@ -916,17 +917,17 @@ TLorentzVector Analysis::createLorentzVector(float pt, float eta, float phi, flo
     return lv;
 }
 
-void Analysis::LeptonSelector()
-{
+void Analysis::LeptonSelector() {
     // Clear output vectors
     v_lepton_idx.clear();
     v_muon_idx.clear();
     v_electron_idx.clear();
-    v_lep_idx_temp.clear();
-    v_muon_idx_temp.clear();
-    v_electron_idx_temp.clear();
 
-    // Prepare corrected collections
+    // Initialize vectors to store TLorentzVectors
+    muons.clear();
+    elecs.clear();
+
+    // Prepare corrected lepton collections
     MakeMuonCollection();
     MakeElecCollection();
 
@@ -946,225 +947,130 @@ void Analysis::LeptonSelector()
     auto elecSCBId = [](int id, int idcut) {
       return id >= idcut; 
     };
+    
     auto elecCharge = [](int id) {
-      return id > 0; 
+      return id > 0; // Electron_tightCharge check
     };
 
-    // Dimuon case
+    // Dimuon channel
     if (TString(Decaymode).Contains("dimuon")) {
         Int_t nmu = muons_iso->GetSize();
         for (int i = 0; i < nmu; ++i) {
-
-            if (!passIsolation(muons_iso->At(i), lepisocut) || 
-                !passKinematicCuts(muons_pt->At(i), muons_eta->At(i),lep_pt, lep_eta) || 
+            // Skip muons that don't pass selection criteria
+            if (!passIsolation(muons_iso->At(i), muon_isocut) ||
+                !passKinematicCuts(muons_pt->At(i), muons_eta->At(i), muon_pt, muon_eta) ||
                 !passId(muons_Id->At(i))) {
                 continue;
             }
-
-            v_lep_idx_temp.push_back(i);
-            v_lep_idx_temp.push_back(i);
-            if (v_lep_idx_temp.size() == 1 && v_lepton_idx.empty()) {
+            
+            if (v_lepton_idx.empty()) {
+                // Add first selected muon
                 v_lepton_idx.push_back(i);
-            } else if (v_lep_idx_temp.size() > 0 &&
-                        (*intVectors["Muon_charge"])[v_lep_idx_temp[0]] != (*intVectors["Muon_charge"])[i]){
-
+                // Store its TLorentzVector in muons vector
+                muons.push_back(pre_muons.at(i));
+            } 
+            else if (v_lepton_idx.size() == 1 && 
+                     (*intVectors["Muon_charge"])[v_lepton_idx[0]] != (*intVectors["Muon_charge"])[i]) {
+                // Add second selected muon with opposite charge
                 v_lepton_idx.push_back(i);
+                // Store its TLorentzVector in muons vector
+                muons.push_back(pre_muons.at(i));
             }
         }
         // Assign final indices to v_muon_idx
         v_muon_idx = v_lepton_idx;
-
     }
-    // Dielectron case
+    // Dielectron channel
     else if (TString(Decaymode).Contains("dielec")) {
-        //Int_t nel = Elec->GetEntriesFast();
         Int_t nel = elecs_pt->GetSize();
         for (int i = 0; i < nel; ++i) {
-            //Ele_lep_sel = elecs.at(i);
-
-
-            if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), lep_pt, lep_eta) ||
+            // Skip electrons that don't pass selection criteria
+            if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
                 !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
                 !(elecCharge((*intVectors["Electron_tightCharge"])[i]))) {
                 continue;
             }
-
-            v_lep_idx_temp.push_back(i);
-            if (v_lep_idx_temp.size() == 1 && v_lepton_idx.empty()) {
+            
+            // Use same logic pattern as dimuon channel
+            if (v_electron_idx.empty()) {
+                // Add first selected electron
                 v_lepton_idx.push_back(i);
                 v_electron_idx.push_back(i);
-            } else if (v_lep_idx_temp.size() > 0 &&
-              ((*intVectors["Electron_charge"])[v_lep_idx_temp[0]] != (*intVectors["Electron_charge"])[i])){
+                // Store its TLorentzVector in electrons vector
+                elecs.push_back(pre_elecs.at(i));
+            } 
+            else if (v_electron_idx.size() == 1 && 
+                     (*intVectors["Electron_charge"])[v_electron_idx[0]] != (*intVectors["Electron_charge"])[i]) {
+                // Add second selected electron with opposite charge
                 v_lepton_idx.push_back(i);
                 v_electron_idx.push_back(i);
+                // Store its TLorentzVector in electrons vector
+                elecs.push_back(pre_elecs.at(i));
             }
         }
     }
-    // MuEl case
+    // Muon-electron channel
     else if (TString(Decaymode).Contains("muel")) {
         // Process muons
-        //Int_t nmu = Muon->GetEntriesFast();
         Int_t nmu = muons_iso->GetSize();
         for (int i = 0; i < nmu; ++i) {
-
-            if (!passIsolation(muons_iso->At(i), muonisocut) || 
-                //!passKinematicCuts(*Mu_lep_sel, muon_pt, muon_eta) || 
-                !passKinematicCuts(muons_pt->At(i), muons_eta->At(i),lep_pt, lep_eta) || 
+            // Skip muons that don't pass selection criteria
+            if (!passIsolation(muons_iso->At(i), muon_isocut) || 
+                !passKinematicCuts(muons_pt->At(i), muons_eta->At(i), muon_pt, muon_eta) || 
                 !passId(muons_Id->At(i))) {
                 continue;
             }
-
+    
+            // Add selected muon
             v_muon_idx.push_back(i);
+            // Store its TLorentzVector in muons vector
+            muons.push_back(pre_muons.at(i));
         }
 
         // Process electrons
-
         Int_t nel = elecs_pt->GetSize();
-        for (int i = 0; i < nel; ++i) {
+        v_electron_idx.clear();
+
+        // Only proceed if we have at least one muon
+        if (!v_muon_idx.empty()) {
+            for (int i = 0; i < nel; ++i) {
+                // Skip electrons that don't pass selection criteria
+                if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
+                    !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
+                   (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
+                   fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
+                  !(elecCharge((*intVectors["Electron_tightCharge"])[i])) ||
+                  !(*boolVectors["Electron_convVeto"])[i]) {
+                    continue;
+                }
         
-          if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), lep_pt, lep_eta) || 
-          !elecSCBId(elecs_scbId->At(i), eleid_scbcut) || 
-          (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 && 
-          fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) || 
-          !(elecCharge((*intVectors["Electron_tightCharge"])[i])) || // Added missing logical operator
-          !(*boolVectors["Electron_convVeto"])[i]) { 
-              continue;
-          }   
-            v_electron_idx_temp.push_back(i);
-        }
-
-
-        if (!v_muon_idx.empty() && !v_electron_idx_temp.empty()) {
-            for (int i : v_electron_idx_temp) {
-                if ((*intVectors["Muon_charge"])[v_lep_idx_temp[0]] != (*intVectors["Electron_charge"])[i]) { // Added missing closing parenthesis
+                // Only select electrons with charge opposite to the first selected muon
+                if ((*intVectors["Muon_charge"])[v_muon_idx[0]] != (*intVectors["Electron_charge"])[i]) {
+                    // Add selected electron
                     v_electron_idx.push_back(i);
+                    // Store its TLorentzVector in electrons vector
+                    elecs.push_back(pre_elecs.at(i));
                 }
             }
-        }
-
-        // Validate charge matching
-        if (!v_muon_idx.empty() && !v_electron_idx.empty() &&
-           (*intVectors["Muon_charge"])[v_muon_idx[0]] == (*intVectors["Electron_charge"])[v_electron_idx[0]]) {
-           if ((*intVectors["Muon_charge"])[v_muon_idx_temp[0]] != (*intVectors["Electron_charge"])[v_electron_idx[0]]) {
-              std::cerr << "MuEl selection wrong!" << std::endl;
-           }
         }
     }
     else {
         std::cerr << "Lepton Selection error" << std::endl;
     }
-    std::cout << " ---sk 333333--- " << std::endl;
-    // Muon Selection
-    Int_t nmu = muonsveto_iso->GetSize();
 
-    for (int imu = 0; imu < nmu; ++imu) {
-        if (!passIsolation(muons_iso->At(imu), lepisocut) || 
-            !passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu), lep_pt, lep_eta) ||
-            !passId(muons_Id->At(imu))) {
-            continue;
-        }
-
-        muonsveto.push_back(muons.at(imu));
-
-    }
-    std::cout << " ---sk 444444--- " << std::endl;
-
-    if (elecsveto_iso == nullptr) {
-        std::cerr << "Error: elecsveto_iso is null!" << std::endl;
-        return; // 또는 continue;
-    }
-
-    // Electron Selection
-    std::cout << "elecs_iso --- " << elecsveto_iso->GetSize() << ", elecs.size: " << elecs.size() << std::endl;
-
-    Int_t nel = elecsveto_iso->GetSize();
-    if (nel != elecs.size()) {
-        std::cerr << "Error: Size mismatch! nel: " << nel << ", elecs.size: " << elecs.size() << std::endl;
-        return; // 또는 continue;
-    }
-
-    std::cout << "---sk 55555---" << std::endl;
-
-    if (!elecs_pt || !elecs_eta || !floatVectors["Electron_deltaEtaSC"] || !intVectors["Electron_tightCharge"]) {
-        if (!elecs_pt) std::cerr << "Error: elecs_pt is null!" << std::endl;
-        if (!elecs_eta) std::cerr << "Error: elecs_eta is null!" << std::endl;
-        if (!floatVectors["Electron_deltaEtaSC"]) std::cerr << "Error: floatVectors['Electron_deltaEtaSC'] is null!" << std::endl;
-        if (!intVectors["Electron_tightCharge"]) std::cerr << "Error: intVectors['Electron_tightCharge'] is null!" << std::endl;
-        return;
-    }
-
-
-    for (int iel = 0; iel < nel; ++iel) {
-        std::cout << "Processing electron index: " << iel << std::endl;
-
-        // 벡터 및 크기 확인
-        if (!elecs_pt || !elecs_eta || !elecsveto_scbId ||
-            !floatVectors["Electron_deltaEtaSC"] || !intVectors["Electron_tightCharge"]) {
-            if (!elecs_pt) std::cerr << "Error: elecs_pt is nullptr!" << std::endl;
-            if (!elecs_eta) std::cerr << "Error: elecs_eta is nullptr!" << std::endl;
-            if (!elecsveto_scbId) std::cerr << "Error: elecsveto_scbId is nullptr!" << std::endl;
-            if (!floatVectors["Electron_deltaEtaSC"]) std::cerr << "Error: floatVectors[\"Electron_deltaEtaSC\"] is nullptr!" << std::endl;
-            if (!intVectors["Electron_tightCharge"]) std::cerr << "Error: intVectors[\"Electron_tightCharge\"] is nullptr!" << std::endl;
-
-            if (!elecs_pt || !elecs_eta || !elecsveto_scbId ||
-                !floatVectors["Electron_deltaEtaSC"] || !intVectors["Electron_tightCharge"]) {
-                std::cerr << "Error: Null pointer detected for variables!" << std::endl;
-                return;
-            }
-
-
-
-            std::cerr << "Error: Null pointer detected for variables!" << std::endl;
-            return;
-        }
-
-        if (elecs_pt->GetSize() <= iel || elecs_eta->GetSize() <= iel ||
-            elecsveto_scbId->GetSize() <= iel ||
-            (*floatVectors["Electron_deltaEtaSC"]).GetSize() <= iel ||
-            (*intVectors["Electron_tightCharge"]).GetSize() <= iel) {
-            std::cerr << "Error: Out-of-bounds access detected at index " << iel << std::endl;
-            continue;
-        }
-
-        // 조건 디버깅
-        if (!passKinematicCuts(elecs_pt->At(iel), elecs_eta->At(iel), lep_pt, lep_eta)) {
-            std::cout << "Failed kinematic cuts for index " << iel << std::endl;
-            continue;
-        }
-
-        if (!elecSCBId(elecsveto_scbId->At(iel), eleid_scbcut)) {
-            std::cout << "Failed SCB ID for index " << iel << std::endl;
-            continue;
-         }
-
-         double combinedEta = (*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel);
-         if (fabs(combinedEta) > 1.4442 && fabs(combinedEta) < 1.566) {
-             std::cout << "Failed eta range for index " << iel << std::endl;
-             continue;
-         }
-         
-         if (!elecCharge((*intVectors["Electron_tightCharge"])[iel])) {
-             std::cout << "Failed charge check for index " << iel << std::endl;
-             continue;
-         }
-         
-         // 최종 선택된 elec 추가
-         elecsveto.push_back(elecs.at(iel));
-         std::cout << "Selected electron index: " << iel << std::endl;
-    }
-
-
-std::cout << "---sk 66666---" << std::endl;
-
-
+    // Select veto leptons for jet cleaning & third lepton veto
+    SelectVetoMuons();
+    SelectVetoElectrons();
 }
 
-
 void Analysis::LeptonOrder() {
+    Lep1.SetPxPyPzE(-999, -999, -999, -999);
+    Lep2.SetPxPyPzE(-999, -999, -999, -999);
+    Lep.SetPxPyPzE(-999, -999, -999, -999);
+    AnLep.SetPxPyPzE(-999, -999, -999, -999);
     // Helper function for assigning leptons and debugging
-    std::cout << "test !! LeptonOrder! " << std::endl;
     auto assignLeptons = [&](const std::vector<TLorentzVector>& leptons,
                              const std::string& chargeKey,
                              const std::vector<int>& indices,
@@ -1174,19 +1080,11 @@ void Analysis::LeptonOrder() {
                       << ") is smaller than required index." << std::endl;
             return;
         }
-        std::cout << "assignLeptons !!!!"<< std::endl;
-        std::cout << "indices ? " << indices.size()<< std::endl;
-        std::cout << "leptons ? " << leptons.size()<< std::endl;
+
         Lep1 = leptons.at(indices[idx1]);
         Lep2 = leptons.at(indices[idx2]);
-        std::cout << "end Lep1 Lep2 assignment !  "<< std::endl;
 
-        // Debugging information
-        std::cerr << "Assigning Lep1 and Lep2:\n"
-                  << "  Lep1: Pt = " << Lep1.Pt() << ", Eta = " << Lep1.Eta() << "\n"
-                  << "  Lep2: Pt = " << Lep2.Pt() << ", Eta = " << Lep2.Eta() << std::endl;
-
-        std::cout << "sk4-1"<< std::endl;
+        // Set Lep & AnLep //
         if ((*intVectors[chargeKey])[indices[idx1]] < 0) {
             Lep = leptons.at(indices[idx1]);
             AnLep = leptons.at(indices[idx2]);
@@ -1194,35 +1092,29 @@ void Analysis::LeptonOrder() {
             Lep = leptons.at(indices[idx2]);
             AnLep = leptons.at(indices[idx1]);
         }
-        std::cout << "sk4-2"<< std::endl;
-        
-        // Additional debugging information
-        std::cerr << "Assigning Lep and AnLep:\n"
-                  << "  Lep: Charge < 0, Pt = " << Lep.Pt() << "\n"
-                  << "  AnLep: Charge > 0, Pt = " << AnLep.Pt() << std::endl;
-        std::cout << "sk4-3"<< std::endl;
+
     }; // end of assignLeptons //
 
-    std::cout << "sk1 " << std::endl;
+    //std::cout << "sk1 " << std::endl;
 
     // Handle dimuon decay mode
     if (TString(Decaymode).Contains("dimuon")) {
-    std::cout << "sk2 " << std::endl;
+    //std::cout << "sk2 " << std::endl;
 
         if (v_muon_idx.size() > 1) {
-    std::cout << "sk3 " << std::endl;
-            assignLeptons(muons, "Muon_charge", v_muon_idx, 0, 1);
+    //std::cout << "sk3 " << std::endl;
+            assignLeptons(pre_muons, "Muon_charge", v_muon_idx, 0, 1);
         } /*else {
             std::cerr << "Lepton TLorentzVector Error: v_muon_idx is empty or too small for Decaymode = dimuon" 
                       << " (size: " << v_muon_idx.size() << ")" << std::endl;
             return;
         }*/
-    std::cout << "sk4 " << std::endl;
+    //std::cout << "sk4 " << std::endl;
     }
     else if (TString(Decaymode).Contains("dielec")) {
     // Handle dielectron decay mode
         if (v_electron_idx.size() > 1) {
-            assignLeptons(elecs, "Electron_charge", v_electron_idx, 0, 1);
+            assignLeptons(pre_elecs, "Electron_charge", v_electron_idx, 0, 1);
         } else {
             std::cerr << "Lepton TLorentzVector Error: v_electron_idx is empty or too small for Decaymode = dielec" 
                       << " (size: " << v_electron_idx.size() << ")" << std::endl;
@@ -1232,25 +1124,25 @@ void Analysis::LeptonOrder() {
     else if (TString(Decaymode).Contains("muel")) {
     // Handle muon-electron decay mode
         if (v_muon_idx.size() > 0 && v_electron_idx.size() > 0) {
-            if (muons.at(v_muon_idx.at(0)).Pt() > elecs.at(v_electron_idx.at(0)).Pt()) {
-                Lep1 = muons.at(v_muon_idx.at(0));
-                Lep2 = elecs.at(v_electron_idx.at(0));
+            if (pre_muons.at(v_muon_idx.at(0)).Pt() > pre_elecs.at(v_electron_idx.at(0)).Pt()) {
+                Lep1 = pre_muons.at(v_muon_idx.at(0));
+                Lep2 = pre_elecs.at(v_electron_idx.at(0));
             } else {
-                Lep1 = elecs.at(v_electron_idx.at(0));
-                Lep2 = muons.at(v_muon_idx.at(0));
+                Lep1 = pre_elecs.at(v_electron_idx.at(0));
+                Lep2 = pre_muons.at(v_muon_idx.at(0));
             }
 
             if ((*intVectors["Muon_charge"])[v_muon_idx[0]] < 0) {
-                Lep = muons.at(v_muon_idx.at(0));
-                AnLep = elecs.at(v_electron_idx.at(0));
+                Lep = pre_muons.at(v_muon_idx.at(0));
+                AnLep = pre_elecs.at(v_electron_idx.at(0));
             } else {
-                Lep = elecs.at(v_electron_idx.at(0));
-                AnLep = muons.at(v_muon_idx.at(0));
+                Lep = pre_elecs.at(v_electron_idx.at(0));
+                AnLep = pre_muons.at(v_muon_idx.at(0));
             }
         } else {
-            std::cerr << "Lepton TLorentzVector Error: v_muon_idx size = " 
-                      << v_muon_idx.size() << ", v_electron_idx size = " 
-                      << v_electron_idx.size() << " for Decaymode = muel" << std::endl;
+         //   std::cerr << "Lepton TLorentzVector Error: v_muon_idx size = " 
+         //             << v_muon_idx.size() << ", v_electron_idx size = " 
+         //             << v_electron_idx.size() << " for Decaymode = muel" << std::endl;
             return;
         }
     }
@@ -1258,128 +1150,222 @@ void Analysis::LeptonOrder() {
     else {
         std::cerr << "Lepton TLorentzVector Error: Decaymode = " << Decaymode << std::endl;
     }
+
 }
 
 
 void Analysis::MakeMuonCollection() {
     // make muon collection tlorentzvectors//
-    std::cout << "Muon Correction !!" << std::endl;
-    muons.clear();
+    //std::cout << "Muon Correction !!" << std::endl;
+    pre_muons.clear();
     for (int imu = 0; imu < muons_pt->GetSize(); ++imu){
         //std::cout << "imu " << imu << " muons_pt->At(imu) : " << muons_pt->At(imu) << " muons_eta->At(imu) : " << muons_eta->At(imu) << " muons_phi->At(imu) : " << muons_phi->At(imu) << " muons_M->At(imu)  : "<< muons_M->At(imu)  << std::endl; 
-        muons.push_back(createLorentzVector(muons_pt->At(imu), muons_eta->At(imu), muons_phi->At(imu), muons_M->At(imu) )); 
+        pre_muons.push_back(createLorentzVector(muons_pt->At(imu), muons_eta->At(imu), muons_phi->At(imu), muons_M->At(imu) )); 
     }
-    std::cout << "end of MakeMuonCollection !" << std::endl;
-    std::cout << "size of muons.size : " << muons.size() << std::endl; 
+//    std::cout << "end of MakeMuonCollection !" << std::endl;
+//    std::cout << "size of pre_muons.size : " << muons.size() << std::endl; 
     return;
 }
 
 
 void Analysis::MakeElecCollection() {
     // Electron collection logic
-    elecs.clear();
+    pre_elecs.clear();
     for (int iele = 0; iele < elecs_pt->GetSize(); ++iele){
-        elecs.push_back(createLorentzVector(elecs_pt->At(iele), elecs_eta->At(iele), elecs_phi->At(iele), elecs_M->At(iele) )); 
+        pre_elecs.push_back(createLorentzVector(elecs_pt->At(iele), elecs_eta->At(iele), elecs_phi->At(iele), elecs_M->At(iele) )); 
     }
  
-    std::cout << "end of MakeElecCollection !" << std::endl;
-    std::cout << "size of elecs.size : " << elecs.size() << std::endl; 
+//    std::cout << "end of MakeElecCollection !" << std::endl;
+//    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
 
 void Analysis::MakeJetCollection() {
     // Jet collection logic
-    jets.clear();
-    for (int ijet = 0; ijet < jets_pt->GetSize(); ++ijet){
-        jets.push_back(createLorentzVector(jets_pt->At(ijet), jets_eta->At(ijet), jets_phi->At(ijet), jets_M->At(ijet) )); 
+    pre_jets.clear();
+    
+    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
+        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
+        return;
+    }
+    
+    Int_t nJets = jets_pt->GetSize();
+    pre_jets.reserve(nJets); 
+    
+    for (int ijet = 0; ijet < nJets; ++ijet) {
+        try {
+            pre_jets.push_back(createLorentzVector(
+                jets_pt->At(ijet), 
+                jets_eta->At(ijet), 
+                jets_phi->At(ijet), 
+                jets_M->At(ijet)
+            ));
+        } catch (const std::exception& e) {
+            std::cerr << "Error creating jet vector at index " << ijet << ": " << e.what() << std::endl;
+        }
     } 
+    
+    //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
     return;
 }
 
-void Analysis::JetSelector()
+
+bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFTER LEPTONSELETOR //
 {
-    MakeJetCollection();
-    v_jet_idx.clear();
-
-    Int_t injet = jets_pt->GetSize();
-
-    TLorentzVector JetCalib;
-    TLorentzVector JetRaw;
-
-    double jetpt_ = -999;
-    double jeteta_ = -999;
-    double jetphi_ = -999;
-    double jetenergy_ = -999;
-
-    for (int i = 0; i < injet; i++)
-    {
-        //JetRaw = *(static_cast<TLorentzVector*>(jets.at(i)));
-        JetRaw = jets.at(i);
-
-
-        //////////////////////////////
-        /// JES Systematic Method1 ///
-        //////////////////////////////
-        if (TString(JetEnSys).Contains("JetEnNorm"))
-        {
-            // 그대로 유지
-        }
-        else if (TString(JetEnSys).Contains("JetEnShiftedUp"))
-        {
-            jetpt_ = JetRaw.Pt();
-            jeteta_ = JetRaw.Eta();
-            jetphi_ = JetRaw.Phi();
-            jetenergy_ = JetRaw.Energy();
-            //JetRaw.SetPtEtaPhiE(jetpt_ * Jet_EnShiftedUp->at(i), jeteta_, jetphi_, jetenergy_ * Jet_EnShiftedUp->at(i));
-        }
-        else if (TString(JetEnSys).Contains("JetEnShiftedDown"))
-        {
-            jetpt_ = JetRaw.Pt();
-            jeteta_ = JetRaw.Eta();
-            jetphi_ = JetRaw.Phi();
-            jetenergy_ = JetRaw.Energy();
-            //JetRaw.SetPtEtaPhiE(jetpt_ * Jet_EnShiftedDown->at(i), jeteta_, jetphi_, jetenergy_ * Jet_EnShiftedDown->at(i));
-        }
-        else
-        {
-            std::cout << "Check out Jet Systematic Config ... Default is Norminal Jet ..." << std::endl;
-        }
-
-        //////////////////////////////
-        /// JER Systematic Method1 ///
-        //////////////////////////////
-        JetCalib = (JERSmearing(&JetRaw, i, JetResSys));
-
-        if (JetCleaning(&JetCalib))
-        {
-            //v_jetdpt_res.push_back(JetCalib.Pt() - JetRaw.Pt());
-            //v_jetdpx_res.push_back(JetCalib.Px() - JetRaw.Px());
-            //v_jetdpy_res.push_back(JetCalib.Py() - JetRaw.Py());
-
-            ////////////////////////////////
-            /// Apply Requirement of Jet ///
-            ////////////////////////////////
-            /*if (JetCalib.Pt() > jet_pt && fabs(JetCalib.Eta()) < jet_eta && v_jet_Id->at(i) >= jet_id)
-            {
-                v_jet_idx.push_back(i);
-                v_jet_TL.push_back(std::make_shared<TLorentzVector>(JetCalib));
-                if (JetCalib.Pt() < 30.0)
-                {
-                    std::cout << "Something wrong " << std::endl;
-                }
-            }*/
+    bool numLeptons = true;
+    
+    if (TString(Decaymode).Contains("dimuon")) {
+        // For dimuon channel, check using v_muon_idx size
+        if (v_muon_idx.size() <= 1 || v_muon_idx.size() < nNLepsCut) {
+            numLeptons = false;
         }
     }
+    else if (TString(Decaymode).Contains("dielec")) {
+        // For dielectron channel, check using v_electron_idx size
+        if (v_electron_idx.size() <= 1 || v_electron_idx.size() < nNLepsCut) {
+            numLeptons = false;
+        }
+    }
+    else if (TString(Decaymode).Contains("muel")) {
+        // For muon-electron channel, require at least one of each
+        if (v_muon_idx.size() < 1 || v_electron_idx.size() < 1 || 
+            (v_muon_idx.size() + v_electron_idx.size()) < nNLepsCut) {
+            numLeptons = false;
+        }
+    }
+    else if (TString(Decaymode).Contains("muonJet")) {
+        // For muon+jets channel, require exactly one lepton
+        if (v_lepton_idx.size() != 1 || v_lepton_idx.size() < nNLepsCut) {
+            numLeptons = false;
+        }
+    }
+    else {
+        std::cerr << "Error: Unrecognized decay mode in NumIsoLeptons()" << std::endl;
+    }
+    //std::cout << "v_muon_idx.size() "<< v_muon_idx.size() << "numLeptons " << numLeptons << std::endl; 
+    return numLeptons;
+}
+
+
+void Analysis::JetSelector()
+{
+    // Check if necessary pointers are initialized
+    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
+        std::cerr << "Error: Basic jet variables (pt, eta, phi, M) are not initialized. Make sure SetObjectVariable() was called." << std::endl;
+        return;
+    }
+
+    MakeJetCollection();
+    v_jet_idx.clear();
+    jets.clear();
+    // Lambda functions for common jet selection checks
+    auto passKinematicCuts = [this](float pt, float eta) -> bool {
+        return pt >= jet_pt && fabs(eta) <= jet_eta;
+    };
+
+    // Add safety check
+    if (jets_Id == nullptr) {
+        std::cerr << "Warning: jets_Id is null. Skipping jet ID check." << std::endl;
+
+        // Default implementation - always pass without ID check
+        auto passJetId = [](int id) -> bool { return true; };
+    } else {
+        auto passJetId = [this](int id) -> bool {
+            return id >= jet_id;
+        };
+    }
+
+    // Add safety check
+
+    auto passPuId = [](int puId, float pt) -> bool {
+        // For jets with pT > 50 GeV, no PU ID required
+        if (pt > 50.0) return true;
+        // For jets with pT <= 50 GeV, check if PU ID exists
+        return (puId & (1 << 0)) != 0;
+    };
+
+    Int_t nJets = jets_pt->GetSize();
+//    std::cout << "Number of jets to process: " << nJets << std::endl;
+
+    // Process all jets
+    for (int i = 0; i < nJets; i++)
+    {
+        // Get basic kinematic properties
+        float jetPt = jets_pt->At(i);
+        float jetEta = jets_eta->At(i);
+
+        // Apply kinematic cuts first (efficiency)
+        if (!passKinematicCuts(jetPt, jetEta)) {
+            continue;
+        }
+
+        // Check jet ID if available
+        if (jets_Id != nullptr) {
+            int jetId = jets_Id->At(i);
+            if (jetId < jet_id) {
+                continue;
+            }
+        }
+
+        // Apply PU ID for low pT jets if available
+        if (jets_puId != nullptr && jetPt <= 50.0) {
+            int jetPuId = jets_puId->At(i);
+            if ((jetPuId & (1 << 0)) == 0) {
+                continue;
+            }
+        }
+
+        // Check if pre_jets vector is properly initialized
+        if (i >= pre_jets.size()) {
+            std::cerr << "Error: Index " << i << " out of range for pre_jets (size: " << pre_jets.size() << ")" << std::endl;
+            continue;
+        }
+
+        // Apply jet cleaning using a copy of the jet
+        TLorentzVector jetVec = pre_jets[i];
+        if (!JetCleaning(&jetVec)) {
+            continue;  // Skip this jet if it overlaps with any lepton
+        }
+
+        // Optionally apply JER smearing for MC
+        if (!TString(FileName_).Contains("Data") && dojer) {
+            try {
+                TLorentzVector smearedJet = JERSmearing(&jetVec, i, "Norm");
+                pre_jets[i] = smearedJet; // Update the jet with smeared version
+            } catch (const std::exception& e) {
+                std::cerr << "Error in JER smearing: " << e.what() << std::endl;
+                // Continue with unsmeared jet
+            }
+        }
+
+        // Add to selected jets
+        v_jet_idx.push_back(i);
+        jets.push_back(pre_jets[i]);
+    }
+
+//    std::cout << "Selected " << v_jet_idx.size() << " jets after cuts" << std::endl;
 }
 
 bool Analysis::JetCleaning(TLorentzVector* jet_)
 {
+
     for (const auto& ele : elecsveto)
     {
         if (ele.DeltaR(*jet_) < 0.4)
             return false;
     }
-    for (const auto& mu : elecsveto)
+    for (const auto& mu : muonsveto)
+    {
+        if (mu.DeltaR(*jet_) < 0.4)
+            return false;
+    }
+
+    for (const auto& ele : elecs)
+    {
+        if (ele.DeltaR(*jet_) < 0.4)
+            return false;
+    }
+    for (const auto& mu : muons)
     {
         if (mu.DeltaR(*jet_) < 0.4)
             return false;
@@ -1414,17 +1400,6 @@ TLorentzVector Analysis::JERSmearing(TLorentzVector* jet, int idx_, TString op_)
     }
 
     return *jet;
-}
-bool Analysis::NumIsoLeptons()//YOU SHOULD REQUIRE THIS FUNCTION AFTER LEPTONSELETOR //
-{        
-    bool numLeptons = true;
-    if ( TString(Decaymode).Contains( "dimuon" ) ||
-         TString(Decaymode).Contains( "dielec" )    ){  if ( v_lepton_idx.size() <= 1 ) {numLeptons=false;} } //Requiring  Two isolated Lepton .
- 
-    else if ( TString(Decaymode).Contains( "muel" ) ){ if (v_muon_idx.size() < 1 || v_electron_idx.size() < 1 ) {numLeptons=false; } else {}}
-    else if ( TString(Decaymode).Contains( "muonJet" ) ){if( v_lepton_idx.size() != 1){numLeptons=false;} }
-    else { std::cerr << "?? something wrong " << std::endl; }
-    return numLeptons;
 }
 
 bool Analysis::LeptonsPtAddtional()//YOU SHOULD REQUIRE THIS FUNCTION AFTER NumIsoLeptons //                                        
@@ -1498,6 +1473,21 @@ void Analysis::METDefiner()
     Met.SetPtEtaPhiM(static_cast<double>(**met_pt), 0, static_cast<double>(**met_phi), 0); // MET_phi MET_pt
 }
 
+
+void Analysis::JetOrder()
+{
+   Jet1.SetPtEtaPhiM(-999,-999,-999,-999);
+   Jet2.SetPtEtaPhiM(-999,-999,-999,-999);
+            
+   if (jets.size() >=1){
+      Jet1 = jets[0];
+      if (jets.size() > 1){ Jet2 = jets[1]; } 
+   }        
+   return; 
+
+}
+
+
 bool Analysis::DiLeptonMassCut()
 {        
    bool dimu_masscut = false;
@@ -1506,4 +1496,355 @@ bool Analysis::DiLeptonMassCut()
          
    return dimu_masscut;
 }        
-      
+
+
+void Analysis::SelectVetoMuons() {
+    // Clear existing veto muon collection
+    muonsveto.clear();
+    v_vetomuon_idx.clear();
+    
+    // Lambda functions for common checks
+    auto passKinematicCuts = [](float pt, float eta) {
+        return pt > 20 && fabs(eta) < 2.4;
+    };
+
+    auto passIsolation = [](float iso, float isoCut) {
+        return iso < isoCut;
+    };
+
+    auto passId = [](bool id) {
+        return id;
+    };
+    
+    // Channel-specific logic - same as before
+    if (TString(Decaymode).Contains("dimuon")) {
+        // For dimuon channel, check muons not in the selected pair
+        Int_t nmu = muons_pt->GetSize();
+        muonsveto.clear(); 
+        for (int imu = 0; imu < nmu; ++imu) {
+            // Skip if this muon is one of the selected muons
+            if (std::find(v_muon_idx.begin(), v_muon_idx.end(), imu) != v_muon_idx.end()) {
+                continue;
+            }
+            
+            // Check criteria
+            //if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
+            if (passIsolation(muons_iso->At(imu), muon_isocut) && 
+                passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
+                passId(muonsveto_Id->At(imu))) {
+                /*std::cout << "In SelectVetoMuons : muonsveto_iso : " << muonsveto_iso->At(imu) 
+                          << " muons_pt->At(imu) : " << muons_pt->At(imu) 
+                          << " muons_eta->At(imu) : " << muons_eta->At(imu) 
+                          << " muonsveto_Id->At(imu) : " << muonsveto_Id->At(imu) 
+                          << std::endl; */
+                // Add to veto collection
+                muonsveto.push_back(pre_muons.at(imu));
+                v_vetomuon_idx.push_back(imu);
+            }
+        }
+    }
+    else if (TString(Decaymode).Contains("dielec")) {
+        // For dielectron channel, check all muons
+        Int_t nmu = muons_pt->GetSize();
+        muonsveto.clear(); 
+        for (int imu = 0; imu < nmu; ++imu) {
+            // Check criteria
+            if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
+                passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
+                passId(muonsveto_Id->At(imu))) {
+                
+                // Add to veto collection
+                muonsveto.push_back(pre_muons.at(imu));
+                v_vetomuon_idx.push_back(imu);
+            }
+        }
+    }
+    else if (TString(Decaymode).Contains("muel")) {
+        muonsveto.clear(); 
+        // For muon-electron channel, check muons not in the selected pair
+        Int_t nmu = muons_pt->GetSize();
+        muonsveto.clear();
+        for (int imu = 0; imu < nmu; ++imu) {
+            // Skip if this muon is the selected muon
+            if (std::find(v_muon_idx.begin(), v_muon_idx.end(), imu) != v_muon_idx.end()) {
+                continue;
+            }
+            
+            // Check criteria
+            if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
+                passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
+                passId(muonsveto_Id->At(imu))) {
+                
+                // Add to veto collection
+                muonsveto.push_back(pre_muons.at(imu));
+                v_vetomuon_idx.push_back(imu);
+            }
+        }
+    }
+    else {
+        std::cerr << "Error: Unrecognized decay mode in SelectVetoMuons!" << std::endl;
+    }
+    //std::cout << "IN SelectVetoMuons : muonsveto : " << muonsveto.size() << std::endl;
+    return;    
+}
+
+
+
+void Analysis::SelectVetoElectrons() {
+    // Clear existing veto electron collection
+    elecsveto.clear();
+    
+    // Lambda functions for common checks
+    auto passKinematicCuts = [](float pt, float eta, float ptCut, float etaCut) {
+        return pt >= ptCut && fabs(eta) <= etaCut;
+    };
+
+    auto passIsolation = [](float iso, float isoCut) {
+        return iso <= isoCut;
+    };
+
+    auto elecSCBId = [](int id, int idcut) {
+        return id >= idcut; 
+    };
+    
+    auto elecCharge = [](int id) {
+        return id > 0;
+    };
+    // Channel-specific logic
+    if (TString(Decaymode).Contains("dimuon")) {
+        // For dimuon channel, check all electrons
+        //elecsveto.clear();    
+        Int_t nel = elecs_pt->GetSize();
+        //std::cout << "nel :" << nel << std::endl;
+        for (int iel = 0; iel < nel; ++iel) {
+            // Apply cuts
+            if (!passKinematicCuts(elecs_pt->At(iel), elecs_eta->At(iel), elec_pt, elec_eta) ||
+                !elecSCBId(elecsveto_scbId->At(iel), elevetoid_scbcut) ||
+                (fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) > 1.4442 &&
+                 fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) < 1.566) ||
+                !elecCharge((*intVectors["Electron_tightCharge"])[iel]) ||
+                !(*boolVectors["Electron_convVeto"])[iel]
+                ) {
+                continue;
+            }
+                 /*std::cout << "In Veto Elec. elecsveto_scbId : " << elecsveto_scbId->At(iel) 
+                          << " elevetoid_scbcut : " << elevetoid_scbcut 
+                          << " elecs_pt->At(i) : " << elecs_pt->At(iel) 
+                          << " elecCharge : " << (*intVectors["Electron_tightCharge"])[iel] 
+                          << " Electron_convVeto : " << (*boolVectors["Electron_convVeto"])[iel]
+                          << std::endl;*/
+            
+            // Add to veto collection
+            elecsveto.push_back(pre_elecs.at(iel));
+        }
+    }
+    else if (TString(Decaymode).Contains("dielec")) {
+        // For dielectron channel, check electrons not in the selected pair
+        Int_t nel = elecs_pt->GetSize();
+        for (int i = 0; i < nel; ++i) {
+            // Skip if this electron is one of the selected electrons
+            if (std::find(v_electron_idx.begin(), v_electron_idx.end(), i) != v_electron_idx.end()) {
+                continue;
+            }
+            
+            // Apply cuts (same logic as in LeptonSelector)
+            if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
+                !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
+                (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
+                 fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
+                !elecCharge((*intVectors["Electron_tightCharge"])[i]) ||
+                !(*boolVectors["Electron_convVeto"])[i]
+                ) {
+                continue;
+            }
+            
+            // Add to veto collection
+            elecsveto.push_back(pre_elecs.at(i));
+        }
+        //std::cout << "elecsveto size in SelectVetoElectrons : "<< elecsveto.size() << std::endl;
+    }
+    else if (TString(Decaymode).Contains("muel")) {
+        // For muon-electron channel, check electrons not in the selected pair
+        Int_t nel = elecs_pt->GetSize();
+        for (int i = 0; i < nel; ++i) {
+            // Skip if this electron is the selected electron
+            if (std::find(v_electron_idx.begin(), v_electron_idx.end(), i) != v_electron_idx.end()) {
+                continue;
+            }
+            
+            // Apply cuts (same logic as in LeptonSelector)
+            if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
+                !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
+                (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
+                 fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
+                !elecCharge((*intVectors["Electron_tightCharge"])[i]) ||
+                !(*boolVectors["Electron_convVeto"])[i]) {
+                continue;
+            }
+            
+            // Add to veto collection
+            elecsveto.push_back(pre_elecs.at(i));
+        }
+    }
+    else {
+        std::cerr << "Error: Unrecognized decay mode in SelectVetoElectrons!" << std::endl;
+    }
+    //std::cout << "elecsveto : " << elecsveto.size()<< std::endl;
+}
+
+bool Analysis::ThirdLeptonVeto()
+{
+    bool third_veto = true;
+
+    if (TString(Decaymode).Contains("dimuon") || TString(Decaymode).Contains("dielec"))
+    {
+        // Check if we have at least 2 leptons
+        if (TString(Decaymode).Contains("dimuon")) {
+            // For dimuon channel
+            if (v_muon_idx.size() <= 1) {
+                third_veto = false;
+            }
+
+        }
+        if (TString(Decaymode).Contains("dielec")) {
+            // For dielectron channel
+            if (v_electron_idx.size() <= 1) {
+                third_veto = false;
+            }
+
+        }
+        
+        // Additional lepton veto - check the size of veto collections
+        // If collections are not empty, fail the veto
+        if (!muonsveto.empty() || !elecsveto.empty()) {
+            third_veto = false;
+        }
+//        std::cout << " 11 --22 third_veto : " << third_veto << std::endl;
+    }
+    else if (TString(Decaymode).Contains("muel"))
+    {
+        // For muon-electron channel
+        if (v_muon_idx.size() < 1 || v_electron_idx.size() < 1) {
+            third_veto = false;
+        }
+    //    else if ((*intVectors["Muon_charge"])[v_muon_idx.at(0)] == (*intVectors["Electron_charge"])[v_electron_idx.at(0)]) {
+            // Require opposite sign
+    //        third_veto = false;
+    //    }
+        
+        // Additional lepton veto - check the size of veto collections
+        // If collections are not empty, fail the veto
+        if (!muonsveto.empty() || !elecsveto.empty()) {
+            third_veto = false;
+        }
+    }
+    else {
+        std::cerr << "Error: Unrecognized decay mode in ThirdLeptonVeto function!" << std::endl;
+    }
+    
+    return third_veto;
+}
+void Analysis::GenWeightApply()
+{    
+    //std::cout << "start GenWieghtApply !!" << std::endl; 
+    double genweight = 1.0;
+    if ( !TString(FileName_).Contains( "Data") ){
+        if (**floatSingles["Generator_weight"] > 0.0){genweight =1;}
+        else {genweight =-1;}
+        evt_weight_ = evt_weight_*genweight;
+    }  
+    else {evt_weight_ = 1;}
+    //std::cout << "End GenWieghtApply !!" << std::endl; 
+}
+
+void Analysis::bJetSelector() {
+    // Clear any previous b-jet selections
+    v_bjet_idx.clear();
+    
+    // Check if there are selected jets to work with
+    if (v_jet_idx.empty()) {
+        return;
+    }
+    
+    // Counter for number of b-tagged jets
+    int nbtagged = 0;
+    
+    // Lambda function to determine if a jet is b-tagged
+    auto isBTagged = [this](int jetIdx) -> bool {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (floatVectors.find("Jet_btagDeepB") != floatVectors.end() && floatVectors["Jet_btagDeepB"] != nullptr) {
+                return (*floatVectors["Jet_btagDeepB"])[jetIdx] > bdisccut;
+            }
+        } 
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (floatVectors.find("Jet_btagDeepFlavB") != floatVectors.end() && floatVectors["Jet_btagDeepFlavB"] != nullptr) {
+                return (*floatVectors["Jet_btagDeepFlavB"])[jetIdx] > bdisccut;
+            }
+        }
+        else if (TString(JetbTag).Contains("pfCSVV2")) {
+            if (floatVectors.find("Jet_btagCSVV2") != floatVectors.end() && floatVectors["Jet_btagCSVV2"] != nullptr) {
+                return (*floatVectors["Jet_btagCSVV2"])[jetIdx] > bdisccut;
+            }
+        }
+        
+        std::cerr << "Warning: Could not determine b-tagging algorithm or missing b-tag discriminator" << std::endl;
+        return false;
+    };
+    
+    // Loop over selected jets to find b-tagged ones
+    for (const auto& jetIdx : v_jet_idx) {
+        if (isBTagged(jetIdx)) {
+            v_bjet_idx.push_back(jetIdx);
+            nbtagged++;
+        }
+    }
+    
+    // Debug output
+    //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
+}
+
+// ZVeto Cut : step 2
+bool Analysis::ZVetoCut()
+{        
+   bool zvetocut = false;
+         
+   if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) )
+   {        
+      if ( ((Lep1)+(Lep2)).M() <= 76 || ((Lep1)+(Lep2)).M() >= 106 ){ zvetocut = true; }
+   }        
+   else if ( TString(Decaymode).Contains( "muel" ) ){ zvetocut = true; }
+   else {std::cerr << "ZVeto Error !!" << std::endl;}
+               
+   return zvetocut;
+}
+
+// Num.Jet Cut : Step 3
+bool Analysis::NumJetCut(std::vector<int> v_jets)
+{           
+   bool numjetcut = false;
+   //if ( v_jets.size() == 2 ){ numjetcut = true; }
+   if ( v_jets.size() >= 2 ){ numjetcut = true; }
+   return numjetcut;
+}
+
+//MET Cut : step 4
+bool Analysis::METCut(TLorentzVector met)        
+{           
+   bool metcut = false;
+   if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) )
+   {        
+      if (met.Pt() > 40) { metcut =true; }
+   }        
+   else if ( TString(Decaymode).Contains( "muel" ) ){ metcut =true; }
+   else {std::cerr << "METCut Error !!" << std::endl;}
+   return metcut;
+}
+
+// Num.Jet Cut : Step 3
+bool Analysis::NumbJetCut(std::vector<int> v_jets)
+{           
+   bool numbjetcut = false;
+   //if ( v_jets.size() == 2 ){ numjetcut = true; }
+   if ( v_jets.size() >= 1 ){ numbjetcut = true; }
+   return numbjetcut;
+}  

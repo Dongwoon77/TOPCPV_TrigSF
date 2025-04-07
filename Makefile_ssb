@@ -2,11 +2,13 @@ PROGRAM         = ssb_analysis
 #PROGRAM         = pfCalib_analysis 
 CC              = g++
 LD              = g++
-CXXFLAGS        = -g -O2 -I$(ROOTSYS)/include -std=c++17 
-LDFLAGS         = $(LIBS) $(GLIBS) -B/usr/X11R6/lib -B/usr/lib64 
-OPT             =
-ROOTLIBS        = $(shell root-config --libs)
-ROOTGLIBS       = $(shell root-config --glibs)
+CXXFLAGS = -g -O2 $(shell root-config --cflags) -std=c++17
+LDFLAGS  = $(LIBS) $(GLIBS)
+ROOTLIBS = $(shell root-config --libs)
+ROOTGLIBS = $(shell root-config --glibs)
+
+LIBS = $(ROOTLIBS)
+GLIBS = $(ROOTGLIBS)
 
 
 LIBS            = $(ROOTLIBS)
