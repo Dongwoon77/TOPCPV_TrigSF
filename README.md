@@ -7,7 +7,7 @@ This repository contains code for analyzing CMS NanoAOD data using the SSB frame
 ### Cloning the Repository
 To get started, clone the repository from GitHub and check out the required branch:
 ```sh
-git clone --branch Run2_ULSummer20_v1 https://github.com/physicist87/SSBNanoAODANCode.git
+git clone --branch Run2_ULSummer20_v2 https://github.com/physicist87/SSBNanoAODANCode.git
 cd SSBNanoAODANCode
 ```
 
