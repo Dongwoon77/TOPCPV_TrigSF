@@ -32,6 +32,6 @@ do
    #echo ./ssb_analysis "${runPeriod}/${i}.list" "${StudyName}/${runPeriod}/${Channels}/${i}.root" "$config" "None" ${runPeriod}
    #./ssb_analysis "${i}.list" "${StudyName}/${runPeriod}/${Channels}/${i}.root" "$config" "None" ${runPeriod}
    echo ./ssb_analysis "${i}.list" "${StudyName}/${runPeriod}/${Channels}/${i}.root" "ULSummer20/UL2016PreVFP/dimuon.config" "None" ${runPeriod}
-   ./ssb_analysis "${runPeriod}/TTbar_Signal/${i}.list" "${StudyName}/${runPeriod}/${Channels}/TTbar_Signal/${i}.root" "ULSummer20/UL2016PreVFP/dimuon.config" "None" ${runPeriod} 100
+   ./ssb_analysis "${runPeriod}/TTbar_Signal/${i}.list" "${StudyName}/${runPeriod}/${Channels}/TTbar_Signal/${i}.root" "ULSummer20/UL2016PreVFP/dimuon.config" "None" ${runPeriod} -1
 done
 
