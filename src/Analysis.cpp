@@ -422,6 +422,7 @@ void Analysis::SetObjectVariable() {
     }
 
     /// btagging WP ///
+/*
     if      ( TString(JetbTag).Contains( "CSVL"  ) )    { bdisccut = 0.244; }
     else if ( TString(JetbTag).Contains( "CSVM"  ) )    { bdisccut = 0.679; }
     else if ( TString(JetbTag).Contains( "CSVT"  ) )    { bdisccut = 0.898; }
@@ -438,7 +439,103 @@ void Analysis::SetObjectVariable() {
     else if ( TString(JetbTag).Contains( "deepJetM" ) ) { bdisccut = 0.2598; }
     else if ( TString(JetbTag).Contains( "deepJetT" ) ) { bdisccut = 0.6502; }
     else { std::cout << "bscriminator error !!" << std::endl; }
-
+*/
+    // Set b-tag discriminator and threshold based on algorithm, WP and RunPeriod
+    
+    // First set the appropriate b-tag discriminator variable
+    if (TString(JetbTag).Contains("deepCSV")) {
+        jets_btag = floatVectors["Jet_btagDeepB"].get();
+    }
+    else if (TString(JetbTag).Contains("deepJet")) {
+        jets_btag = floatVectors["Jet_btagDeepFlavB"].get();
+    }
+    else if (TString(JetbTag).Contains("pfCSVV2")) {
+        jets_btag = floatVectors["Jet_btagCSVV2"].get();
+    }
+    else if (TString(JetbTag).Contains("CSV") && !TString(JetbTag).Contains("deep")) {
+        jets_btag = floatVectors["Jet_btagCSV"].get(); // Modify with appropriate variable name if needed
+    }
+    else if (TString(JetbTag).Contains("CISV")) {
+        jets_btag = floatVectors["Jet_btagCISV"].get(); // Modify with appropriate variable name if needed
+    }
+    else {
+        std::cout << "Error: Unknown b-tagging algorithm in " << JetbTag << std::endl;
+        jets_btag = nullptr;
+        bdisccut = -1.0;
+        return;
+    }
+    
+    // Set appropriate bdisccut value based on RunPeriod, algorithm, and WP
+    if (TString(RunPeriod).Contains("2016PreVFP")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.2027;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.6001;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.8819;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0508;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2598;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.6502;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("pfCSVV2")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.5426;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.8484;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.9535;
+            else std::cout << "Unknown pfCSVV2 working point!" << std::endl;
+        }
+    }
+    else if (TString(RunPeriod).Contains("2016PostVFP")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1918;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.5847;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.8767;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0480;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2489;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.6377;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+    }
+    else if (TString(RunPeriod).Contains("2017")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1355;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.4506;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7738;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0532;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.3040;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7476;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+    }
+    else if (TString(RunPeriod).Contains("2018")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1208;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.4168;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7665;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0490;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2783;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7100;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+    }
+    else {
+        std::cout << "Error: Unsupported run period: " << RunPeriod << std::endl;
+        jets_btag = nullptr;
+        bdisccut = -1.0;
+    }
+    
+    /*std::cout << "Setup B-tagging: " << JetbTag << " for period " << RunPeriod 
+              << " with cut value " << bdisccut << std::endl;*/
     /// MET ///
     met_pt  = floatSingles["MET_pt"].get(); 
     met_phi  = floatSingles["MET_phi"].get(); 
@@ -551,6 +648,7 @@ void Analysis::Loop() {
         FillHisto( h_Lep2eta[3],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[3],    (Lep2).Phi() , evt_weight_ );
 
+        if ((Jet2).Pt() < 30.) printf("jet2pt %lf eta %lf \n",Jet2.Pt(), Jet2.Eta());//std::cout << "Wrong! " << Jet2.Pt() << std::endl;
         FillHisto( h_Jet1pt[3] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[3],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[3],    (Jet1).Phi() , evt_weight_ );
@@ -605,6 +703,68 @@ void Analysis::Loop() {
 
         FillHisto( h_METpt[5]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[5]  ,   Met.Phi()  , evt_weight_ );
+        SetUpKINObs();
+        if (isKinSol)
+        {
+              FillHisto( h_Lep1pt[8] , Lep1.Pt() , evt_weight_ );
+              FillHisto( h_Lep2pt[8] , Lep2.Pt() , evt_weight_ );
+              FillHisto( h_Lep1eta[8], Lep1.Eta(), evt_weight_ );
+              FillHisto( h_Lep2eta[8], Lep2.Eta(), evt_weight_ );
+              FillHisto( h_Lep1phi[8], Lep1.Phi(), evt_weight_ );
+              FillHisto( h_Lep2phi[8], Lep2.Phi(), evt_weight_ );
+              
+
+              FillHisto( h_Jet1pt[8] , Jet1.Pt() , evt_weight_ );
+              FillHisto( h_Jet2pt[8] , Jet2.Pt() , evt_weight_ );
+              FillHisto( h_Jet1eta[8], Jet1.Eta(), evt_weight_ );
+              FillHisto( h_Jet2eta[8], Jet2.Eta(), evt_weight_ );
+              FillHisto( h_Jet1phi[8], Jet1.Phi(), evt_weight_ );
+              FillHisto( h_Jet2phi[8], Jet2.Phi(), evt_weight_ );
+              FillHisto( h_METpt[8]  , Met.Pt()  , evt_weight_ );
+              FillHisto( h_METphi[8] , Met.Phi() , evt_weight_ );
+              //FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
+              
+              FillHisto( h_DiLepMass[8], ( Lep1+Lep2 ).M(), evt_weight_ );
+              
+              FillHisto( h_Num_PV[8]   , num_pv          ,  evt_weight_ );
+              FillHisto( h_Num_Jets[8] , v_jet_idx.size(),  evt_weight_ );
+              FillHisto( h_Num_bJets[8], v_bjet_idx.size(), evt_weight_ );
+              if ( Top.Pt() > AnTop.Pt() ) { Top1 = Top; Top2 = AnTop; }
+              else { Top1 = AnTop; Top2 = Top; }
+
+              
+              FillHisto( h_TopMass      , Top.M()         , evt_weight_ );
+              FillHisto( h_Toppt        , Top.Pt()        , evt_weight_ );
+              FillHisto( h_Topphi       , Top.Phi()       , evt_weight_ );
+              FillHisto( h_TopRapidity  , Top.Rapidity()  , evt_weight_ );
+              FillHisto( h_TopEnergy    , Top.Energy()    , evt_weight_ );
+              FillHisto( h_AnTopMass    , AnTop.M()       , evt_weight_ );
+              FillHisto( h_AnToppt      , AnTop.Pt()      , evt_weight_ );
+              FillHisto( h_AnTopphi     , AnTop.Phi()     , evt_weight_ );
+              FillHisto( h_AnTopRapidity, AnTop.Rapidity(), evt_weight_ );
+              FillHisto( h_AnTopEnergy  , AnTop.Energy()  , evt_weight_ );
+              
+              
+              FillHisto( h_W1Mass , W1.M()  , evt_weight_ );
+              FillHisto( h_W2Mass , W2.M()  , evt_weight_ );
+              
+              FillHisto( h_W1Mt , W1.Mt()  , evt_weight_ );
+              FillHisto( h_W2Mt , W2.Mt()  , evt_weight_ );
+              
+              //FillHisto( h_bJet1Energy , bJet1.Energy()  , evt_weight_ );
+              //FillHisto( h_bJet2Energy , bJet2.Energy()  , evt_weight_ );
+              
+              FillHisto( h_bJetEnergy   , bJet.Energy()   , evt_weight_ );
+              FillHisto( h_AnbJetEnergy , AnbJet.Energy() , evt_weight_ );
+              FillHisto( h_bJetPt       , bJet.Pt()   , evt_weight_ );
+              FillHisto( h_AnbJetPt     , AnbJet.Pt() , evt_weight_ );
+              FillHisto( h_LepEnergy    , Lep.Energy()    , evt_weight_ );
+              FillHisto( h_AnLepEnergy  , AnLep.Energy()  , evt_weight_ );
+              FillHisto( h_NuEnergy     , Nu.Energy()     , evt_weight_ );
+              FillHisto( h_AnNuEnergy   , AnNu.Energy()   , evt_weight_ );
+                  
+ 
+        }
 
 
     }// end of event iteration //
@@ -933,7 +1093,7 @@ void Analysis::LeptonSelector() {
 
     // Lambda functions for common checks
     auto passKinematicCuts = [](float _pt, float _eta, float ptCut, float etaCut) {
-      return _pt >= ptCut && fabs(_eta) <= etaCut;
+      return _pt > ptCut && fabs(_eta) < etaCut;
     };
 
     auto passIsolation = [](float iso, float isoCut) {
@@ -1260,7 +1420,7 @@ void Analysis::JetSelector()
     jets.clear();
     // Lambda functions for common jet selection checks
     auto passKinematicCuts = [this](float pt, float eta) -> bool {
-        return pt >= jet_pt && fabs(eta) <= jet_eta;
+        return pt > jet_pt && fabs(eta) < jet_eta;
     };
 
     // Add safety check
@@ -1276,14 +1436,24 @@ void Analysis::JetSelector()
     }
 
     // Add safety check
+auto passPuId = [&](int puId, float pt) -> bool {
+    if (pt > 50.0) return true;
+    if (RunPeriod.Contains("2016")) {
+        // 2016 UL 특수: loose ↔ tight
+        return (puId & (1 << 2)) != 0;
+    } else {
+        return (puId & (1 << 0)) != 0;
+    }
+};
 
+/*
     auto passPuId = [](int puId, float pt) -> bool {
         // For jets with pT > 50 GeV, no PU ID required
         if (pt > 50.0) return true;
         // For jets with pT <= 50 GeV, check if PU ID exists
         return (puId & (1 << 0)) != 0;
     };
-
+*/
     Int_t nJets = jets_pt->GetSize();
 //    std::cout << "Number of jets to process: " << nJets << std::endl;
 
@@ -1461,6 +1631,55 @@ void Analysis::DeclareHistos()
       h_Num_Jets[i]  = new TH1D(Form("h_Num_Jets_%d",i), Form("Num. of Jets after %s",cutflowName[i].Data()), 20, 0.0, 20); h_Num_Jets[i]->Sumw2();
       h_Num_bJets[i] = new TH1D(Form("h_Num_bJets_%d",i),Form("Num. of b Jets after %s",cutflowName[i].Data()), 20, 0.0, 20); h_Num_bJets[i]->Sumw2();
     }
+    h_Top1Mass     = new TH1D(Form("h_Top1Mass"   ), Form("Top1 Mass"   ), 1000, 0.0, 1000); h_Top1Mass->Sumw2();
+    h_Top1pt       = new TH1D(Form("h_Top1pt"   ), Form("Top1 pt"   ), 1000, 0.0, 1000); h_Top1pt->Sumw2();
+    h_Top1Rapidity = new TH1D(Form("h_Top1Rapidity"   ), Form("Top1 Rapidity"   ), 100, -5, 5); h_Top1Rapidity->Sumw2();
+    h_Top1phi      = new TH1D(Form("h_Top1phi"   ), Form("Top1 phi"   ), 24, -1*pi, pi); h_Top1phi->Sumw2();
+    h_Top1Energy   = new TH1D(Form("h_Top1Energy"   ), Form("Top1 Energy"   ), 1000, 0.0, 1000); h_Top1Energy->Sumw2();
+    h_Top2Mass     = new TH1D(Form("h_Top2Mass" ), Form("Top2 Mass" ), 1000, 0.0, 1000); h_Top2Mass->Sumw2();
+    h_Top2pt       = new TH1D(Form("h_Top2pt"   ), Form("Top2 pt"   ), 1000, 0.0, 1000); h_Top2pt->Sumw2();
+    h_Top2Rapidity = new TH1D(Form("h_Top2Rapidity"   ), Form("Top2 Rapidity"   ), 100, -5, 5); h_Top2Rapidity->Sumw2();
+    h_Top2phi      = new TH1D(Form("h_Top2phi"   ), Form("Top2 phi"   ), 24, -1*pi, pi); h_Top2phi->Sumw2();
+    h_Top2Energy = new TH1D(Form("h_Top2Energy"   ), Form("Top2 Energy"   ), 1000, 0.0, 1000); h_Top2Energy->Sumw2();
+    
+    h_TopMass       = new TH1D(Form("h_TopMass"   ), Form("Top Mass"   ), 1000, 0.0, 1000); h_TopMass->Sumw2();
+    h_Toppt         = new TH1D(Form("h_Toppt"   ), Form("Top pt"   ), 1000, 0.0, 1000); h_Toppt->Sumw2();
+    h_TopRapidity   = new TH1D(Form("h_TopRapidity"   ), Form("Top Rapidity"   ), 100, -5, 5); h_TopRapidity->Sumw2();
+    h_Topphi        = new TH1D(Form("h_Topphi"   ), Form("Top phi"   ), 24, -1*pi, pi); h_Topphi->Sumw2();
+    h_TopEnergy     = new TH1D(Form("h_TopEnergy"   ), Form("Top Energy"   ), 1000, 0.0, 1000); h_TopEnergy->Sumw2();
+    h_AnTopMass     = new TH1D(Form("h_AnTopMass" ), Form("AnTop Mass" ), 1000, 0.0, 1000); h_AnTopMass->Sumw2();
+    h_AnToppt       = new TH1D(Form("h_AnToppt"   ), Form("AnTop pt"   ), 1000, 0.0, 1000); h_AnToppt->Sumw2();
+    h_AnTopRapidity = new TH1D(Form("h_AnTopRapidity"   ), Form("AnTop Rapidity"   ), 100, -5, 5); h_AnTopRapidity->Sumw2();
+    h_AnTopphi      = new TH1D(Form("h_AnTopphi"   ), Form("AnTop phi"   ), 24, -1*pi, pi); h_AnTopphi->Sumw2();
+    h_AnTopEnergy   = new TH1D(Form("h_AnTopEnergy"   ), Form("AnTop Energy"   ), 1000, 0.0, 1000); h_AnTopEnergy->Sumw2();
+
+    h_W1Mass     = new TH1D(Form("h_W1Mass"  ), Form("W1 Mass" ), 300, 0.0, 300); h_W1Mass->Sumw2();
+    h_W2Mass     = new TH1D(Form("h_W2Mass"  ), Form("W2 Mass" ), 300, 0.0, 300); h_W2Mass->Sumw2();
+    
+    h_W1Mt     = new TH1D(Form("h_W1Mt"  ), Form("W1 Transverse Mass" ), 300, 0.0, 300); h_W1Mt->Sumw2();
+    h_W2Mt     = new TH1D(Form("h_W2Mt"  ), Form("W2 Transverse Mass" ), 300, 0.0, 300); h_W2Mt->Sumw2();
+                      
+    h_bJet1Energy = new TH1D(Form("h_bJet1Energy" ), Form("Leading bJet Energy"   ), 500, 0.0, 500); h_bJet1Energy->Sumw2();
+    h_bJet2Energy = new TH1D(Form("h_bJet2Energy" ), Form("Second Leading bJet Energy" ), 500, 0.0, 500); h_bJet2Energy->Sumw2();
+                      
+    h_bJetEnergy   = new TH1D(Form("h_bJetEnergy" ), Form("bJet Energy"   ), 1000, 0.0, 1000); h_bJetEnergy->Sumw2();
+    h_AnbJetEnergy = new TH1D(Form("h_AnbJetEnergy" ), Form("b-barJet Energy" ), 1000, 0.0, 1000); h_AnbJetEnergy->Sumw2();
+    h_bJetPt   = new TH1D(Form("h_bJetPt" ), Form("bJet Pt"   ), 1000, 0.0, 1000); h_bJetPt->Sumw2();
+    h_AnbJetPt = new TH1D(Form("h_AnbJetPt" ), Form("b-barJet Pt" ), 1000, 0.0, 1000); h_AnbJetPt->Sumw2();
+                      
+    h_Lep1Energy = new TH1D(Form("h_Lep1Energy" ), Form("Leading Lepton Energy"   ), 400, 0.0, 400); h_Lep1Energy->Sumw2();
+    h_Lep2Energy = new TH1D(Form("h_Lep2Energy" ), Form("Second Leading Lepton Energy" ), 400, 0.0, 400); h_Lep2Energy->Sumw2();
+                      
+    h_LepEnergy   = new TH1D(Form("h_LepEnergy" ), Form("Lepton Energy"   ), 400, 0.0, 400); h_LepEnergy->Sumw2();
+    h_AnLepEnergy = new TH1D(Form("h_AnLepEnergy" ), Form("Anti-Lepton Energy" ), 400, 0.0, 400); h_AnLepEnergy->Sumw2();
+    
+    h_Nu1Energy = new TH1D(Form("h_Nu1Energy" ), Form("Leading Nuetrino Energy"   ), 400, 0.0, 400); h_Nu1Energy->Sumw2();
+    h_Nu2Energy = new TH1D(Form("h_Nu2Energy" ), Form("Second Leading Nuetrino Energy" ), 400, 0.0, 400); h_Nu2Energy->Sumw2();
+    
+    h_NuEnergy   = new TH1D(Form("h_NuEnergy" ), Form("Nuetrino Energy"   ), 400, 0.0, 400); h_NuEnergy->Sumw2();
+    h_AnNuEnergy = new TH1D(Form("h_AnNuEnergy" ), Form("anti-Nuetrino Energy" ), 400, 0.0, 400); h_AnNuEnergy->Sumw2();
+
+
 }
 
 
@@ -1762,6 +1981,37 @@ void Analysis::bJetSelector() {
     v_bjet_idx.clear();
     
     // Check if there are selected jets to work with
+    if (v_jet_idx.empty() || jets_btag == nullptr) {
+        return;
+    }
+
+    // Counter for number of b-tagged jets
+    int nbtagged = 0;
+            
+    // Simple lambda function to determine if a jet is b-tagged
+    auto isBTagged = [this](int jetIdx) -> bool {
+        if (jets_btag != nullptr) {
+            return (*jets_btag)[jetIdx] > bdisccut;
+        }
+        return false;
+    };      
+                
+    // Loop over selected jets to find b-tagged ones
+    for (const auto& jetIdx : v_jet_idx) {
+        if (isBTagged(jetIdx)) {
+            v_bjet_idx.push_back(jetIdx);
+            nbtagged++;
+        }
+    }
+
+    // Debug output
+    //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
+}
+/*void Analysis::bJetSelector() {
+    // Clear any previous b-jet selections
+    v_bjet_idx.clear();
+    
+    // Check if there are selected jets to work with
     if (v_jet_idx.empty()) {
         return;
     }
@@ -1801,7 +2051,7 @@ void Analysis::bJetSelector() {
     
     // Debug output
     //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
-}
+}*/
 
 // ZVeto Cut : step 2
 bool Analysis::ZVetoCut()
@@ -1847,4 +2097,151 @@ bool Analysis::NumbJetCut(std::vector<int> v_jets)
    //if ( v_jets.size() == 2 ){ numjetcut = true; }
    if ( v_jets.size() >= 1 ){ numbjetcut = true; }
    return numbjetcut;
-}  
+}
+// Top reconstruction //
+/*void Analysis::SetUpKINObs()
+{
+   std::cout << "SetUpKINObs Start ! " << std::endl;
+   isKinSol=false;
+   std::vector<double> jets_btag_vec;
+   v_leptons_VLV.clear();
+   v_jets_VLV.clear();
+   v_lepidx_KIN.clear();
+   v_anlepidx_KIN.clear();
+   v_jetidx_KIN.clear();
+   v_bjetidx_KIN.clear();
+   v_btagging_KIN.clear();
+   /// lepton ///
+   v_leptons_VLV.push_back(common::TLVtoLV(Lep));
+   v_lepidx_KIN.push_back(0);
+   v_leptons_VLV.push_back(common::TLVtoLV(AnLep));
+   v_anlepidx_KIN.push_back(1);
+   const KinematicReconstruction* kinematicReconstruction(0); 
+   kinematicReconstruction = new KinematicReconstruction(1, true);
+
+   const LV met_LV = common::TLVtoLV(Met);
+   std::cout << "v_jet_idx.size() : " << v_jet_idx.size() << std::endl;
+   for (int ijet = 0; ijet < v_jet_idx.size(); ++ijet)
+   {
+      int idx_jet = v_jet_idx[ijet];
+      v_jets_VLV.push_back(common::TLVtoLV(jets[ijet]));
+      v_jetidx_KIN.push_back(ijet);
+      jets_btag_vec.push_back(static_cast<double>((*jets_btag)[idx_jet]));
+   }
+
+   v_bjetidx_KIN = v_bjet_idx;
+
+   KinematicReconstructionSolutions kinematicReconstructionSolutions = kinematicReconstruction->solutions(v_lepidx_KIN,v_anlepidx_KIN, v_jetidx_KIN,  v_bjetidx_KIN,  v_leptons_VLV, v_jets_VLV, jets_btag_vec, met_LV);
+   if (kinematicReconstructionSolutions.numberOfSolutions())
+   {
+   std::cout << "Num Sol : " << kinematicReconstructionSolutions.numberOfSolutions() << std::endl;
+   std::cout << "MET ? " << met_LV.pt() << std::endl;
+      isKinSol= true;
+      LV top1 = kinematicReconstructionSolutions.solution().top();
+      LV top2 = kinematicReconstructionSolutions.solution().antiTop();
+      LV bjet1 = kinematicReconstructionSolutions.solution().bjet();
+      LV bjet2 = kinematicReconstructionSolutions.solution().antiBjet();
+      LV neutrino1 = kinematicReconstructionSolutions.solution().neutrino();
+      LV neutrino2 = kinematicReconstructionSolutions.solution().antiNeutrino();
+      //kinematicReconstructionSolutions.solution().print();
+      //Top = new TLorentzVector(common::LVtoTLV(top1));   
+      Top       = common::LVtoTLV(top1);
+      AnTop     = common::LVtoTLV(top2);
+      bJet      = common::LVtoTLV(bjet1);
+      AnbJet    = common::LVtoTLV(bjet2);
+      Nu        = common::LVtoTLV(neutrino1);
+      AnNu      = common::LVtoTLV(neutrino2);
+
+      W1        = Lep  + AnNu;
+      W2        = AnLep  + Nu;
+
+   }
+   //delete 
+   delete kinematicReconstruction;
+}*/
+
+void Analysis::SetUpKINObs()
+{
+   //std::cout << "SetUpKINObs Start ! " << std::endl;
+   isKinSol=false;
+   std::vector<double> jets_btag_vec;
+   v_leptons_VLV.clear();
+   v_jets_VLV.clear();
+   v_lepidx_KIN.clear();
+   v_anlepidx_KIN.clear();
+   v_jetidx_KIN.clear();
+   v_bjetidx_KIN.clear();
+   v_btagging_KIN.clear();
+   /// lepton ///
+   v_leptons_VLV.push_back(common::TLVtoLV(Lep));
+   v_lepidx_KIN.push_back(0);
+   v_leptons_VLV.push_back(common::TLVtoLV(AnLep));
+   v_anlepidx_KIN.push_back(1);
+
+   const KinematicReconstruction* kinematicReconstruction(0); 
+   kinematicReconstruction = new KinematicReconstruction(1, true);
+
+   const LV met_LV = common::TLVtoLV(Met);
+   //std::cout << "v_jet_idx.size() : " << v_jet_idx.size() << std::endl;
+   
+   // Create a map to translate from original jet indices to new indices in v_jets_VLV
+   std::map<int, int> jet_idx_map;
+   
+   for (int i = 0; i < v_jet_idx.size(); ++i)
+   {
+      int idx_jet = v_jet_idx[i];
+      v_jets_VLV.push_back(common::TLVtoLV(jets[i]));
+      v_jetidx_KIN.push_back(i);  // Use sequential indices
+      jets_btag_vec.push_back(static_cast<double>((*jets_btag)[idx_jet]));
+      jet_idx_map[idx_jet] = i;  // Map original index to new index
+   }
+
+   // Translate b-jet indices to the new index system
+   for (auto orig_idx : v_bjet_idx) {
+      // Check if the original index exists in our jets vector
+      if (jet_idx_map.find(orig_idx) != jet_idx_map.end()) {
+         v_bjetidx_KIN.push_back(jet_idx_map[orig_idx]);
+      }
+   }
+   
+   // Debug output
+   //std::cout << "v_bjetidx_KIN size: " << v_bjetidx_KIN.size() << std::endl;
+   /*for (auto idx : v_bjetidx_KIN) {
+      std::cout << "b-jet index: " << idx << " (valid range: 0-" << (v_jets_VLV.size()-1) << ")" << std::endl;
+   }*/
+
+   // Only proceed if we have valid b-jet indices
+   if (!v_bjetidx_KIN.empty() && v_jets_VLV.size() > 0) {
+      KinematicReconstructionSolutions kinematicReconstructionSolutions = 
+         kinematicReconstruction->solutions(v_lepidx_KIN, v_anlepidx_KIN, v_jetidx_KIN, 
+                                         v_bjetidx_KIN, v_leptons_VLV, v_jets_VLV, 
+                                         jets_btag_vec, met_LV);
+                                         
+      if (kinematicReconstructionSolutions.numberOfSolutions()) {
+         //std::cout << "Num Sol : " << kinematicReconstructionSolutions.numberOfSolutions() << std::endl;
+         //std::cout << "MET ? " << met_LV.pt() << std::endl;
+         isKinSol= true;
+         LV top1 = kinematicReconstructionSolutions.solution().top();
+         LV top2 = kinematicReconstructionSolutions.solution().antiTop();
+         LV bjet1 = kinematicReconstructionSolutions.solution().bjet();
+         LV bjet2 = kinematicReconstructionSolutions.solution().antiBjet();
+         LV neutrino1 = kinematicReconstructionSolutions.solution().neutrino();
+         LV neutrino2 = kinematicReconstructionSolutions.solution().antiNeutrino();
+         
+         Top       = common::LVtoTLV(top1);
+         AnTop     = common::LVtoTLV(top2);
+         bJet      = common::LVtoTLV(bjet1);
+         AnbJet    = common::LVtoTLV(bjet2);
+         Nu        = common::LVtoTLV(neutrino1);
+         AnNu      = common::LVtoTLV(neutrino2);
+
+         W1        = Lep  + AnNu;
+         W2        = AnLep  + Nu;
+      }
+   } else {
+      std::cout << "Not enough b-jets or jets for kinematic reconstruction" << std::endl;
+   }
+   
+   // Clean up
+   delete kinematicReconstruction;
+} 

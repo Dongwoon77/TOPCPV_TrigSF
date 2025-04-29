@@ -16,6 +16,11 @@
 #include <TH1D.h>
 #include <TFile.h>
 
+// Top reconstruction //TOP-17-014
+#include "./../KinSolv/analysisUtils.h"                                                                                       
+#include "./../KinSolv/KinematicReconstruction.h"                                                                             
+#include "./../KinSolv/KinematicReconstructionSolution.h"
+
 // Common tools 
 #include "./../CommonTools.hpp"
 // Textreader
@@ -116,6 +121,23 @@ private:
     bool METCut(TLorentzVector met);
     bool NumbJetCut(std::vector<int> v_jets);
 
+    ////////////////////////////
+    /// New Kinematic Solver ///
+    ////////////////////////////
+    void SetUpKINObs();
+    bool isKinSol;
+    VLV v_leptons_VLV; 
+    VLV v_jets_VLV; 
+    VLV v_bjets_VLV; 
+    std::vector<int> v_lepidx_KIN; 
+    std::vector<int> v_anlepidx_KIN; 
+    std::vector<int> v_jetidx_KIN; 
+    std::vector<int> v_bjetidx_KIN; 
+    std::vector<double> v_btagging_KIN; 
+
+
+
+
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> triggerList;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> noiseFilters;
     //std::vector<int> v_lep_idx_temp;
@@ -178,6 +200,19 @@ private:
     // MET //
     TTreeReaderValue<Float_t>* met_pt;
     TTreeReaderValue<Float_t>* met_phi;
+
+    // Top Recontruction //
+    TLorentzVector Top;
+    TLorentzVector AnTop;
+    TLorentzVector Top1;
+    TLorentzVector Top2;
+    TLorentzVector bJet;
+    TLorentzVector AnbJet;
+    TLorentzVector Nu;
+    TLorentzVector AnNu;
+    TLorentzVector W1;
+    TLorentzVector W2;
+
 
     //LepIdType   v_muon_Id;
     //LepIdType   v_elec_Id;
@@ -321,6 +356,54 @@ private:
 
     TH1D *h_Reco_CPO_[13];
     TH1D *h_Reco_CPO_ReRange_[13];
+
+    TH1D* h_Top1Mass;
+    TH1D* h_Top1pt;
+    TH1D* h_Top1Rapidity;
+    TH1D* h_Top1phi;
+    TH1D* h_Top1Energy;
+    TH1D* h_Top2Mass;
+    TH1D* h_Top2pt;
+    TH1D* h_Top2Rapidity;
+    TH1D* h_Top2phi;
+    TH1D* h_Top2Energy;
+    
+    TH1D* h_TopMass;
+    TH1D* h_Toppt;
+    TH1D* h_TopRapidity;
+    TH1D* h_Topphi;
+    TH1D* h_TopEnergy;
+    TH1D* h_AnTopMass;
+    TH1D* h_AnToppt;
+    TH1D* h_AnTopRapidity;
+    TH1D* h_AnTopphi;
+    TH1D* h_AnTopEnergy;
+
+    TH1D* h_W1Mass;
+    TH1D* h_W2Mass;
+    TH1D* h_W1Mt;
+    TH1D* h_W2Mt;
+
+    TH1D* h_bJet1Energy;
+    TH1D* h_bJet2Energy;
+
+    TH1D* h_bJetEnergy;
+    TH1D* h_AnbJetEnergy;
+    TH1D* h_bJetPt;
+    TH1D* h_AnbJetPt;
+
+    TH1D* h_Lep1Energy;
+    TH1D* h_Lep2Energy;
+    
+    TH1D* h_LepEnergy;
+    TH1D* h_AnLepEnergy;
+
+    TH1D* h_Nu1Energy;
+    TH1D* h_Nu2Energy;
+
+    TH1D* h_NuEnergy;
+    TH1D* h_AnNuEnergy;
+
 };
 
 #endif // ANALYSIS_H
