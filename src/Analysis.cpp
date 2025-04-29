@@ -608,7 +608,7 @@ void Analysis::Loop() {
         if (DiLeptonMassCut() == false) {continue;}
         /// Step 1 ///
         //std::cout << "? evet weight " << evt_weight_ << std::endl;
- 
+        num_pv =  **intSingles["PV_npvsGood"]; 
         FillHisto( h_DiLepMass[1], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[1],     num_pv, evt_weight_ );
         FillHisto( h_Lep1pt[1] ,    (Lep1).Pt()  , evt_weight_ );
