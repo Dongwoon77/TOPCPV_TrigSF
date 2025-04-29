@@ -13,17 +13,14 @@ GLIBS = $(ROOTGLIBS)
 
 LIBS            = $(ROOTLIBS)
 GLIBS           = $(ROOTGLIBS) -L/usr/X11R6/lib -lXext -lGenVector
-OBJS            = CommonTools.o  Analysis.o main_ssb.o TextReader.o  
-INPUTS	   	    =  ./interface/Analysis.h ./src/Analysis.cpp main_ssb.cpp ./TextReader/TextReader.hpp ./TextReader/TextReader.cpp
+OBJS            = CommonTools.o  Analysis.o main_ssb.o TextReader.o utils.o analysisUtils.o KinematicReconstruction_LSroutines.o KinematicReconstruction_MeanSol.o KinematicReconstructionSolution.o KinematicReconstruction.o 
+INPUTS	   	    =  ./interface/Analysis.h ./src/Analysis.cpp main_ssb.cpp ./TextReader/TextReader.hpp ./TextReader/TextReader.cpp ./KinSolv/utils.h ./KinSolv/utils.cc ./KinSolv/analysisUtils.h ./KinSolv/analysisUtils.cc ./KinSolv/KinematicReconstruction_LSroutines.h ./KinSolv/KinematicReconstruction_LSroutines.cc ./KinSolv/KinematicReconstruction_MeanSol.h ./KinSolv/KinematicReconstruction_MeanSol.cc ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc 
  
 all: $(OBJS) 															
 	$(CC) $(OPT) $(LDFLAGS) -o $(PROGRAM) -g $(OBJS) $(LIBS)
 
-main_ssb.o: main_ssb.cpp $(INPUTS) 
+main_ssb.o: main_ssb.cpp $(INPUTS)
 	$(CC) $(CXXFLAGS) -c main_ssb.cpp
-
-#ssb_analysis.o: ./interface/ssb_analysis.hpp ./src/ssb_analysis.cpp
-#	$(CC) $(CXXFLAGS) -c ./src/ssb_analysis.cpp
 
 Analysis.o: ./interface/Analysis.h ./src/Analysis.cpp
 	$(CC) $(CXXFLAGS) -c ./src/Analysis.cpp
@@ -34,17 +31,34 @@ CommonTools.o: CommonTools.hpp CommonTools.cpp
 TextReader.o: ./TextReader/TextReader.hpp ./TextReader/TextReader.cpp
 	$(CC) $(CXXFLAGS) -c TextReader/TextReader.cpp
 
+utils.o: ./KinSolv/utils.h ./KinSolv/utils.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/utils.cc
+
+analysisUtils.o: ./KinSolv/analysisUtils.h ./KinSolv/analysisUtils.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/analysisUtils.cc
+
+KinematicReconstruction_LSroutines.o: ./KinSolv/KinematicReconstruction_LSroutines.h ./KinSolv/KinematicReconstruction_LSroutines.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/KinematicReconstruction_LSroutines.cc
+
+KinematicReconstruction_MeanSol.o: ./KinSolv/KinematicReconstruction_MeanSol.h ./KinSolv/KinematicReconstruction_MeanSol.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/KinematicReconstruction_MeanSol.cc
+
+KinematicReconstructionSolution.o: ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/KinematicReconstructionSolution.cc
+
+KinematicReconstruction.o: ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc
+	$(CC) $(CXXFLAGS) -c ./KinSolv/KinematicReconstruction.cc
+
 clean:
-	-rm -f *~ $(OBJS) core core.*	
+	-rm -f *~ $(OBJS) core core.* 
 	-rm -rf ti_files
 	-rm -f $(PROGRAM)
 	-rm -f *~;
 
-distclean:						
+distclean:            
 	-rm -f *~ $(PROGRAM) $(OBJS)
 	-rm -rf ti_files
 
-run: $(PROGRAM) $(OBJS)	
+run: $(PROGRAM) $(OBJS)
 	make all
 	./$(PROGRAM) 1
-
