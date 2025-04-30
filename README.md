@@ -4,10 +4,19 @@ This repository contains code for analyzing CMS NanoAOD data using the SSB frame
 
 ## Installation and Setup
 
+To run this analysis, you need ROOT and optionally CMSSW.  
+If you are using jet/muon/pileup corrections, the [`correctionlib`](https://github.com/cms-nanoaod/correctionlib) framework must also be available.
+
+You can either:
+- Use a CMSSW release that includes `correctionlib` (e.g., `CMSSW_13_3_0`)
+- Or install it as a standalone C++ library via `pip install correctionlib --no-binary=correctionlib`
+
+ See [Objects Corrections (+ pileup) with correctionlib](#objects-corrections--pileup-with-correctionlib) for full instructions.
+
 ### Cloning the Repository
 To get started, clone the repository from GitHub and check out the required branch:
 ```sh
-git clone --branch Run2_ULSummer20_v2 https://github.com/physicist87/SSBNanoAODANCode.git
+git clone --branch Run2_ULSummer20_v3 https://github.com/physicist87/SSBNanoAODANCode.git
 cd SSBNanoAODANCode
 ```
 
@@ -119,3 +128,37 @@ For questions or contributions, please open an issue or contact the maintainers.
 ---
 This README provides essential instructions for setting up and running the SSB NanoAOD analysis. If you need additional details, feel free to modify and expand it!
 
+### Objects Corrections (+ pileup) with `correctionlib`
+
+This analysis applies object-level corrections using the [`correctionlib`](https://github.com/cms-nanoaod/correctionlib) framework, including:
+
+- Jet Energy Corrections (JEC)
+- Jet Energy Resolution (JER) smearing
+- Muon ID and isolation scale factors
+- Pileup weight corrections
+
+To use these corrections, choose one of the following setups:
+
+- **Option 1: CMSSW (recommended)**  
+  Use a CMSSW release that includes `correctionlib` (e.g., `CMSSW_13_3_0` or later).
+  ```sh
+  cmsrel CMSSW_13_3_0
+  cd CMSSW_13_3_0/src
+  cmsenv
+  ```
+
+- **Option 2: Standalone C++ installation**  
+  If you're not using CMSSW, install `correctionlib` manually:
+  ```sh
+  python3 -m pip install correctionlib --no-binary=correctionlib
+  ```
+  Add the following to your `Makefile` to compile with correctionlib:
+  ```make
+  CXXFLAGS += $(shell correction config --cflags)
+  LDFLAGS  += $(shell correction config --ldflags --rpath)
+  ```
+
+For more details, refer to the official installation guide:  
+ [CMS correctionlib installation guide](https://cms-nanoaod.github.io/correctionlib/install.html#outside-cmssw)
+
+Correction JSON files (e.g. `jet_jerc.json.gz`, `muon_Z.json`, `puWeights.json`) must be downloaded from the [CMS JSON repository](https://cms-nanoaod.github.io/jsonpog-integration/) and are configured via `configs/*.config` using `TextReader`.
