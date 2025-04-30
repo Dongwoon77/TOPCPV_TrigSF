@@ -10,18 +10,26 @@ ROOTCFLAGS      = $(shell root-config --cflags)
 ROOTLIBS        = $(shell root-config --libs)
 ROOTGLIBS       = $(shell root-config --glibs)
 
-# correctionlib flags (auto-detect CVMFS or fallback to pip-installed)
+# correctionlib flags with env override > cvmfs > pip fallback
 
-CORR_CVMFS_INCLUDE := /cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/lib/python3.9/site-packages/correctionlib/include
+CORR_ENV_INCLUDE ?= $(CORRECTION_PATH)
+CORR_ENV_LIBPATH ?= $(CORRECTION_LIBPATH)
+CORR_CVMFS_INCLUDE := /cvmfs/sft.cern.ch/lcg/releases/correctionlib/2.2.2-13853/x86_64-centos7-gcc11-opt/include
+CORR_CVMFS_LIBPATH := /cvmfs/sft.cern.ch/lcg/releases/correctionlib/2.2.2-13853/x86_64-centos7-gcc11-opt/lib
 
-ifeq ($(wildcard $(CORR_CVMFS_INCLUDE)/correction.h),)
+ifeq ($(wildcard $(CORR_ENV_INCLUDE)/correction.h),)
+  ifeq ($(wildcard $(CORR_CVMFS_INCLUDE)/correction.h),)
+    # Mac or pip fallback
     CORRCFLAGS = $(shell correction config --cflags)
     CORRLDFLAGS = $(shell correction config --ldflags --rpath)
-else
+  else
     CORRCFLAGS = -std=c++17 -I$(CORR_CVMFS_INCLUDE)
-    CORRLDFLAGS = -L/cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/lib -lcorrectionlib -Wl,-rpath,/cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/lib
+    CORRLDFLAGS = -L$(CORR_CVMFS_LIBPATH) -lcorrectionlib -Wl,-rpath,$(CORR_CVMFS_LIBPATH)
+  endif
+else
+  CORRCFLAGS = -std=c++17 -I$(CORR_ENV_INCLUDE)
+  CORRLDFLAGS = -L$(CORR_ENV_LIBPATH) -lcorrectionlib -Wl,-rpath,$(CORR_ENV_LIBPATH)
 endif
-
 
 # Compilation and linking flags
 CXXFLAGS = -g -O2 $(ROOTCFLAGS) $(CORRCFLAGS) -std=c++17 
