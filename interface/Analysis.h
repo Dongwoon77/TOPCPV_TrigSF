@@ -23,6 +23,10 @@
 
 // Common tools 
 #include "./../CommonTools.hpp"
+
+// Correction tools
+#include "./SSBCorrections.h"
+
 // Textreader
 #include "./../TextReader/TextReader.hpp"
 
@@ -52,6 +56,7 @@ private:
     TFile *fout;
     //TextReader from Jaehoon.
     TextReader *SSBConfReader;
+    SSBCorrections *SSBCorr;
     int NumEvt; //
 
     double Lumi;
@@ -195,6 +200,11 @@ private:
     TTreeReaderArray<Float_t>* jets_btag;
     std::vector<TLorentzVector> pre_jets;
     std::vector<TLorentzVector> jets;
+    // gen jets // 
+    TTreeReaderArray<Float_t>* gen_jets_pt;
+    TTreeReaderArray<Float_t>* gen_jets_eta;
+    TTreeReaderArray<Float_t>* gen_jets_phi;
+    TTreeReaderArray<Float_t>* gen_jets_M;
     bool dojer;
 
     // MET //

@@ -1,24 +1,57 @@
-PROGRAM         = ssb_analysis 
-#PROGRAM         = pfCalib_analysis 
+# Name of the final executable program
+PROGRAM         = ssb_analysis
+
+# Compiler and linker
 CC              = g++
 LD              = g++
-CXXFLAGS = -g -O2 $(shell root-config --cflags) -std=c++17
-LDFLAGS  = $(LIBS) $(GLIBS)
-ROOTLIBS = $(shell root-config --libs)
-ROOTGLIBS = $(shell root-config --glibs)
 
-LIBS = $(ROOTLIBS)
-GLIBS = $(ROOTGLIBS)
+# ROOT flags
+ROOTCFLAGS      = $(shell root-config --cflags)
+ROOTLIBS        = $(shell root-config --libs)
+ROOTGLIBS       = $(shell root-config --glibs)
 
+# correctionlib flags (must be installed with: pip install correctionlib[cli])
+CORRCFLAGS      = $(shell correction config --cflags)
+CORRLDFLAGS     = $(shell correction config --ldflags --rpath)
 
-LIBS            = $(ROOTLIBS)
+# Compilation and linking flags
+CXXFLAGS = -g -O2 $(ROOTCFLAGS) $(CORRCFLAGS) -std=c++17 
+LDFLAGS         = $(ROOTLIBS) $(CORRLDFLAGS)
+
+# Additional graphical libraries and GenVector
 GLIBS           = $(ROOTGLIBS) -L/usr/X11R6/lib -lXext -lGenVector
-OBJS            = CommonTools.o  Analysis.o main_ssb.o TextReader.o utils.o analysisUtils.o KinematicReconstruction_LSroutines.o KinematicReconstruction_MeanSol.o KinematicReconstructionSolution.o KinematicReconstruction.o 
-INPUTS	   	    =  ./interface/Analysis.h ./src/Analysis.cpp main_ssb.cpp ./TextReader/TextReader.hpp ./TextReader/TextReader.cpp ./KinSolv/utils.h ./KinSolv/utils.cc ./KinSolv/analysisUtils.h ./KinSolv/analysisUtils.cc ./KinSolv/KinematicReconstruction_LSroutines.h ./KinSolv/KinematicReconstruction_LSroutines.cc ./KinSolv/KinematicReconstruction_MeanSol.h ./KinSolv/KinematicReconstruction_MeanSol.cc ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc 
- 
-all: $(OBJS) 															
-	$(CC) $(OPT) $(LDFLAGS) -o $(PROGRAM) -g $(OBJS) $(LIBS)
 
+# List of object files to compile
+OBJS = \
+    CommonTools.o \
+    Analysis.o \
+    main_ssb.o \
+    TextReader.o \
+    utils.o \
+    analysisUtils.o \
+    KinematicReconstruction_LSroutines.o \
+    KinematicReconstruction_MeanSol.o \
+    KinematicReconstructionSolution.o \
+    KinematicReconstruction.o \
+    SSBCorrections.o
+
+# Input source and header dependencies
+INPUTS = \
+    ./interface/Analysis.h ./src/Analysis.cpp main_ssb.cpp \
+    ./TextReader/TextReader.hpp ./TextReader/TextReader.cpp \
+    ./KinSolv/utils.h ./KinSolv/utils.cc \
+    ./KinSolv/analysisUtils.h ./KinSolv/analysisUtils.cc \
+    ./KinSolv/KinematicReconstruction_LSroutines.h ./KinSolv/KinematicReconstruction_LSroutines.cc \
+    ./KinSolv/KinematicReconstruction_MeanSol.h ./KinSolv/KinematicReconstruction_MeanSol.cc \
+    ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc \
+    ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc \
+    ./interface/SSBCorrections.h ./src/SSBCorrections.cpp
+
+# Default rule: build all object files and link them into the final program
+all: $(OBJS)
+	$(CC) -o $(PROGRAM) -g $(OBJS) $(LDFLAGS)
+
+# Compilation rules for each component
 main_ssb.o: main_ssb.cpp $(INPUTS)
 	$(CC) $(CXXFLAGS) -c main_ssb.cpp
 
@@ -49,16 +82,23 @@ KinematicReconstructionSolution.o: ./KinSolv/KinematicReconstructionSolution.h .
 KinematicReconstruction.o: ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc
 	$(CC) $(CXXFLAGS) -c ./KinSolv/KinematicReconstruction.cc
 
+# New correctionlib component
+SSBCorrections.o: ./interface/SSBCorrections.h ./src/SSBCorrections.cpp
+	$(CC) $(CXXFLAGS) -c ./src/SSBCorrections.cpp -o SSBCorrections.o
+
+# Clean all build products
 clean:
-	-rm -f *~ $(OBJS) core core.* 
+	-rm -f *~ $(OBJS) core core.*
 	-rm -rf ti_files
 	-rm -f $(PROGRAM)
 	-rm -f *~;
 
-distclean:            
+# Full clean including backup
+distclean:
 	-rm -f *~ $(PROGRAM) $(OBJS)
 	-rm -rf ti_files
 
+# Run the program
 run: $(PROGRAM) $(OBJS)
 	make all
 	./$(PROGRAM) 1

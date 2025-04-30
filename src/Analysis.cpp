@@ -21,6 +21,7 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     SSBConfReader->ReadFile(confpath);
     SSBConfReader->ReadVariables();
     SSBConfReader->PrintoutVariables();
+    SSBCorr = new SSBCorrections(SSBConfReader);
     // Initialize branches based on branch list file
     InitBranches(branchListFile);
     cutflowName[0] = "Step_0";
@@ -1336,7 +1337,7 @@ void Analysis::MakeElecCollection() {
 //    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
-
+/*
 void Analysis::MakeJetCollection() {
     // Jet collection logic
     pre_jets.clear();
@@ -1365,8 +1366,46 @@ void Analysis::MakeJetCollection() {
     //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
     return;
 }
+*/
+void Analysis::MakeJetCollection() {
+    pre_jets.clear();
+       
+    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
+        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
+        return;
+    }
 
+    Int_t nJets = jets_pt->GetSize();
+    pre_jets.reserve(nJets); 
 
+    for (int ijet = 0; ijet < nJets; ++ijet) {
+        try {
+            double pt   = jets_pt->At(ijet);
+            double eta  = jets_eta->At(ijet);
+            double phi  = jets_phi->At(ijet);
+            double mass = jets_M->At(ijet);
+
+            // Optional: fallback if branch is missing
+            double genpt = -1.0;
+            if (gen_jets_pt != nullptr && gen_jets_pt->GetSize() > ijet) {
+                genpt = gen_jets_pt->At(ijet);
+            }
+
+            // Apply JER smearing only if not data
+            if (!TString(FileName_).Contains("Data") && SSBCorr != nullptr) {
+                double rho = **floatSingles["fixedGridRhoFastjetAll"];
+                pt = SSBCorr->SmearJER(pt, genpt, eta, rho, "nominal");
+            }
+
+            pre_jets.push_back(createLorentzVector(pt, eta, phi, mass));
+        } catch (const std::exception& e) {
+            std::cerr << "Error creating jet vector at index " << ijet << ": " << e.what() << std::endl;
+        }
+    }
+
+    //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
+    return;
+}
 bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFTER LEPTONSELETOR //
 {
     bool numLeptons = true;
@@ -1433,15 +1472,15 @@ void Analysis::JetSelector()
     }
 
     // Add safety check
-auto passPuId = [&](int puId, float pt) -> bool {
-    if (pt > 50.0) return true;
-    if (RunPeriod.Contains("2016")) {
-        // 2016 UL 특수: loose ↔ tight
-        return (puId & (1 << 2)) != 0;
-    } else {
-        return (puId & (1 << 0)) != 0;
-    }
-};
+    auto passPuId = [&](int puId, float pt) -> bool {
+        if (pt > 50.0) return true;
+        if (RunPeriod.Contains("2016")) {
+            // 2016 : loose <-> tight
+            return (puId & (1 << 2)) != 0;
+        } else {
+            return (puId & (1 << 0)) != 0;
+        }
+    };
 
 /*
     auto passPuId = [](int puId, float pt) -> bool {

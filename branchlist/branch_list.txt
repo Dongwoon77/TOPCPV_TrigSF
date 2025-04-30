@@ -74,6 +74,13 @@ Jet_btagDeepFlavB, jet, Float_t, vector
 Jet_btagDeepFlavCvB, jet, Float_t, vector
 Jet_btagDeepFlavCvL, jet, Float_t, vector
 Jet_btagDeepFlavQG, jet, Float_t, vector
+Jet_genJetIdx, jet, Int_t, vector
+fixedGridRhoFastjetAll, Jet, Float_t, single
+nGenJet, genjet, UInt_t, single
+GenJet_pt, genjet, Float_t, vector
+GenJet_phi, genjet, Float_t, vector
+GenJet_eta, genjet, Float_t, vector
+GenJet_mass, genjet, Float_t, vector
 Electron_pt, electron, Float_t, vector
 Electron_phi, electron, Float_t, vector
 Electron_eta, electron, Float_t, vector
