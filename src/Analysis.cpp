@@ -706,62 +706,59 @@ void Analysis::Loop() {
         SetUpKINObs();
         if (isKinSol)
         {
-              FillHisto( h_Lep1pt[8] , Lep1.Pt() , evt_weight_ );
-              FillHisto( h_Lep2pt[8] , Lep2.Pt() , evt_weight_ );
-              FillHisto( h_Lep1eta[8], Lep1.Eta(), evt_weight_ );
-              FillHisto( h_Lep2eta[8], Lep2.Eta(), evt_weight_ );
-              FillHisto( h_Lep1phi[8], Lep1.Phi(), evt_weight_ );
-              FillHisto( h_Lep2phi[8], Lep2.Phi(), evt_weight_ );
-              
+            FillHisto( h_Lep1pt[8] , Lep1.Pt() , evt_weight_ );
+            FillHisto( h_Lep2pt[8] , Lep2.Pt() , evt_weight_ );
+            FillHisto( h_Lep1eta[8], Lep1.Eta(), evt_weight_ );
+            FillHisto( h_Lep2eta[8], Lep2.Eta(), evt_weight_ );
+            FillHisto( h_Lep1phi[8], Lep1.Phi(), evt_weight_ );
+            FillHisto( h_Lep2phi[8], Lep2.Phi(), evt_weight_ );
 
-              FillHisto( h_Jet1pt[8] , Jet1.Pt() , evt_weight_ );
-              FillHisto( h_Jet2pt[8] , Jet2.Pt() , evt_weight_ );
-              FillHisto( h_Jet1eta[8], Jet1.Eta(), evt_weight_ );
-              FillHisto( h_Jet2eta[8], Jet2.Eta(), evt_weight_ );
-              FillHisto( h_Jet1phi[8], Jet1.Phi(), evt_weight_ );
-              FillHisto( h_Jet2phi[8], Jet2.Phi(), evt_weight_ );
-              FillHisto( h_METpt[8]  , Met.Pt()  , evt_weight_ );
-              FillHisto( h_METphi[8] , Met.Phi() , evt_weight_ );
-              //FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
-              
-              FillHisto( h_DiLepMass[8], ( Lep1+Lep2 ).M(), evt_weight_ );
-              
-              FillHisto( h_Num_PV[8]   , num_pv          ,  evt_weight_ );
-              FillHisto( h_Num_Jets[8] , v_jet_idx.size(),  evt_weight_ );
-              FillHisto( h_Num_bJets[8], v_bjet_idx.size(), evt_weight_ );
-              if ( Top.Pt() > AnTop.Pt() ) { Top1 = Top; Top2 = AnTop; }
-              else { Top1 = AnTop; Top2 = Top; }
-
-              
-              FillHisto( h_TopMass      , Top.M()         , evt_weight_ );
-              FillHisto( h_Toppt        , Top.Pt()        , evt_weight_ );
-              FillHisto( h_Topphi       , Top.Phi()       , evt_weight_ );
-              FillHisto( h_TopRapidity  , Top.Rapidity()  , evt_weight_ );
-              FillHisto( h_TopEnergy    , Top.Energy()    , evt_weight_ );
-              FillHisto( h_AnTopMass    , AnTop.M()       , evt_weight_ );
-              FillHisto( h_AnToppt      , AnTop.Pt()      , evt_weight_ );
-              FillHisto( h_AnTopphi     , AnTop.Phi()     , evt_weight_ );
-              FillHisto( h_AnTopRapidity, AnTop.Rapidity(), evt_weight_ );
-              FillHisto( h_AnTopEnergy  , AnTop.Energy()  , evt_weight_ );
-              
-              
-              FillHisto( h_W1Mass , W1.M()  , evt_weight_ );
-              FillHisto( h_W2Mass , W2.M()  , evt_weight_ );
-              
-              FillHisto( h_W1Mt , W1.Mt()  , evt_weight_ );
-              FillHisto( h_W2Mt , W2.Mt()  , evt_weight_ );
-              
-              //FillHisto( h_bJet1Energy , bJet1.Energy()  , evt_weight_ );
-              //FillHisto( h_bJet2Energy , bJet2.Energy()  , evt_weight_ );
-              
-              FillHisto( h_bJetEnergy   , bJet.Energy()   , evt_weight_ );
-              FillHisto( h_AnbJetEnergy , AnbJet.Energy() , evt_weight_ );
-              FillHisto( h_bJetPt       , bJet.Pt()   , evt_weight_ );
-              FillHisto( h_AnbJetPt     , AnbJet.Pt() , evt_weight_ );
-              FillHisto( h_LepEnergy    , Lep.Energy()    , evt_weight_ );
-              FillHisto( h_AnLepEnergy  , AnLep.Energy()  , evt_weight_ );
-              FillHisto( h_NuEnergy     , Nu.Energy()     , evt_weight_ );
-              FillHisto( h_AnNuEnergy   , AnNu.Energy()   , evt_weight_ );
+            FillHisto( h_Jet1pt[8] , Jet1.Pt() , evt_weight_ );
+            FillHisto( h_Jet2pt[8] , Jet2.Pt() , evt_weight_ );
+            FillHisto( h_Jet1eta[8], Jet1.Eta(), evt_weight_ );
+            FillHisto( h_Jet2eta[8], Jet2.Eta(), evt_weight_ );
+            FillHisto( h_Jet1phi[8], Jet1.Phi(), evt_weight_ );
+            FillHisto( h_Jet2phi[8], Jet2.Phi(), evt_weight_ );
+            FillHisto( h_METpt[8]  , Met.Pt()  , evt_weight_ );
+            FillHisto( h_METphi[8] , Met.Phi() , evt_weight_ );
+            //FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
+            
+            FillHisto( h_DiLepMass[8], ( Lep1+Lep2 ).M(), evt_weight_ );
+            
+            FillHisto( h_Num_PV[8]   , num_pv          ,  evt_weight_ );
+            FillHisto( h_Num_Jets[8] , v_jet_idx.size(),  evt_weight_ );
+            FillHisto( h_Num_bJets[8], v_bjet_idx.size(), evt_weight_ );
+            if ( Top.Pt() > AnTop.Pt() ) { Top1 = Top; Top2 = AnTop; }
+            else { Top1 = AnTop; Top2 = Top; }
+            
+            FillHisto( h_TopMass      , Top.M()         , evt_weight_ );
+            FillHisto( h_Toppt        , Top.Pt()        , evt_weight_ );
+            FillHisto( h_Topphi       , Top.Phi()       , evt_weight_ );
+            FillHisto( h_TopRapidity  , Top.Rapidity()  , evt_weight_ );
+            FillHisto( h_TopEnergy    , Top.Energy()    , evt_weight_ );
+            FillHisto( h_AnTopMass    , AnTop.M()       , evt_weight_ );
+            FillHisto( h_AnToppt      , AnTop.Pt()      , evt_weight_ );
+            FillHisto( h_AnTopphi     , AnTop.Phi()     , evt_weight_ );
+            FillHisto( h_AnTopRapidity, AnTop.Rapidity(), evt_weight_ );
+            FillHisto( h_AnTopEnergy  , AnTop.Energy()  , evt_weight_ );
+            
+            FillHisto( h_W1Mass , W1.M()  , evt_weight_ );
+            FillHisto( h_W2Mass , W2.M()  , evt_weight_ );
+            
+            FillHisto( h_W1Mt , W1.Mt()  , evt_weight_ );
+            FillHisto( h_W2Mt , W2.Mt()  , evt_weight_ );
+            
+            //FillHisto( h_bJet1Energy , bJet1.Energy()  , evt_weight_ );
+            //FillHisto( h_bJet2Energy , bJet2.Energy()  , evt_weight_ );
+            
+            FillHisto( h_bJetEnergy   , bJet.Energy()   , evt_weight_ );
+            FillHisto( h_AnbJetEnergy , AnbJet.Energy() , evt_weight_ );
+            FillHisto( h_bJetPt       , bJet.Pt()   , evt_weight_ );
+            FillHisto( h_AnbJetPt     , AnbJet.Pt() , evt_weight_ );
+            FillHisto( h_LepEnergy    , Lep.Energy()    , evt_weight_ );
+            FillHisto( h_AnLepEnergy  , AnLep.Energy()  , evt_weight_ );
+            FillHisto( h_NuEnergy     , Nu.Energy()     , evt_weight_ );
+            FillHisto( h_AnNuEnergy   , AnNu.Energy()   , evt_weight_ );
                   
  
         }
