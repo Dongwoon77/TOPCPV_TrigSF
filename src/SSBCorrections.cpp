@@ -5,34 +5,45 @@
 #include "TRandom3.h"
 #include <cmath>
 #include <iostream>
+#include <filesystem>
+
 
 using correction::CorrectionSet;
 
 SSBCorrections::SSBCorrections(TextReader* reader) {
     std::cout << "TextReader in SSBCorrections ! " << std::endl;
+    std::cout << "Current directory: " << std::filesystem::current_path() << std::endl;
     reader->PrintoutVariables();
+    //std::string jsonDir = std::filesystem::current_path()+"./jsonpog-integration/POG/";
+    std::string jsonDir = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
+
     // Load correction file paths from config
     std::string jec_path     = reader->GetText("JECPath");
     std::string jer_path     = reader->GetText("JERPath");
     std::string jer_sf_path  = reader->GetText("JERSFPath");
     std::string muon_path    = reader->GetText("MuonSFPath");
-
+    std::cout << "jsonDir+jec_path : " << (jsonDir+jec_path) << std::endl;
     // Load JEC
-    auto jec_set = CorrectionSet::from_file(jec_path);
-    jec_ = jec_set->at("Summer19UL16_V7_MC_L1L2L3Residual_AK4PFchs");
-
+    std::cout << "before jec " << std::endl;
+    auto jec_set = CorrectionSet::from_file(jsonDir+jec_path);
+    //jec_ = jec_set->at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
+    jec_ = jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
+    
+    std::cout << "done jec" << std::endl;
     // Load JER resolution
-    auto jer_set = CorrectionSet::from_file(jer_path);
+    auto jer_set = CorrectionSet::from_file(jsonDir+jer_path);
     jer_ = jer_set->at("Summer20UL16APV_JRV3_MC_PtResolution_AK4PFchs");
+    std::cout << "done jer_set" << std::endl;
 
     //  Load JER scale factor (JERSF)
-    auto jer_sf_set = CorrectionSet::from_file(jer_sf_path);
+    auto jer_sf_set = CorrectionSet::from_file(jsonDir+jer_sf_path);
     jer_sf_ = jer_sf_set->at("Summer20UL16APV_JRV3_MC_ScaleFactor_AK4PFchs");
+    std::cout << "done jer_sf_set" << std::endl;
 
     // Load muon SF
-    auto muon_set = CorrectionSet::from_file(muon_path);
-    muon_id_sf_  = muon_set->at("NUM_TightID_DEN_TrackerMuons_abseta_pt");
-    muon_iso_sf_ = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt");
+    //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
+    //muon_id_sf_  = muon_set->at("NUM_TightID_DEN_TrackerMuons_abseta_pt");
+    //muon_iso_sf_ = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt");
 }
 
 double SSBCorrections::GetJEC(double eta, double pt, double rho) const {
@@ -64,9 +75,9 @@ double SSBCorrections::SmearJER(double reco_pt, double gen_pt, double eta, doubl
 }
 
 double SSBCorrections::GetMuonIDSF(double eta, double pt) const {
-    return muon_id_sf_->evaluate({"nominal", std::abs(eta), pt});
+    return 1;//muon_id_sf_->evaluate({"nominal", std::abs(eta), pt});
 }
 
 double SSBCorrections::GetMuonIsoSF(double eta, double pt) const {
-    return muon_iso_sf_->evaluate({"nominal", std::abs(eta), pt});
+    return 1;//muon_iso_sf_->evaluate({"nominal", std::abs(eta), pt});
 }

@@ -34,7 +34,8 @@ public:
     double GetMuonIsoSF(double eta, double pt) const;
 
 private:
-    std::shared_ptr<const correction::Correction> jec_;
+    //std::shared_ptr<const correction::Correction> jec_;
+    std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor
     std::shared_ptr<const correction::Correction> muon_id_sf_;
