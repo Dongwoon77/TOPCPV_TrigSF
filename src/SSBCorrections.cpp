@@ -8,7 +8,7 @@
 #include <filesystem>
 
 
-using correction::CorrectionSet;
+
 
 SSBCorrections::SSBCorrections(TextReader* reader) {
     std::cout << "TextReader in SSBCorrections ! " << std::endl;
@@ -27,7 +27,7 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     std::cout << "before jec " << std::endl;
     auto jec_set = CorrectionSet::from_file(jsonDir+jec_path);
     //jec_ = jec_set->at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
-    jec_ = jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
+    jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
     
     std::cout << "done jec" << std::endl;
     // Load JER resolution
@@ -56,7 +56,9 @@ double SSBCorrections::GetJER(double eta, double pt) const {
 
 double SSBCorrections::SmearJER(double reco_pt, double gen_pt, double eta, double rho, const std::string& jer_tag) const {
     // Get JER scale factor for this eta and variation (nominal/up/down)
-    double sf = jer_sf_->evaluate({jer_tag, eta});
+
+    //double sf = jer_sf_->evaluate({jer_tag, eta});
+    double sf = jer_sf_->evaluate({eta, jer_tag});;
 
     // Get JER resolution
     double resolution = jer_->evaluate({eta, reco_pt, rho});

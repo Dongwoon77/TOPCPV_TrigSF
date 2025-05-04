@@ -3,14 +3,18 @@
 
 #include <memory>
 #include <string>
+#include <correction.h>
 
+
+using correction::CorrectionSet;
+using correction::CompoundCorrection;
 // Forward declarations
 class TextReader;
-
+/*
 namespace correction {
     class Correction;
 }
-
+*/
 // A utility class for loading and applying correctionlib-based
 // JEC, JER, and muon scale factors using configuration
 class SSBCorrections {
@@ -35,7 +39,10 @@ public:
 
 private:
     //std::shared_ptr<const correction::Correction> jec_;
-    std::shared_ptr<const correction::CompoundCorrection> jec_;
+    correction::CompoundCorrection::Ref jec_;
+    //std::unique_ptr<correction::CorrectionSet> jec_;
+    //std::shared_ptr<const correction::Correction> jec_;
+    std::shared_ptr<const correction::CorrectionSet> c_jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor
     std::shared_ptr<const correction::Correction> muon_id_sf_;

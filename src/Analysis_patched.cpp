@@ -21,7 +21,6 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     SSBConfReader->ReadFile(confpath);
     SSBConfReader->ReadVariables();
     SSBConfReader->PrintoutVariables();
-    SSBCorr = new SSBCorrections(SSBConfReader);
     // Initialize branches based on branch list file
     InitBranches(branchListFile);
     cutflowName[0] = "Step_0";
@@ -133,6 +132,7 @@ void Analysis::SetVariables() {
 
     Lumi = SSBConfReader->GetNumber( "Luminosity" );
     RunPeriod = SSBConfReader->GetText( "RunRange" );
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod);
     Decaymode = SSBConfReader->GetText( "Channel" ); // Channel
     XsecTable_ = SSBConfReader->GetText( "XSecTablesName" );
     /// Set Trigger List ///
@@ -401,25 +401,31 @@ void Analysis::SetObjectVariable() {
     jets_Id = intVectors["Jet_jetId"].get();
     jets_puId = intVectors["Jet_puId"].get();// for Run 2 50 GeV Jets have to pass PUID //
 
-    if (RunPeriod.Contains("2016")) {
+    if (RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2016")) {
         if      (JetId == "PFLoose") { jet_id = 1; } // Loose ID
         else if (JetId == "PFTight") { jet_id = 3; } // Loose + Tight ID
         else if (JetId == "PFLooseLepVeto") { jet_id = 5; } // Loose + Tight + TightLeptonVeto
         else if (JetId == "PFTightLepVeto") { jet_id = 7; } // Loose + Tight + TightLeptonVeto
         else { std::cout << "Jet condition error for 2016!" << std::endl; }
     } 
-    else if (RunPeriod.Contains("2017") || RunPeriod.Contains("2018")) {
+    else if (RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2017") || RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2018")) {
         if      (JetId == "PFTight") { jet_id = 2; } // Tight ID
         else if (JetId == "PFTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
         else { std::cout << "Jet condition error for 2017/2018!" << std::endl; }
     } 
-    else if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) {
+    else if (RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2022") || RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2023")) {
         if      (JetId == "PFTight") { jet_id = 2; } // Tight ID
         else if (JetId == "PFTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
         else { std::cout << "Jet condition error for 2022/2023!" << std::endl; }
     } 
     else {
-        std::cout << "RunPeriod not recognized!" << std::endl;
+        std::cout << "RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod) not recognized!" << std::endl;
     }
 
     /// btagging WP ///
@@ -441,7 +447,8 @@ void Analysis::SetObjectVariable() {
     else if ( TString(JetbTag).Contains( "deepJetT" ) ) { bdisccut = 0.6502; }
     else { std::cout << "bscriminator error !!" << std::endl; }
 */
-    // Set b-tag discriminator and threshold based on algorithm, WP and RunPeriod
+    // Set b-tag discriminator and threshold based on algorithm, WP and RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod)
     
     // First set the appropriate b-tag discriminator variable
     if (TString(JetbTag).Contains("deepCSV")) {
@@ -466,8 +473,10 @@ void Analysis::SetObjectVariable() {
         return;
     }
     
-    // Set appropriate bdisccut value based on RunPeriod, algorithm, and WP
-    if (TString(RunPeriod).Contains("2016PreVFP")) {
+    // Set appropriate bdisccut value based on RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod), algorithm, and WP
+    if (TString(RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod)).Contains("2016PreVFP")) {
         if (TString(JetbTag).Contains("deepCSV")) {
             if (TString(JetbTag).Contains("L")) bdisccut = 0.2027;
             else if (TString(JetbTag).Contains("M")) bdisccut = 0.6001;
@@ -487,7 +496,8 @@ void Analysis::SetObjectVariable() {
             else std::cout << "Unknown pfCSVV2 working point!" << std::endl;
         }
     }
-    else if (TString(RunPeriod).Contains("2016PostVFP")) {
+    else if (TString(RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod)).Contains("2016PostVFP")) {
         if (TString(JetbTag).Contains("deepCSV")) {
             if (TString(JetbTag).Contains("L")) bdisccut = 0.1918;
             else if (TString(JetbTag).Contains("M")) bdisccut = 0.5847;
@@ -501,7 +511,8 @@ void Analysis::SetObjectVariable() {
             else std::cout << "Unknown deepJet working point!" << std::endl;
         }
     }
-    else if (TString(RunPeriod).Contains("2017")) {
+    else if (TString(RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod)).Contains("2017")) {
         if (TString(JetbTag).Contains("deepCSV")) {
             if (TString(JetbTag).Contains("L")) bdisccut = 0.1355;
             else if (TString(JetbTag).Contains("M")) bdisccut = 0.4506;
@@ -515,7 +526,8 @@ void Analysis::SetObjectVariable() {
             else std::cout << "Unknown deepJet working point!" << std::endl;
         }
     }
-    else if (TString(RunPeriod).Contains("2018")) {
+    else if (TString(RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod)).Contains("2018")) {
         if (TString(JetbTag).Contains("deepCSV")) {
             if (TString(JetbTag).Contains("L")) bdisccut = 0.1208;
             else if (TString(JetbTag).Contains("M")) bdisccut = 0.4168;
@@ -530,12 +542,14 @@ void Analysis::SetObjectVariable() {
         }
     }
     else {
-        std::cout << "Error: Unsupported run period: " << RunPeriod << std::endl;
+        std::cout << "Error: Unsupported run period: " << RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod) << std::endl;
         jets_btag = nullptr;
         bdisccut = -1.0;
     }
     
-    /*std::cout << "Setup B-tagging: " << JetbTag << " for period " << RunPeriod 
+    /*std::cout << "Setup B-tagging: " << JetbTag << " for period " << RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod) 
               << " with cut value " << bdisccut << std::endl;*/
     /// MET ///
     met_pt  = floatSingles["MET_pt"].get(); 
@@ -844,7 +858,8 @@ bool Analysis::Trigger()
    else {
       // Set veto trigger & selected trigger //
       // Channel Index //
-      if ( RunPeriod.Contains("2018") )/// Only 2018, SingleEG and Double EG combined 
+      if ( RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2018") )/// Only 2018, SingleEG and Double EG combined 
       {
          if (TString(Decaymode).Contains("dimuon")){ // Dimuon // 
             if ( TString(FileName_).Contains( "Single") ) {
@@ -1337,7 +1352,7 @@ void Analysis::MakeElecCollection() {
 //    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
-/*
+
 void Analysis::MakeJetCollection() {
     // Jet collection logic
     pre_jets.clear();
@@ -1366,49 +1381,8 @@ void Analysis::MakeJetCollection() {
     //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
     return;
 }
-*/
-void Analysis::MakeJetCollection() {
-    pre_jets.clear();
-       
-    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
-        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
-        return;
-    }
 
-    Int_t nJets = jets_pt->GetSize();
-    pre_jets.reserve(nJets); 
 
-    for (int ijet = 0; ijet < nJets; ++ijet) {
-        try {
-            double pt   = jets_pt->At(ijet);
-            double eta  = jets_eta->At(ijet);
-            double phi  = jets_phi->At(ijet);
-            double mass = jets_M->At(ijet);
-
-            // Optional: fallback if branch is missing
-            double genpt = -1.0;
-            if (gen_jets_pt != nullptr && gen_jets_pt->GetSize() > ijet) {
-                genpt = gen_jets_pt->At(ijet);
-            }
-
-            // Apply JER smearing only if not data
-            if (!TString(FileName_).Contains("Data") && SSBCorr != nullptr) {
-                double rho = **floatSingles["fixedGridRhoFastjetAll"];
-                //pt = SSBCorr->SmearJER(pt, genpt, eta, rho, "nominal");
-                //std::cout << "pt "<< pt << " cor " << SSBCorr->SmearJER(pt, genpt, eta, rho, "nom") << std::endl;
-                pt = SSBCorr->SmearJER(pt, genpt, eta, rho, "nom");
-
-            }
-
-            pre_jets.push_back(createLorentzVector(pt, eta, phi, mass));
-        } catch (const std::exception& e) {
-            std::cerr << "Error creating jet vector at index " << ijet << ": " << e.what() << std::endl;
-        }
-    }
-
-    //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
-    return;
-}
 bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFTER LEPTONSELETOR //
 {
     bool numLeptons = true;
@@ -1475,15 +1449,16 @@ void Analysis::JetSelector()
     }
 
     // Add safety check
-    auto passPuId = [&](int puId, float pt) -> bool {
-        if (pt > 50.0) return true;
-        if (RunPeriod.Contains("2016")) {
-            // 2016 : loose <-> tight
-            return (puId & (1 << 2)) != 0;
-        } else {
-            return (puId & (1 << 0)) != 0;
-        }
-    };
+auto passPuId = [&](int puId, float pt) -> bool {
+    if (pt > 50.0) return true;
+    if (RunPeriod;
+    jet_corrector = BuildJetCorrectorFromRunPeriod(RunPeriod).Contains("2016")) {
+        // 2016 UL 특수: loose ↔ tight
+        return (puId & (1 << 2)) != 0;
+    } else {
+        return (puId & (1 << 0)) != 0;
+    }
+};
 
 /*
     auto passPuId = [](int puId, float pt) -> bool {
