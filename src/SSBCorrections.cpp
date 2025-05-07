@@ -15,26 +15,39 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     reader->PrintoutVariables();
     std::string jsonDir = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
 
+    std::string puw_path     = reader->GetText("PUWeightPath");
     std::string jec_path     = reader->GetText("JECPath");
     std::string jer_path     = reader->GetText("JERPath");
     std::string jer_sf_path  = reader->GetText("JERSFPath");
     std::string muon_path    = reader->GetText("MuonSFPath");
     std::string elec_path    = reader->GetText("ElecSFPath");
     std::string RunPeriod    = reader->GetText("RunRange");
-
+    std::string puJson  =  "";
     if (RunPeriod.find("2016PreVFP") != std::string::npos) {
         year_ = "2016preVFP";
+        puJson = "Collisions16_UltraLegacy_goldenJSON";
+        
     } else if (RunPeriod.find("2016PostVFP") != std::string::npos) {
         year_ = "2016postVFP";
+        puJson = "Collisions16_UltraLegacy_goldenJSON";
     } else if (RunPeriod.find("2017") != std::string::npos) {
         year_ = "2017";
+        puJson = "Collisions17_UltraLegacy_goldenJSON";
     } else if (RunPeriod.find("2018") != std::string::npos) {
         year_ = "2018";
+        puJson = "Collisions18_UltraLegacy_goldenJSON";
     } 
     else {
         std::cerr << "[SSBCorrections] Unknown RunPeriod: " << RunPeriod << std::endl;
         year_ = "2018"; // fallback or throw error
     }
+
+    std::cout << "jsonDir + puw_path : " << jsonDir + puw_path << std::endl;
+    auto puset = correction::CorrectionSet::from_file(jsonDir + puw_path);
+    
+    pu_weight_ = puset->at(puJson);
+//    std::string pu_year_ = year_;
+//    std::cout << "pu_year_ : " << pu_year_ << std::endl;
 
 
     auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
@@ -200,4 +213,40 @@ float SSBCorrections::GetElectronRecoSF(float pt, float eta) const {
     //float id_sf = ele_id_sf_->evaluate({ year_, wp, "nominal", eta, pt });
     //float reco_sf = ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
     return ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
+}
+
+
+
+float SSBCorrections::GetPUWeight(float nTrueInt, const std::string& systTag) const {
+    std::string variation = systTag;
+    
+    if (!pu_weight_) {
+        std::cerr << "[SSBCorrections::GetPUWeight] PU correction not loaded.\n";
+        return 1.0;
+    }
+    
+    // Central이나 빈 문자열인 경우만 nominal로 변경, 다른 경우는 그대로 유지
+    if (systTag == "Central" || systTag == "") {
+        variation = "nominal";
+    }
+    
+    std::cout << "variation in PU " << variation << std::endl;
+
+    // 유효한 값이 아닌 경우 nominal로 변경
+    if (variation != "nominal" && variation != "up" && variation != "down") {
+        std::cerr << "PileUp sys Error ... Defaulting to Weight_PileUp ... Original value: " << variation << std::endl;
+        variation = "nominal";
+    }
+    
+    std::cout << "nTrueInt : " << nTrueInt << std::endl;
+    
+    try {
+        std::variant<double, std::vector<double>> val = pu_weight_->evaluate({ nTrueInt, variation });
+        double weight = std::get<double>(val);
+        std::cout << "PileUp weight: " << weight << std::endl;  // 결과 가중치 출력 추가
+        return weight;
+    } catch (const std::exception& e) {
+        std::cerr << "[SSBCorrections::GetPUWeight] Evaluation failed: " << e.what() << std::endl;
+        return 1.0;
+    }
 }

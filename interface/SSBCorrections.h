@@ -24,6 +24,10 @@ public:
     // Constructor using a configuration reader (TextReader)
     explicit SSBCorrections(TextReader* reader);
 
+    // Get PU weight for a given nTrueInt and variation
+    float GetPUWeight(float nTrueInt, const std::string& variation = "nominal") const;
+
+
     // Jet Energy Correction (JEC) factor
     double GetJEC(double eta, double pt, double rho) const;
 
@@ -67,6 +71,9 @@ private:
     //std::shared_ptr<const correction::Correction> jec_;
     //std::shared_ptr<const correction::CorrectionSet> c_jec_;
     std::string year_;
+
+    std::shared_ptr<const correction::Correction> pu_weight_;
+
     std::shared_ptr<const correction::Correction> muon_id_sf_;
     std::shared_ptr<const correction::Correction> muon_iso_sf_;
     std::shared_ptr<const correction::Correction> muon_reco_;

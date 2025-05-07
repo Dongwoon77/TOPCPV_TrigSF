@@ -214,6 +214,8 @@ void Analysis::SetVariables() {
     veto_elecid       = SSBConfReader->GetText( "VetoElecId"  );
 
     dojer = SSBConfReader->GetBool("DoJER");
+    
+    PileUpSys = SSBConfReader->GetText("PileupSys");
 
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
@@ -581,6 +583,7 @@ void Analysis::Loop() {
         MCSFApply();
 
         GenWeightApply();
+        PUWeightApply();
 
         SetObjectVariable(); //
         LeptonSelector(); 
@@ -2322,4 +2325,23 @@ void Analysis::LeptonSFApply()
        std::cout << "LeptonGetSF error !!!!" << std::endl;
     }
 }
- 
+void Analysis::PUWeightApply()
+{
+    std::cout << "start ! LeptonSFApply  " << std::endl;
+     
+   evt_weight_beforePileup_ = 1;
+   evt_weight_beforePileup_ = evt_weight_; // keep event weight // 
+   double puweight_ = 1.;
+      
+   if ( !TString(FileName_).Contains( "Data") )
+   {  
+      double pu_weight_central = SSBCorr->GetPUWeight( **floatSingles["Pileup_nTrueInt"] , PileUpSys.Data() );
+      if (TString(PileUpSys).Contains("central") || TString(PileUpSys).Contains("nominal")  ) { puweight_   = pu_weight_central;}
+      else {  
+         std::cerr << "PUWeightApply Error... Defalut is Weight_PileUp ... : " << PileUpSys << std::endl;
+      }
+      evt_weight_ = evt_weight_*puweight_;  // apply PileUpReweight //
+   }  
+   else {evt_weight_ = 1;}
+    std::cout << "PileUp evt : " << evt_weight_ << " pu weight " << puweight_ << std::endl;
+}
