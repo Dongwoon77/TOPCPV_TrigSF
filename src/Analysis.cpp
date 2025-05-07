@@ -58,6 +58,15 @@ Analysis::~Analysis() {
         std::cout << "SSBConfReader successfully deleted." << std::endl;
     }
 
+    // Safely delete the TextReader object
+    if (SSBCorr) {
+        delete SSBCorr;
+        SSBCorr = nullptr;
+        std::cout << "SSBCorr successfully deleted." << std::endl;
+    }
+/*    else {
+    std::cout << "Error !! SSBConfReader " << std::endl;
+    }*/
     // Add other cleanup as needed for dynamically allocated objects
     std::cout << "Analysis destructor completed." << std::endl;
 }
@@ -607,6 +616,9 @@ void Analysis::Loop() {
         //std::cout << "after ThirdLeptons : " << std::endl;
         if (LeptonsPtAddtional() == false ) {continue;}
         if (DiLeptonMassCut() == false) {continue;}
+
+        LeptonSFApply();
+
         /// Step 1 ///
         //std::cout << "? evet weight " << evt_weight_ << std::endl;
         num_pv =  **intSingles["PV_npvsGood"]; 
@@ -649,7 +661,7 @@ void Analysis::Loop() {
         FillHisto( h_Lep2eta[3],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[3],    (Lep2).Phi() , evt_weight_ );
 
-        if ((Jet2).Pt() < 30.) printf("jet2pt %lf eta %lf \n",Jet2.Pt(), Jet2.Eta());//std::cout << "Wrong! " << Jet2.Pt() << std::endl;
+        //if ((Jet2).Pt() < 30.) printf("jet2pt %lf eta %lf \n",Jet2.Pt(), Jet2.Eta());//std::cout << "Wrong! " << Jet2.Pt() << std::endl;
         FillHisto( h_Jet1pt[3] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[3],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[3],    (Jet1).Phi() , evt_weight_ );
@@ -2283,4 +2295,31 @@ void Analysis::SetUpKINObs()
    
    // Clean up
    delete kinematicReconstruction;
-} 
+}
+void Analysis::LeptonSFApply()
+{
+    std::cout << "start ! LeptonSFApply  " << std::endl;
+    lep_sf = 1.0;
+    
+    if (TString(Decaymode).Contains("dimuon")) {
+        std::cout << "dimuon case !" << std::endl;
+        lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
+        std::cout << "lep_sf " << lep_sf << std::endl;
+    }
+    else if (TString(Decaymode).Contains("dielec")) {
+    //   lep_sf = SSBEffcal->DoubleElec_EffROOT(Lep1, Lep2,
+    //                   Elec_Supercluster_Eta->at(v_lepton_idx[0]),
+    //                   Elec_Supercluster_Eta->at(v_lepton_idx[1]),
+    //                   LepIdSFSys, LepRecoSFSys); // LepRecoSFSys is for Electron
+    }
+    else if (TString(Decaymode).Contains("muel")) {
+    //   lep_sf = SSBEffcal->MuonElec_EffROOT(TMuon, TElectron,
+    //                   Elec_Supercluster_Eta->at(v_electron_idx[0]),
+    //                   LepIdSFSys, LepIsoSFSys, LepTrackSFSys, LepRecoSFSys); // RecoSF is for Electron
+    }
+    else {
+       lep_sf = 1.0;
+       std::cout << "LeptonGetSF error !!!!" << std::endl;
+    }
+}
+ 

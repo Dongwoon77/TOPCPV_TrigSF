@@ -99,7 +99,6 @@ private:
     void LeptonSelector(); //(muon & electron)
     void LeptonOrder(); // Lepton (muon & electron)
     
-    // 수정된 함수 선언: bool 리턴 타입에서 void로 변경
     void SelectVetoMuons();
     void SelectVetoElectrons();
 
@@ -125,6 +124,9 @@ private:
     bool NumJetCut(std::vector<int> v_jets);
     bool METCut(TLorentzVector met);
     bool NumbJetCut(std::vector<int> v_jets);
+
+    // Event Weight //
+    void LeptonSFApply();
 
     ////////////////////////////
     /// New Kinematic Solver ///
@@ -308,7 +310,7 @@ private:
     double evt_weight_beforeTrigger_;
     double evt_weight_beforeLepsf_;
     double evt_weight_beforeBtag_;
-    double lep_eff;
+    double lep_sf;
 
     //Kinetic Variables                                                                                                               
     int    n_elep_Id;                                                                                                                 
