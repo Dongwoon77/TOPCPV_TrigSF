@@ -23,6 +23,16 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     std::string elec_path    = reader->GetText("ElecSFPath");
     std::string RunPeriod    = reader->GetText("RunRange");
     std::string puJson  =  "";
+
+    // Muon Infor. ID  ISO // 
+    std::string muon_id_corName  = reader->GetText( "MuonIDSFName"  );
+    std::string muon_iso_corName = reader->GetText( "MuonIsoSFName" );
+    
+    // Electron ID ISO // 
+    std::string ele_sf_name_      = reader->GetText( "ElecIDSFName"  );  
+    std::string ele_reco_sf_name_    = reader->GetText( "ElecRecoSFName" );
+    
+
     if (RunPeriod.find("2016PreVFP") != std::string::npos) {
         year_ = "2016preVFP";
         puJson = "Collisions16_UltraLegacy_goldenJSON";
@@ -46,8 +56,6 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     auto puset = correction::CorrectionSet::from_file(jsonDir + puw_path);
     
     pu_weight_ = puset->at(puJson);
-//    std::string pu_year_ = year_;
-//    std::cout << "pu_year_ : " << pu_year_ << std::endl;
 
 
     auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
@@ -71,14 +79,24 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     auto muon_set = correction::CorrectionSet::from_file(jsonDir + muon_path);
 
     //muon_reco_ = muon_set->at("NUM_TightID_DEN_TrackerMuons");
-    muon_id_   = muon_set->at("NUM_TightID_DEN_TrackerMuons");
-    muon_iso_  = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut");
+    //std::string muon_id_corName = "";
+    //std::string muon_iso_corName = "";
 
+    std::cout << "muon_id_corName : " << muon_id_corName << std::endl;
+    std::cout << "muon_iso_corName : " << muon_iso_corName << std::endl;
+    //muon_id_   = muon_set->at("NUM_TightID_DEN_TrackerMuons");
+    //muon_iso_  = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut");
+
+    muon_id_   = muon_set->at(muon_id_corName);
+    muon_iso_  = muon_set->at(muon_iso_corName);
     //std::string path = "jsonpog-integration/POG/EGM/" + year + "_UL/electron.json.gz";
     std::cout << "electron SF path : " << jsonDir + elec_path << std::endl;
     year_ = "2016preVFP";
-    //auto cset = correction::CorrectionSet::from_file(jsonDir + elec_path);
-    //ele_id_sf_ = cset->at("Electron-ID-SF");
+    auto cset = correction::CorrectionSet::from_file(jsonDir + elec_path);
+    std::cout << "sk ele 1 ele_sf_name_ : " << ele_sf_name_ << std::endl;
+    ele_sf_ = cset->at(ele_sf_name_);
+    std::cout << "sk ele 2 ele_reco_sf_name_: " << ele_reco_sf_name_ << std::endl;
+    //ele_sf_ = cset->at("Electron-ID-SF");
     //ele_reco_sf_ = cset->at("Electron-Reco-SF");
     //year_ = "2016";
 }
@@ -194,14 +212,14 @@ double SSBCorrections::DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector l
 }
 
 float SSBCorrections::GetElectronIDSF(float pt, float eta, const std::string& wp) const {
-    if (!ele_id_sf_) {
+    if (!ele_sf_) {
         std::cerr << "[GetElectronIDSF] SF not loaded! Call LoadElectronSF() first.\n";
         return 1.0;
     }
 
-    //float id_sf = ele_id_sf_->evaluate({ year_, wp, "nominal", eta, pt });
+    //float id_sf = ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });
     //float reco_sf = ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
-    return ele_id_sf_->evaluate({ year_, wp, "nominal", eta, pt });;
+    return ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });;
 }
 
 float SSBCorrections::GetElectronRecoSF(float pt, float eta) const {
@@ -210,7 +228,7 @@ float SSBCorrections::GetElectronRecoSF(float pt, float eta) const {
         return 1.0;
     }
 
-    //float id_sf = ele_id_sf_->evaluate({ year_, wp, "nominal", eta, pt });
+    //float id_sf = ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });
     //float reco_sf = ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
     return ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
 }
@@ -225,14 +243,14 @@ float SSBCorrections::GetPUWeight(float nTrueInt, const std::string& systTag) co
         return 1.0;
     }
     
-    // Central이나 빈 문자열인 경우만 nominal로 변경, 다른 경우는 그대로 유지
+    // If systTag is "Central" or empty, treat as "nominal"
     if (systTag == "Central" || systTag == "") {
         variation = "nominal";
     }
     
-    std::cout << "variation in PU " << variation << std::endl;
+    //std::cout << "variation in PU " << variation << std::endl;
 
-    // 유효한 값이 아닌 경우 nominal로 변경
+    // If the variation is not valid, fallback to "nominal"
     if (variation != "nominal" && variation != "up" && variation != "down") {
         std::cerr << "PileUp sys Error ... Defaulting to Weight_PileUp ... Original value: " << variation << std::endl;
         variation = "nominal";
@@ -243,10 +261,24 @@ float SSBCorrections::GetPUWeight(float nTrueInt, const std::string& systTag) co
     try {
         std::variant<double, std::vector<double>> val = pu_weight_->evaluate({ nTrueInt, variation });
         double weight = std::get<double>(val);
-        std::cout << "PileUp weight: " << weight << std::endl;  // 결과 가중치 출력 추가
+        //std::cout << "PileUp weight: " << weight << std::endl;  
         return weight;
     } catch (const std::exception& e) {
         std::cerr << "[SSBCorrections::GetPUWeight] Evaluation failed: " << e.what() << std::endl;
+        return 1.0;
+    }
+}
+
+float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
+    std::string recoPtThreshold = pt >= 20 ? "RecoAbove20" : "RecoBelow20";
+    std::string type = sf_type;
+
+    if (sf_type == "Reco") type = recoPtThreshold;
+
+    try {
+        return ele_sf_->evaluate({year_, syst, type, eta, pt});
+    } catch (const std::exception& e) {
+        std::cerr << "[GetElectronSF] Failed to evaluate: " << e.what() << std::endl;
         return 1.0;
     }
 }

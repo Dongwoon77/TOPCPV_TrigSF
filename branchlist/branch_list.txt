@@ -131,3 +131,4 @@ PV_chi2, PV, Float_t, single
 PV_score, PV, Float_t, single
 PV_npvs, PV, Int_t, single
 PV_npvsGood, PV, Int_t, single
+Pileup_nTrueInt, Pileup, Float_t, single

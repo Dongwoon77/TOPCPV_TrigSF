@@ -50,6 +50,8 @@ public:
 
     float GetElectronIDSF(float pt, float eta, const std::string& wp = "wp80") const;
     float GetElectronRecoSF(float pt, float eta) const;
+    // Electron scale factor accessor
+    float GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst = "sf") const;
 
 
 
@@ -80,7 +82,7 @@ private:
     std::shared_ptr<const correction::Correction> muon_id_;
     std::shared_ptr<const correction::Correction> muon_iso_;
 
-    std::shared_ptr<const correction::Correction> ele_id_sf_;
+    std::shared_ptr<const correction::Correction> ele_sf_;
     std::shared_ptr<const correction::Correction> ele_reco_sf_;
 
     std::shared_ptr<const correction::CompoundCorrection> jec_;
