@@ -66,6 +66,7 @@ Jet_mass, jet, Float_t, vector
 Jet_jetId, jet, Int_t, vector
 Jet_puId, jet, Int_t, vector
 Jet_area, jet, Float_t, vector
+Jet_rawFactor, jet, Float_t, vector
 Jet_btagCSVV2, jet, Float_t, vector
 Jet_btagDeepB, jet, Float_t, vector
 Jet_btagDeepCvB, jet, Float_t, vector

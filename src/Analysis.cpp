@@ -592,7 +592,7 @@ void Analysis::Loop() {
         JetSelector(); 
         JetOrder(); 
         bJetSelector(); 
-        METDefiner();
+        //METDefiner();
 
         //if (i > 100) break; //%lld supports Long64_t
         if (ientry % 10000 == 0) {
@@ -841,6 +841,89 @@ bool Analysis::SelTrigger(std::vector<std::string> v_sel)
 
 bool Analysis::Trigger()
 {
+   bool trigpass = false;
+
+   if (!TString(FileName_).Contains("Data")) {
+       // MC: always apply trigName
+       trigpass = SelTrigger(trigName);
+       return trigpass;
+   }
+
+   /// Data Samples
+   std::vector<std::string> seltrigName;
+   std::vector<std::string> vetotrigName;
+
+   if (RunPeriod.Contains("2018")) {
+      if (TString(Decaymode).Contains("dimuon")) {
+         if (TString(FileName_).Contains("Single")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            trigpass = pass_single && !pass_double;
+            return trigpass;
+         } else if (TString(FileName_).Contains("Double")) {
+            bool pass_double = SelTrigger(DLtrigName);
+            trigpass = pass_double;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dimuon in 2018" << std::endl;
+            return false;
+         }
+      }
+
+      else if (TString(Decaymode).Contains("muel")) {
+         if (TString(FileName_).Contains("MuonEG")) {
+            bool pass_double = SelTrigger(DLtrigName);
+            trigpass = pass_double;
+            return trigpass;
+         } else if (TString(FileName_).Contains("EGamma")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            trigpass = pass_single;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for muel in 2018" << std::endl;
+            return false;
+         }
+      }
+
+      else if (TString(Decaymode).Contains("dielec")) {
+         if (TString(FileName_).Contains("EGamma")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dielec in 2018" << std::endl;
+            return false;
+         }
+      }
+
+      else {
+         std::cout << "[Trigger] Check Decaymode for 2018" << std::endl;
+         return false;
+      }
+   }
+
+   /// 2016 / 2017
+   else {
+      if (TString(FileName_).Contains("Single")) {
+         bool pass_single = SelTrigger(SLtrigName);
+         bool pass_double = SelTrigger(DLtrigName);
+         trigpass = pass_single && !pass_double;
+         return trigpass;
+      } else if (TString(FileName_).Contains("Double") || TString(FileName_).Contains("MuonEG")) {
+         bool pass_double = SelTrigger(DLtrigName);
+         trigpass = pass_double;
+         return trigpass;
+      } else {
+         std::cout << "[Trigger] Check FileName_ for 2016/2017" << std::endl;
+         return false;
+      }
+   }
+}
+
+/*
+bool Analysis::Trigger()
+{
    /// Variable for Trigger Function
    bool singleTrig_ = false;
    bool doubleTrig_ = false;
@@ -939,19 +1022,6 @@ bool Analysis::Trigger()
    }
    //cout << "ispassselTrig_ : " << ispassselTrig_ << " ispassvetoTrig_ : " << ispassvetoTrig_ << "trigger : " << trigpass << endl; 
    return trigpass;
-}
-/*TString Analysis::SetInputFileName( std::string inname )
-{  
-   TString inputName = inname;
-   char unsco_ = '_';
-   Size_t unscoIndex = inputName.Last(unsco_);
-   inputName.Remove(unscoIndex, inputName.Length());
-   if (inputName.Contains("/")){
-      unscoIndex = inputName.Last('/');
-      inputName.Remove(0,unscoIndex+1);
-   }
-   //cout << "inputName : " << inputName << endl;
-   return inputName; 
 }
 */
 TString Analysis::SetInputFileName(std::string inname)
@@ -1352,77 +1422,80 @@ void Analysis::MakeElecCollection() {
 //    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
-/*
-void Analysis::MakeJetCollection() {
-    // Jet collection logic
-    pre_jets.clear();
-    
-    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
-        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
-        return;
-    }
-    
-    Int_t nJets = jets_pt->GetSize();
-    pre_jets.reserve(nJets); 
-    
-    for (int ijet = 0; ijet < nJets; ++ijet) {
-        try {
-            pre_jets.push_back(createLorentzVector(
-                jets_pt->At(ijet), 
-                jets_eta->At(ijet), 
-                jets_phi->At(ijet), 
-                jets_M->At(ijet)
-            ));
-        } catch (const std::exception& e) {
-            std::cerr << "Error creating jet vector at index " << ijet << ": " << e.what() << std::endl;
-        }
-    } 
-    
-    //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
-    return;
-}
-*/
+
 void Analysis::MakeJetCollection() {
     pre_jets.clear();
-       
+
     if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
         std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
         return;
     }
 
     Int_t nJets = jets_pt->GetSize();
-    pre_jets.reserve(nJets); 
+    std::vector<TLorentzVector> rawJets;
+    std::vector<float> rawFactors;
+    std::vector<float> jetAreas;
+    std::vector<TLorentzVector> genJets;
+    std::vector<int> genJetIndices;
+
+    rawJets.reserve(nJets);
+    rawFactors.reserve(nJets);
+    jetAreas.reserve(nJets);
+    genJets.reserve(nJets);
+    genJetIndices.reserve(nJets);
 
     for (int ijet = 0; ijet < nJets; ++ijet) {
         try {
-            double pt   = jets_pt->At(ijet);
-            double eta  = jets_eta->At(ijet);
-            double phi  = jets_phi->At(ijet);
-            double mass = jets_M->At(ijet);
+            TLorentzVector rawJet;
+            rawJet.SetPtEtaPhiM(jets_pt->At(ijet), jets_eta->At(ijet), jets_phi->At(ijet), jets_M->At(ijet));
+            rawJets.push_back(rawJet);
 
-            // Optional: fallback if branch is missing
-            double genpt = -1.0;
-            if (gen_jets_pt != nullptr && gen_jets_pt->GetSize() > ijet) {
-                genpt = gen_jets_pt->At(ijet);
-            }
+            float rawFactor = (floatVectors.count("Jet_rawFactor") && floatVectors["Jet_rawFactor"]->GetSize() > ijet)
+                                ? floatVectors["Jet_rawFactor"]->At(ijet) : 0.0;
+            rawFactors.push_back(rawFactor);
 
-            // Apply JER smearing only if not data
-            if (!TString(FileName_).Contains("Data") && SSBCorr != nullptr) {
-                double rho = **floatSingles["fixedGridRhoFastjetAll"];
-                //pt = SSBCorr->SmearJER(pt, genpt, eta, rho, "nominal");
-                //std::cout << "pt "<< pt << " cor " << SSBCorr->SmearJER(pt, genpt, eta, rho, "nom") << std::endl;
-                pt = SSBCorr->SmearJER(pt, genpt, eta, rho, "nom");
+            float area = (floatVectors.count("Jet_area") && floatVectors["Jet_area"]->GetSize() > ijet)
+                           ? floatVectors["Jet_area"]->At(ijet) : 0.5;
+            jetAreas.push_back(area);
 
-            }
-
-            pre_jets.push_back(createLorentzVector(pt, eta, phi, mass));
+            int genIdx = (intVectors.count("Jet_genJetIdx") && intVectors["Jet_genJetIdx"]->GetSize() > ijet)
+                           ? intVectors["Jet_genJetIdx"]->At(ijet) : -1;
+            genJetIndices.push_back(genIdx);
         } catch (const std::exception& e) {
-            std::cerr << "Error creating jet vector at index " << ijet << ": " << e.what() << std::endl;
+            std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
         }
     }
 
-    //std::cout << "Created " << pre_jets.size() << " jets in collection" << std::endl;
-    return;
+    if (gen_jets_pt && gen_jets_eta && gen_jets_phi && gen_jets_M) {
+        Int_t nGenJets = gen_jets_pt->GetSize();
+        for (int i = 0; i < nGenJets; ++i) {
+            TLorentzVector gj;
+            gj.SetPtEtaPhiM(gen_jets_pt->At(i), gen_jets_eta->At(i), gen_jets_phi->At(i), gen_jets_M->At(i));
+            genJets.push_back(gj);
+        }
+    }
+
+    double rho = (floatSingles.count("fixedGridRhoFastjetAll") > 0) ? **floatSingles["fixedGridRhoFastjetAll"] : 0.0;
+    double raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
+    double raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
+    bool isData = TString(FileName_).Contains("Data");
+
+    JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
+        rawJets,
+        rawFactors,
+        jetAreas,
+        rho,
+        isData,
+        true,
+        true,
+        raw_met_pt,
+        raw_met_phi,
+        genJets,
+        genJetIndices
+    );
+
+    pre_jets = corr_output.corrected_jets;
+    Met = corr_output.corrected_met;
 }
 bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFTER LEPTONSELETOR //
 {
@@ -2061,51 +2134,6 @@ void Analysis::bJetSelector() {
     // Debug output
     //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
 }
-/*void Analysis::bJetSelector() {
-    // Clear any previous b-jet selections
-    v_bjet_idx.clear();
-    
-    // Check if there are selected jets to work with
-    if (v_jet_idx.empty()) {
-        return;
-    }
-    
-    // Counter for number of b-tagged jets
-    int nbtagged = 0;
-    
-    // Lambda function to determine if a jet is b-tagged
-    auto isBTagged = [this](int jetIdx) -> bool {
-        if (TString(JetbTag).Contains("deepCSV")) {
-            if (floatVectors.find("Jet_btagDeepB") != floatVectors.end() && floatVectors["Jet_btagDeepB"] != nullptr) {
-                return (*floatVectors["Jet_btagDeepB"])[jetIdx] > bdisccut;
-            }
-        } 
-        else if (TString(JetbTag).Contains("deepJet")) {
-            if (floatVectors.find("Jet_btagDeepFlavB") != floatVectors.end() && floatVectors["Jet_btagDeepFlavB"] != nullptr) {
-                return (*floatVectors["Jet_btagDeepFlavB"])[jetIdx] > bdisccut;
-            }
-        }
-        else if (TString(JetbTag).Contains("pfCSVV2")) {
-            if (floatVectors.find("Jet_btagCSVV2") != floatVectors.end() && floatVectors["Jet_btagCSVV2"] != nullptr) {
-                return (*floatVectors["Jet_btagCSVV2"])[jetIdx] > bdisccut;
-            }
-        }
-        
-        std::cerr << "Warning: Could not determine b-tagging algorithm or missing b-tag discriminator" << std::endl;
-        return false;
-    };
-    
-    // Loop over selected jets to find b-tagged ones
-    for (const auto& jetIdx : v_jet_idx) {
-        if (isBTagged(jetIdx)) {
-            v_bjet_idx.push_back(jetIdx);
-            nbtagged++;
-        }
-    }
-    
-    // Debug output
-    //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
-}*/
 
 // ZVeto Cut : step 2
 bool Analysis::ZVetoCut()
@@ -2152,68 +2180,6 @@ bool Analysis::NumbJetCut(std::vector<int> v_jets)
    if ( v_jets.size() >= 1 ){ numbjetcut = true; }
    return numbjetcut;
 }
-// Top reconstruction //
-/*void Analysis::SetUpKINObs()
-{
-   std::cout << "SetUpKINObs Start ! " << std::endl;
-   isKinSol=false;
-   std::vector<double> jets_btag_vec;
-   v_leptons_VLV.clear();
-   v_jets_VLV.clear();
-   v_lepidx_KIN.clear();
-   v_anlepidx_KIN.clear();
-   v_jetidx_KIN.clear();
-   v_bjetidx_KIN.clear();
-   v_btagging_KIN.clear();
-   /// lepton ///
-   v_leptons_VLV.push_back(common::TLVtoLV(Lep));
-   v_lepidx_KIN.push_back(0);
-   v_leptons_VLV.push_back(common::TLVtoLV(AnLep));
-   v_anlepidx_KIN.push_back(1);
-   const KinematicReconstruction* kinematicReconstruction(0); 
-   kinematicReconstruction = new KinematicReconstruction(1, true);
-
-   const LV met_LV = common::TLVtoLV(Met);
-   std::cout << "v_jet_idx.size() : " << v_jet_idx.size() << std::endl;
-   for (int ijet = 0; ijet < v_jet_idx.size(); ++ijet)
-   {
-      int idx_jet = v_jet_idx[ijet];
-      v_jets_VLV.push_back(common::TLVtoLV(jets[ijet]));
-      v_jetidx_KIN.push_back(ijet);
-      jets_btag_vec.push_back(static_cast<double>((*jets_btag)[idx_jet]));
-   }
-
-   v_bjetidx_KIN = v_bjet_idx;
-
-   KinematicReconstructionSolutions kinematicReconstructionSolutions = kinematicReconstruction->solutions(v_lepidx_KIN,v_anlepidx_KIN, v_jetidx_KIN,  v_bjetidx_KIN,  v_leptons_VLV, v_jets_VLV, jets_btag_vec, met_LV);
-   if (kinematicReconstructionSolutions.numberOfSolutions())
-   {
-   std::cout << "Num Sol : " << kinematicReconstructionSolutions.numberOfSolutions() << std::endl;
-   std::cout << "MET ? " << met_LV.pt() << std::endl;
-      isKinSol= true;
-      LV top1 = kinematicReconstructionSolutions.solution().top();
-      LV top2 = kinematicReconstructionSolutions.solution().antiTop();
-      LV bjet1 = kinematicReconstructionSolutions.solution().bjet();
-      LV bjet2 = kinematicReconstructionSolutions.solution().antiBjet();
-      LV neutrino1 = kinematicReconstructionSolutions.solution().neutrino();
-      LV neutrino2 = kinematicReconstructionSolutions.solution().antiNeutrino();
-      //kinematicReconstructionSolutions.solution().print();
-      //Top = new TLorentzVector(common::LVtoTLV(top1));   
-      Top       = common::LVtoTLV(top1);
-      AnTop     = common::LVtoTLV(top2);
-      bJet      = common::LVtoTLV(bjet1);
-      AnbJet    = common::LVtoTLV(bjet2);
-      Nu        = common::LVtoTLV(neutrino1);
-      AnNu      = common::LVtoTLV(neutrino2);
-
-      W1        = Lep  + AnNu;
-      W2        = AnLep  + Nu;
-
-   }
-   //delete 
-   delete kinematicReconstruction;
-}*/
-
 void Analysis::SetUpKINObs()
 {
    //std::cout << "SetUpKINObs Start ! " << std::endl;
@@ -2307,7 +2273,7 @@ void Analysis::LeptonSFApply()
     if (TString(Decaymode).Contains("dimuon")) {
         std::cout << "dimuon case !" << std::endl;
         lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
-        std::cout << "lep_sf " << lep_sf << std::endl;
+    //    std::cout << "lep_sf " << lep_sf << std::endl;
     }
     else if (TString(Decaymode).Contains("dielec")) {
     //   lep_sf = SSBEffcal->DoubleElec_EffROOT(Lep1, Lep2,
@@ -2327,21 +2293,22 @@ void Analysis::LeptonSFApply()
 }
 void Analysis::PUWeightApply()
 {
-    std::cout << "start ! LeptonSFApply  " << std::endl;
+    //std::cout << "start ! PUSFApply  " << std::endl;
      
-   evt_weight_beforePileup_ = 1;
-   evt_weight_beforePileup_ = evt_weight_; // keep event weight // 
-   double puweight_ = 1.;
-      
-   if ( !TString(FileName_).Contains( "Data") )
-   {  
-      double pu_weight_central = SSBCorr->GetPUWeight( **floatSingles["Pileup_nTrueInt"] , PileUpSys.Data() );
-      if (TString(PileUpSys).Contains("central") || TString(PileUpSys).Contains("nominal")  ) { puweight_   = pu_weight_central;}
-      else {  
-         std::cerr << "PUWeightApply Error... Defalut is Weight_PileUp ... : " << PileUpSys << std::endl;
-      }
-      evt_weight_ = evt_weight_*puweight_;  // apply PileUpReweight //
-   }  
-   else {evt_weight_ = 1;}
-    std::cout << "PileUp evt : " << evt_weight_ << " pu weight " << puweight_ << std::endl;
+    evt_weight_beforePileup_ = 1;
+    evt_weight_beforePileup_ = evt_weight_; // keep event weight // 
+    double puweight_ = 1.;
+       
+    if ( !TString(FileName_).Contains( "Data") )
+    {  
+       double pu_weight_central = SSBCorr->GetPUWeight( **floatSingles["Pileup_nTrueInt"] , PileUpSys.Data() );
+       if (TString(PileUpSys).Contains("central") || TString(PileUpSys).Contains("nominal")  ) { puweight_   = pu_weight_central;}
+       else {  
+          std::cerr << "PUWeightApply Error... Defalut is Weight_PileUp ... : " << PileUpSys << std::endl;
+       }
+       evt_weight_ = evt_weight_*puweight_;  // apply PileUpReweight //
+    }  
+    else {evt_weight_ = 1;}
+    //std::cout << "PileUp evt : " << evt_weight_ << " pu weight " << puweight_ << std::endl;
 }
+

@@ -6,17 +6,21 @@
 #include <correction.h>
 #include "TLorentzVector.h"
 #include <variant> 
+#include <TFile.h>
+#include <TH2D.h>
+#include <TString.h>
 
 
 using correction::CorrectionSet;
 using correction::CompoundCorrection;
 // Forward declarations
 class TextReader;
-/*
-namespace correction {
-    class Correction;
-}
-*/
+
+struct JetCorrectionOutput {
+    std::vector<TLorentzVector> corrected_jets;
+    TLorentzVector corrected_met;
+};
+
 // A utility class for loading and applying correctionlib-based
 // JEC, JER, and muon scale factors using configuration
 class SSBCorrections {
@@ -36,6 +40,37 @@ public:
 
     // Smear JER for a MC jet using hybrid method (with optional JER systematic variation)
     double SmearJER(double reco_pt, double gen_pt, double eta, double rho, const std::string& jer_tag = "nominal") const;
+/*    JetCorrectionOutput ApplyJetCorrections(
+    const std::vector<TLorentzVector>& raw_jets,
+    const TLorentzVector& original_met,
+    const std::vector<float>& rawFactors,
+    const std::vector<float>& etas,
+    const std::vector<float>& areas,
+    float rho,
+    bool isData,
+    bool applyJES,
+    bool applyJER) const;*/
+
+    // Reco/gen matching for JER hybrid smearing
+    float MatchGenPt(const TLorentzVector& reco_jet,
+                     const std::vector<TLorentzVector>& gen_jets,
+                     float maxDR = 0.2) const;
+
+    // Apply JES/JER corrections to jets and propagate to MET
+
+    JetCorrectionOutput ApplyJetCorrectionsWithMET(
+        const std::vector<TLorentzVector>& rawJets,
+        const std::vector<float>& rawFactors,
+        const std::vector<float>& areas,
+        float rho,
+        bool isData,
+        bool applyJES,
+        bool applyJER,
+        double raw_met_pt,
+        double raw_met_phi,
+        const std::vector<TLorentzVector>& genJets,
+        const std::vector<int>& genJetIndices
+    ) const;
 
     /*// Muon ID scale factor
     double GetMuonIDSF(double eta, double pt) const;
@@ -53,17 +88,32 @@ public:
     // Electron scale factor accessor
     float GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst = "sf") const;
 
-
+    double TrigDiMuon_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
+    double TrigDiElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
+    double TrigMuElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
 
     TLorentzVector RecomputeMET(double raw_met_pt, double raw_met_phi,
                                 const std::vector<TLorentzVector>& rawJets,
                                 const std::vector<TLorentzVector>& corrJets) const;
 
-    TLorentzVector BuildCorrectedJetWithJER(double raw_pt, double raw_mass, double eta, double phi,
-                                            double area, double rho, double gen_pt, const std::string& jer_tag) const;
+/*    TLorentzVector BuildCorrectedJetWithJER(double raw_pt, double raw_mass, double eta, double phi,
+                                            double area, double rho, double gen_pt, const std::string& jer_tag) const;*/
 
-    double GetCorrectedJetPt(double raw_pt, double eta, double area) const;
-    double GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area) const;
+//    double GetCorrectedJetPt(double raw_pt, double eta, double area) const;
+    double GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const;
+    double GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area, double rho) const;
+    TLorentzVector GetCorrectedJet(const TLorentzVector& raw_jet,
+                                float rawFactor, float eta, float area, float rho,
+                                int jet_index, int seed, bool isData,
+                                bool applyJES, bool applyJER) const;
+
+
+
+    TLorentzVector METXYCorrection(const TLorentzVector& type1_met,
+                                const std::string& era,
+                                bool isData,
+                                int npv) const;
+
 
 private:
     //std::shared_ptr<const correction::Correction> jec_;
@@ -73,6 +123,8 @@ private:
     //std::shared_ptr<const correction::Correction> jec_;
     //std::shared_ptr<const correction::CorrectionSet> c_jec_;
     std::string year_;
+    double GetTrgEff(double pt1, double pt2, TString Sys_);
+    TH2D* H_trig;
 
     std::shared_ptr<const correction::Correction> pu_weight_;
 
@@ -88,6 +140,8 @@ private:
     std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor
+
+    std::shared_ptr<const correction::Correction> metphi_corr_;
 };
 
 #endif  // SSBCORRECTIONS_H

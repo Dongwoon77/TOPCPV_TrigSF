@@ -108,6 +108,7 @@ private:
     void MakeElecCollection(); // Electron 
     void JetSelector(); // Jet
     void MakeJetCollection(); // Jet 
+    //void MakeGenJetCollection(); // Jet 
     bool JetCleaning(TLorentzVector* jet_);
     TLorentzVector JERSmearing(TLorentzVector* jet, int idx_, TString op_);
     void bJetSelector();
@@ -208,6 +209,7 @@ private:
     TTreeReaderArray<Float_t>* gen_jets_eta;
     TTreeReaderArray<Float_t>* gen_jets_phi;
     TTreeReaderArray<Float_t>* gen_jets_M;
+    //std::vector<TLorentzVector> genJets;
     bool dojer;
 
     // MET //
