@@ -35,7 +35,7 @@ cd SSBNanoAODANCode
 ### Compilation Instructions
 To compile the analysis program, use the provided `Makefile`:
 ```sh
-make -f Makefile
+make -f Makefile_ssb
 ```
 This will generate the executable **`ssb_analysis`**.
 
