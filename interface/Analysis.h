@@ -129,6 +129,7 @@ private:
 
     // Event Weight //
     void LeptonSFApply();
+    void TriggerSFApply();
 
     ////////////////////////////
     /// New Kinematic Solver ///
@@ -283,6 +284,7 @@ private:
     std::string PileUpDATAFile;
     TString PileUpSys;
     TString L1PreFireSys;
+    TString TrigSFSys;
 
     // PDF Systematic ... Getting the Num of PDF Set
     int PDFSys;

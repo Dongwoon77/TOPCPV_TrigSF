@@ -216,6 +216,7 @@ void Analysis::SetVariables() {
     dojer = SSBConfReader->GetBool("DoJER");
     
     PileUpSys = SSBConfReader->GetText("PileupSys");
+    TrigSFSys = SSBConfReader->GetText("TrigSFSys");
 
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
@@ -621,6 +622,7 @@ void Analysis::Loop() {
         if (DiLeptonMassCut() == false) {continue;}
 
         LeptonSFApply();
+        TriggerSFApply();
 
         /// Step 1 ///
         //std::cout << "? evet weight " << evt_weight_ << std::endl;
@@ -2267,11 +2269,11 @@ void Analysis::SetUpKINObs()
 }
 void Analysis::LeptonSFApply()
 {
-    std::cout << "start ! LeptonSFApply  " << std::endl;
+    //std::cout << "start ! LeptonSFApply  " << std::endl;
     lep_sf = 1.0;
     
     if (TString(Decaymode).Contains("dimuon")) {
-        std::cout << "dimuon case !" << std::endl;
+        //std::cout << "dimuon case !" << std::endl;
         lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
     //    std::cout << "lep_sf " << lep_sf << std::endl;
     }
@@ -2312,3 +2314,28 @@ void Analysis::PUWeightApply()
     //std::cout << "PileUp evt : " << evt_weight_ << " pu weight " << puweight_ << std::endl;
 }
 
+void Analysis::TriggerSFApply()
+{        
+    double triggersf_ = 1.0;
+
+    evt_weight_beforeTrigger_ = evt_weight_;  // Store weight before applying Trigger SF
+
+    if (!TString(FileName_).Contains("Data")) {
+        // Apply MC trigger scale factors based on decay mode
+        if (TString(Decaymode).Contains("dielec")) {
+            triggersf_ = SSBCorr->TrigDiElec_Eff(Lep1, Lep2, TrigSFSys);
+        }
+        else if (TString(Decaymode).Contains("muel")) {
+            triggersf_ = SSBCorr->TrigMuElec_Eff(Lep1, Lep2, TrigSFSys);
+        }
+        else if (TString(Decaymode).Contains("dimu")) {
+            triggersf_ = SSBCorr->TrigDiMuon_Eff(Lep1, Lep2, TrigSFSys);
+        }
+        else {
+            std::cerr << "[TriggerSFApply] WARNING: Unknown Decaymode = " << Decaymode << std::endl;
+        }
+
+        evt_weight_ *= triggersf_;  // Apply the trigger scale factor
+    }
+    // For Data, no correction is applied
+}

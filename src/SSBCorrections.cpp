@@ -15,12 +15,27 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     std::cout << "TextReader in SSBCorrections ! " << std::endl;
     std::cout << "Current directory: " << std::filesystem::current_path() << std::endl;
     reader->PrintoutVariables();
-    std::string jsonDir = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
+
+    std::string jsonDir;// = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
+    const std::string cvmfsPath = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/";
+    if (std::filesystem::exists(cvmfsPath)) {
+        std::cout << "[INFO] Using CVMFS path for JSONs: " << cvmfsPath << std::endl;
+        jsonDir = cvmfsPath;
+    } else {
+        std::string localPath = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
+        std::cout << "[WARNING] CVMFS path not found. Falling back to local path: " << localPath << std::endl;
+        jsonDir = localPath;
+    }
+
+//    std::string jsonDir = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
 
     std::string puw_path     = reader->GetText("PUWeightPath");
     std::string jec_path     = reader->GetText("JECPath");
     std::string jer_path     = reader->GetText("JERPath");
     std::string jer_sf_path  = reader->GetText("JERSFPath");
+    std::string jec_name     = reader->GetText("JECName");
+    std::string jer_name     = reader->GetText("JERName");
+    std::string jer_res_name = reader->GetText("JERResName");
     std::string muon_path    = reader->GetText("MuonSFPath");
     std::string elec_path    = reader->GetText("ElecSFPath");
     std::string RunPeriod    = reader->GetText("RunRange");
@@ -65,13 +80,14 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
 
 
     auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
-    jec_ = jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
+    //jec_ = jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
+    jec_ = jec_set->compound().at(jec_name);
 
     auto jer_set = correction::CorrectionSet::from_file(jsonDir + jer_path);
-    jer_ = jer_set->at("Summer20UL16APV_JRV3_MC_PtResolution_AK4PFchs");
+    jer_ = jer_set->at(jer_res_name);
 
     auto jer_sf_set = correction::CorrectionSet::from_file(jsonDir + jer_sf_path);
-    jer_sf_ = jer_sf_set->at("Summer20UL16APV_JRV3_MC_ScaleFactor_AK4PFchs");
+    jer_sf_ = jer_sf_set->at(jer_name);
 
     // Load muon SF
     //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
@@ -102,24 +118,11 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     //std::cout << "sk ele 1 ele_sf_name_ : " << ele_sf_name_ << std::endl;
     ele_sf_ = cset->at(ele_sf_name_);
     //std::cout << "sk ele 2 ele_reco_sf_name_: " << ele_reco_sf_name_ << std::endl;
-    TFile *f_trg     = new TFile(Trig_sf_name_.c_str());
+    std::string TrigSFPath = std::filesystem::current_path().string() + "/CorrectionFiles/Trig/";
+    TFile *f_trg     = new TFile((TrigSFPath+Trig_sf_name_).c_str());
     H_trig = (TH2D*) f_trg->Get(Trig_sf_histname_.c_str()); 
+}
 
-}
-/*
-double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area) const {
-    std::cout << "in GetCorrectedJetPt raw_pt : " << raw_pt << " eta " << eta << " area : " << area << std::endl;
-    std::cout << "Inputs for JEC correction:" << std::endl;
-for (const auto& input : jec_->inputs()) {
-    std::cout << " - " << input.name() << std::endl;
-}
-    //double sf = jec_->evaluate({eta, raw_pt, area});
-    double sf = jec_->evaluate({eta, raw_pt});
-    std::cout << "sf in GetCorrectedJetPt : "<< sf << std::endl; 
-    //double sf = jec_->evaluate({raw_pt,eta});
-    return raw_pt * sf;
-}
-*/
 double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const {
     //std::cout << "in GetCorrectedJetPt raw_pt : " << raw_pt
     //          << " eta " << eta << " area : " << area << " rho : " << rho << std::endl;
@@ -205,8 +208,8 @@ double SSBCorrections::DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector l
     float abseta1 = std::abs(lep1.Eta());
     float abseta2 = std::abs(lep2.Eta());
 
-    std::cout << "muidsys : " << muidsys << std::endl;
-    std::cout << "muisosys : " << muisosys << std::endl;
+    //std::cout << "muidsys : " << muidsys << std::endl;
+    //std::cout << "muisosys : " << muisosys << std::endl;
 
     std::string IDSyst = "nominal", IsoSyst = "nominal";
 
@@ -222,6 +225,7 @@ double SSBCorrections::DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector l
     double mu1iso = GetMuonIsoSF(pt1, abseta1, IsoSyst);
     double mu2iso = GetMuonIsoSF(pt2, abseta2, IsoSyst);
 
+    // track SF is 1.0, so you don't need to apply them... 
     double mu1trk =1.0;// TrackSF(lep1->Eta());
     double mu2trk =1.0;// TrackSF(lep2->Eta());
 /*
@@ -322,149 +326,6 @@ float SSBCorrections::MatchGenPt(const TLorentzVector& reco_jet,
     }
     return matched_genpt;
 }
-
-// Apply JES and JER corrections to jets, then recompute MET accordingly
-/*JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
-    const std::vector<TLorentzVector>& rawJets,
-    const std::vector<float>& rawFactors,
-    const std::vector<float>& areas,
-    float rho,
-    bool isData,
-    bool applyJES,
-    bool applyJER,
-    double raw_met_pt,
-    double raw_met_phi,
-    const std::vector<TLorentzVector>& genJets  // Gen-level jets for hybrid smearing
-) const {
-    std::vector<TLorentzVector> correctedJets;
-    std::vector<TLorentzVector> rawJetsWithRawPt;
-    correctedJets.reserve(rawJets.size());
-    rawJetsWithRawPt.reserve(rawJets.size());
-
-    for (size_t i = 0; i < rawJets.size(); ++i) {
-        double eta  = rawJets[i].Eta();
-        double phi  = rawJets[i].Phi();
-        double mass = rawJets[i].M() * (1.0 - rawFactors[i]);
-        double raw_pt = rawJets[i].Pt() * (1.0 - rawFactors[i]);
-
-        // Apply Jet Energy Scale correction
-        if (applyJES) {
-            raw_pt = GetCorrectedJetPt(raw_pt, eta, areas[i]);
-            mass   = GetCorrectedJetMass(mass, raw_pt, eta, areas[i]);
-        }
-
-        // Apply Jet Energy Resolution smearing (only for MC)
-        if (!isData && applyJER) {
-            float matched_genpt = MatchGenPt(rawJets[i], genJets, 0.2);  // ΔR < 0.2
-            raw_pt = SmearJER(raw_pt, matched_genpt, eta, rho, "nominal");
-        }
-
-        // Build the corrected jet
-        TLorentzVector corrected;
-        corrected.SetPtEtaPhiM(raw_pt, eta, phi, mass);
-        correctedJets.push_back(corrected);
-
-        // Rebuild raw jet using raw pt for MET recomputation
-        TLorentzVector raw_rebuilt;
-        raw_rebuilt.SetPtEtaPhiM(rawJets[i].Pt() * (1.0 - rawFactors[i]), eta, phi, mass);
-        rawJetsWithRawPt.push_back(raw_rebuilt);
-    }
-
-    // Propagate the jet corrections to MET
-    TLorentzVector correctedMET = RecomputeMET(raw_met_pt, raw_met_phi, rawJetsWithRawPt, correctedJets);
-
-    JetCorrectionOutput result;
-    result.corrected_jets = correctedJets;
-    result.corrected_met = correctedMET;
-    return result;
-}
-*/
-
-// Apply JES and JER corrections to jets, then recompute MET accordingly
-/*JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
-    const std::vector<TLorentzVector>& rawJets,
-    const std::vector<float>& rawFactors,
-    const std::vector<float>& areas,
-    float rho,
-    bool isData,
-    bool applyJES,
-    bool applyJER,
-    double raw_met_pt,
-    double raw_met_phi,
-    const std::vector<TLorentzVector>& genJets
-) const {
-    std::vector<TLorentzVector> correctedJets;
-    std::vector<TLorentzVector> rawJetsRebuilt;
-
-    correctedJets.reserve(rawJets.size());
-    rawJetsRebuilt.reserve(rawJets.size());
-
-    std::cout << "ApplyJetCorrectionsWithMET step1 " << std::endl;
-    for (size_t i = 0; i < rawJets.size(); ++i) {
-        double eta  = rawJets[i].Eta();
-        double phi  = rawJets[i].Phi();
-        std::cout << "ApplyJetCorrectionsWithMET step1-1 " << std::endl;
-
-        // Reconstruct raw pt and mass from rawFactor
-        double raw_pt   = rawJets[i].Pt()   * (1.0 - rawFactors[i]);
-        double raw_mass = rawJets[i].M()    * (1.0 - rawFactors[i]);
-        std::cout << "ApplyJetCorrectionsWithMET step1-2 " << std::endl;
-
-        // Rebuild the raw jet (used for MET correction)
-        TLorentzVector raw_jet;
-        raw_jet.SetPtEtaPhiM(raw_pt, eta, phi, raw_mass);
-        rawJetsRebuilt.push_back(raw_jet);
-        std::cout << "ApplyJetCorrectionsWithMET step1-3 " << std::endl;
-
-        double corrected_pt   = raw_pt;
-        double corrected_mass = raw_mass;
-
-        std::cout << "corrected_pt : " << corrected_pt << std::endl;
-        std::cout << "corrected_mass : " << corrected_mass << std::endl;
-        std::cout << "applyJES : " << applyJES << std::endl;
-        // Apply Jet Energy Scale (JES) correction
-        if (applyJES) {
-        std::cout << "start ! ApplyJetCorrectionsWithMET step1-4-applyJES " << std::endl;
-        std::cout << "raw_pt " << raw_pt << " eta " << eta << " areas " << areas[i]  << std::endl;
-          
-            corrected_pt   = GetCorrectedJetPt(raw_pt, eta, areas[i], rho);
-        std::cout << "raw_mass " << raw_mass << std::endl;
-            corrected_mass = GetCorrectedJetMass(raw_mass, raw_pt, eta, areas[i], rho);
-        std::cout << "after raw_mass " << raw_mass << std::endl;
-        }
-        std::cout << "2-corrected_pt : " << corrected_pt << std::endl;
-        std::cout << "2-corrected_mass : " << corrected_mass << std::endl;
-
-        // Apply Jet Energy Resolution (JER) smearing — only for MC
-        if (!isData && applyJER) {
-            float matched_genpt = MatchGenPt(rawJets[i], genJets, 0.2);  // DeltaR matching
-            corrected_pt = SmearJER(corrected_pt, matched_genpt, eta, rho, "nominal");
-            std::cout << "ApplyJetCorrectionsWithMET step1-4-applyJER " << std::endl;
-        }
-
-        // Optionally scale mass to match new pt/pT ratio
-        if (raw_pt > 0) {
-            corrected_mass *= (corrected_pt / raw_pt);
-        std::cout << "ApplyJetCorrectionsWithMET step1-4-applyJetMass " << std::endl;
-        }
-
-        // Construct final corrected jet
-        TLorentzVector corr_jet;
-        corr_jet.SetPtEtaPhiM(corrected_pt, eta, phi, corrected_mass);
-        std::cout << "ApplyJetCorrectionsWithMET step1-5" << std::endl;
-        correctedJets.push_back(corr_jet);
-    }
-
-        std::cout << "ApplyJetCorrectionsWithMET step2" << std::endl;
-    // Type-1 MET correction: subtract (rawJets - correctedJets) from raw MET
-    TLorentzVector correctedMET = RecomputeMET(raw_met_pt, raw_met_phi, rawJetsRebuilt, correctedJets);
-        std::cout << "ApplyJetCorrectionsWithMET step3" << std::endl;
-
-    JetCorrectionOutput result;
-    result.corrected_jets = correctedJets;
-    result.corrected_met = correctedMET;
-    return result;
-}*/
 
 JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     const std::vector<TLorentzVector>& rawJets,
@@ -602,6 +463,7 @@ double SSBCorrections::TrigMuElec_Eff(TLorentzVector lep1, TLorentzVector lep2, 
 double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
     // Clamp values below the histogram max range (assumed 500)
     double max_pt = 499.999;
+
     pt1 = std::min(pt1, max_pt);
     pt2 = std::min(pt2, max_pt);
 
@@ -611,7 +473,8 @@ double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
     double trgsf = H_trig->GetBinContent(xbin, ybin);
     double trgsferr = 0.0;
 
-    if (Sys_ == "Up" || Sys_ == "up")
+    if (Sys_ == "nominal" || Sys_ == "Central") {trgsferr = 0.0;}
+    else if (Sys_ == "Up" || Sys_ == "up")
         trgsferr = H_trig->GetBinError(xbin, ybin);
     else if (Sys_ == "Down" || Sys_ == "down")
         trgsferr = -H_trig->GetBinError(xbin, ybin);
