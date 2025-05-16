@@ -77,7 +77,7 @@ int main(int argc, char **argv)
     //int *runPeriod = argv[5];
     int maxEvt = std::stoi(argv[6]);
 
-    printf("Run period = %d\n", maxEvt);
+    printf("Max Events = %d\n", maxEvt);
     
     //merge files
     FILE *filelist;
