@@ -28,7 +28,7 @@ make -f Makefile_ssb
 ### Cloning the Repository
 To get started, clone the repository from GitHub and check out the required branch:
 ```sh
-git clone --branch Run2_ULSummer20_v3 https://github.com/physicist87/SSBNanoAODANCode.git
+git clone --branch Run2_ULSummer20_v5 https://github.com/physicist87/SSBNanoAODANCode.git
 cd SSBNanoAODANCode
 ```
 
@@ -67,23 +67,25 @@ Where:
 - **`runPeriod`**: Specifies the data-taking period (e.g., `UL2016PreVFP`, `UL2017`, `UL2018`).
 - **`StudyName`**: Defines the study version (e.g., `Testv1`).
 - **`Channels`**: The physics channel being analyzed:
-  - `MuMu` → Dimuon channel
-  - `ElEl` → Dielectron channel
-  - `MuEl` → Muon-electron channel
+  - `MuMu` → Dimuon channel -> Configfile : dimuon.config
+  - `ElEl` → Dielectron channel -> Configfile: dielec.config
+  - `MuEl` → Muon-electron channel -> Configfile: muelec.config
 - **`input_list`**: The dataset file (e.g., `input/UL2016PreVFP/TTbar_Signal_1.list`).
 
 ### Example Execution Commands
 For a dimuon analysis in UL2016 PreVFP:
 ```sh
-./ssb_analysis UL2016PreVFP Testv1 MuMu input/UL2016PreVFP/TTbar_Signal_1.list
+./ssb_analysis "${runPeriod}/TTbar_Signal/${i}.list" "${StudyName}/${runPeriod}/${Channels}/TTbar_Signal/${i}.root" "ULSummer20/UL2016PreVFP/dimuon.config" "None" ${runPeriod} -1
 ```
 For a dielectron analysis in UL2017:
 ```sh
 ./ssb_analysis UL2017 StudyX ElEl input/UL2016PreVFP/TTbar_Signal_1.list
+./ssb_analysis "${runPeriod}/TTbar_Signal/${i}.list" "${StudyName}/${runPeriod}/${Channels}/TTbar_Signal/${i}.root" "ULSummer20/UL2016PreVFP/dielec.config" "None" ${runPeriod} -1
 ```
 For a muon-electron analysis in UL2018:
 ```sh
-./ssb_analysis UL2018 AnalysisA MuEl input/UL2016PreVFP/TTbar_Signal_1.list
+./ssb_analysis "${runPeriod}/TTbar_Signal/${i}.list" "${StudyName}/${runPeriod}/${Channels}/TTbar_Signal/${i}.root" "ULSummer20/UL2016PreVFP/muelec.config" "None" ${runPeriod} -1
+
 ```
 
 ### Running a Check
