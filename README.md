@@ -8,6 +8,9 @@ This repository contains code for analyzing CMS NanoAOD data using the SSB frame
 
 This project uses [correctionlib](https://cms-nanoaod.github.io/correctionlib/) for JEC, JER, and lepton scale factor corrections.
 
+The current packages utilize correctionlib, and if you are using ROOT through CMSSW, the following procedures are not necessary.
+You can simply install it by using a release like CMSSW_13_x_x.
+
 The Makefile is configured to automatically detect the appropriate correctionlib installation using the following priority:
 
 1. **Environment Variables**:  
