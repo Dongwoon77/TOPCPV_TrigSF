@@ -11,10 +11,11 @@
 
 
 
-SSBCorrections::SSBCorrections(TextReader* reader) {
+SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileName) {
     std::cout << "TextReader in SSBCorrections ! " << std::endl;
     std::cout << "Current directory: " << std::filesystem::current_path() << std::endl;
     reader->PrintoutVariables();
+
 
     std::string jsonDir;// = std::filesystem::current_path().string() + "/jsonpog-integration/POG/";
     const std::string cvmfsPath = "/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/";
@@ -52,7 +53,8 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
     // Trigger SF // 
     std::string Trig_sf_name_      = reader->GetText( "TrigSFFile"  );  
     std::string Trig_sf_histname_  = reader->GetText( "TrigSFHist"  );  
-    
+
+    //if inputfileName    
 
     if (RunPeriod.find("2016PreVFP") != std::string::npos) {
         year_ = "2016preVFP";
@@ -72,6 +74,37 @@ SSBCorrections::SSBCorrections(TextReader* reader) {
         std::cerr << "[SSBCorrections] Unknown RunPeriod: " << RunPeriod << std::endl;
         year_ = "2018"; // fallback or throw error
     }
+
+
+    bool is_data = inputfileName.find("Data") != std::string::npos;
+
+std::string era = "Unknown";
+
+if (is_data) {
+    // For data: extract year and era from the input file name, e.g. "Run2016F-HIPM"
+    size_t run_pos = inputfileName.find("Run");
+    if (run_pos != std::string::npos && run_pos + 7 <= inputfileName.size()) {
+        // Extract year: 4 digits following "Run"
+        std::string year_digits = inputfileName.substr(run_pos + 3, 4); // e.g., "2016", "2017"
+
+        // Extract era: characters immediately after "RunYYYY"
+        era = inputfileName.substr(run_pos + 7); // e.g., "B", "F-HIPM"
+        size_t delim = era.find_first_of("._/");
+        if (delim != std::string::npos) {
+            era = era.substr(0, delim); // Trim suffix after era
+        }
+    }
+} else {
+    // For MC: use the RunPeriod directly (e.g., "2016PreVFP", "2016PostVFP", "2017", "2018")
+    era = "MC";  // Dummy placeholder; era is not needed for MC in most JEC logic
+}
+
+    std::cout << "era : " << era <<  std::endl;
+    std::cout << "jec_name: " << jec_name << std::endl; 
+    jec_name = ExpandJECName(jec_name, era, is_data); 
+    std::cout << "after ExpandJECName jec_name: " << jec_name << std::endl; 
+    
+
 
     std::cout << "jsonDir + puw_path : " << jsonDir + puw_path << std::endl;
     auto puset = correction::CorrectionSet::from_file(jsonDir + puw_path);
@@ -480,4 +513,76 @@ double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
         trgsferr = -H_trig->GetBinError(xbin, ybin);
 
     return trgsf + trgsferr;
+}
+
+std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, const std::string& era, bool is_data) {
+    //  "Summer19UL16_v7" -> prefix = "Summer19UL16", version = "7"
+    size_t pos = base_jec_name.find("_V");
+    if (pos == std::string::npos) {
+        std::cerr << "[ERROR] Invalid jec_name format: " << base_jec_name << std::endl;
+        return base_jec_name; // fallback
+    }
+
+    std::string prefix = base_jec_name.substr(0, pos);             // "Summer19UL16"
+    std::string version = base_jec_name.substr(pos + 2);           // "7"
+    std::string suffix = "_L1L2L3Res_AK4PFchs";
+
+    std::string expanded = prefix;  // prefix
+
+    // Year-specific logic
+    if (prefix.find("UL16") != std::string::npos) {
+        if (is_data) {
+            if (era == "B" || era == "C" || era == "D") {
+                expanded += "APV_RunBCD";
+            } else if (era == "E") {
+                expanded += "APV_RunEF";
+            } else if (era.find("F") == 0) {
+                expanded += "_RunF";
+            } else if (era == "G" || era == "H") {
+                expanded += "_RunGH";
+            } else {
+                expanded += "_RunFGH";  // fallback
+            }
+        } else {
+            expanded += (era == "B" || era == "C" || era == "D" || era == "E") ? "APV" : "";
+        }
+    } else if (prefix.find("UL17") != std::string::npos) {
+        if (is_data) {
+            if (era == "B" ) {
+                expanded += "_RunB";
+            } else if (era == "C") {
+                expanded += "_RunC";
+            } else if (era == "D" ) {
+                expanded += "_RunD";
+            } else if (era == "E") {
+                expanded += "_RunE";
+            } else if (era == "F") {
+                expanded += "_RunF"; 
+            } else {
+                expanded += "_RunB"; 
+            }
+        
+        }
+    } else if (prefix.find("UL18") != std::string::npos) {
+        if (is_data) {
+            if (era == "A" ) {
+                expanded += "_RunA";
+            } else if (era == "B") {
+                expanded += "_RunB";
+            } else if (era == "C" ) {
+                expanded += "_RunC";
+            } else if (era == "D") {
+                expanded += "_RunD";
+            } else {
+                expanded += "_RunB"; 
+            }
+        }
+    }
+
+    // Add version and data/MC tag
+    expanded += "_V" + version + "_";
+    expanded += is_data ? "DATA" : "MC";
+    expanded += suffix;
+
+    return expanded;
 }

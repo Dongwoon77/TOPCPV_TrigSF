@@ -21,7 +21,7 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     SSBConfReader->ReadFile(confpath);
     SSBConfReader->ReadVariables();
     SSBConfReader->PrintoutVariables();
-    SSBCorr = new SSBCorrections(SSBConfReader);
+    SSBCorr = new SSBCorrections(SSBConfReader, FileName_.Data());
     // Initialize branches based on branch list file
     InitBranches(branchListFile);
     cutflowName[0] = "Step_0";

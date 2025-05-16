@@ -26,8 +26,8 @@ struct JetCorrectionOutput {
 class SSBCorrections {
 public:
     // Constructor using a configuration reader (TextReader)
-    explicit SSBCorrections(TextReader* reader);
-
+    explicit SSBCorrections(TextReader* reader, const std::string inputfileName);
+    std::string ExpandJECName(const std::string& base_jec_name, const std::string& era, bool is_data);
     // Get PU weight for a given nTrueInt and variation
     float GetPUWeight(float nTrueInt, const std::string& variation = "nominal") const;
 
