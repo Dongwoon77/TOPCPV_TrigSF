@@ -54,6 +54,7 @@ private:
     std::string outdir;
     TTreeReader fReader;
     TFile *fout;
+    bool isData;
     //TextReader from Jaehoon.
     TextReader *SSBConfReader;
     SSBCorrections *SSBCorr;

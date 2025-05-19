@@ -11,6 +11,7 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
         throw std::runtime_error("Error: Invalid TChain pointer!");
     }
     FileName_ = SetInputFileName(inputName);
+    isData = TString(FileName_).Contains("Data");
     std::cout << "FileName_ : " << FileName_ << std::endl;
     // Load Configuration files //
     std::cout << "configFile : " << configFile << std::endl;  
@@ -102,7 +103,9 @@ void Analysis::InitBranches(const std::string &branchListFile) {
             trim(objectType);
             trim(dataType);
             trim(varType);
-
+	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
+	    if (isData && branchName.find("gen") != std::string::npos) {continue;}
+	    if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
             // Initialize based on data type and variable type
             if (dataType == "Bool_t" && varType == "single") {
                 boolSingles[branchName] = std::make_unique<TTreeReaderValue<Bool_t>>(fReader, branchName.c_str());
@@ -167,6 +170,7 @@ void Analysis::SetVariables() {
     }
 
     for (int i = 0; i < trigName.size(); ++i){
+	std::cout << "test trigName[i] " << trigName[i] << std::endl;
         triggerList[trigName[i]] =DeepCopy<bool>( boolSingles[trigName[i]]);
     }
 
@@ -413,6 +417,13 @@ void Analysis::SetObjectVariable() {
     jets_Id = intVectors["Jet_jetId"].get();
     jets_puId = intVectors["Jet_puId"].get();// for Run 2 50 GeV Jets have to pass PUID //
 
+    if (!isData){ 
+        gen_jets_pt  = floatVectors["Gen_Jet_pt"].get();
+        gen_jets_eta = floatVectors["Gen_Jet_eta"].get();
+        gen_jets_phi = floatVectors["Gen_Jet_phi"].get();
+        gen_jets_M   = floatVectors["Gen_Jet_mass"].get();
+    }
+
     if (RunPeriod.Contains("2016")) {
         if      (JetId == "PFLoose") { jet_id = 1; } // Loose ID
         else if (JetId == "PFTight") { jet_id = 3; } // Loose + Tight ID
@@ -573,7 +584,6 @@ void Analysis::Loop() {
     MCSF();
 
     for (Long64_t ientry = 0; ientry < ((NumEvt == -1 || NumEvt > nEntries) ? nEntries : NumEvt); ++ientry) {
-    // 루프 내용
 
 
         if (!fReader.Next()) { // Move to the next entry
@@ -788,9 +798,18 @@ void Analysis::Loop() {
 
 
 template <typename T>
-std::unique_ptr<TTreeReaderValue<T>> Analysis::DeepCopy(const std::unique_ptr<TTreeReaderValue<T>>& src) {                       
-    return std::make_unique<TTreeReaderValue<T>>(*src);                                                                             
+std::unique_ptr<TTreeReaderValue<T>> Analysis::DeepCopy(const std::unique_ptr<TTreeReaderValue<T>>& src) {
+    if (src) {
+        // If source pointer is valid, make a deep copy
+        return std::make_unique<TTreeReaderValue<T>>(*src);
+    } else {
+	std::cerr << "no source !!! "  << std::endl;
+        // If source is nullptr, return nullptr
+        return nullptr;
+    }
 }
+
+
 
 std::string Analysis::removeSubstring(std::string &str, const std::string &keyword) {
     size_t pos = str.find(keyword);  // find specific keyword ! 
@@ -1468,12 +1487,14 @@ void Analysis::MakeJetCollection() {
         }
     }
 
-    if (gen_jets_pt && gen_jets_eta && gen_jets_phi && gen_jets_M) {
-        Int_t nGenJets = gen_jets_pt->GetSize();
-        for (int i = 0; i < nGenJets; ++i) {
-            TLorentzVector gj;
-            gj.SetPtEtaPhiM(gen_jets_pt->At(i), gen_jets_eta->At(i), gen_jets_phi->At(i), gen_jets_M->At(i));
-            genJets.push_back(gj);
+    if(!isData){
+        if (gen_jets_pt && gen_jets_eta && gen_jets_phi && gen_jets_M) {
+            Int_t nGenJets = gen_jets_pt->GetSize();
+            for (int i = 0; i < nGenJets; ++i) {
+                TLorentzVector gj;
+                gj.SetPtEtaPhiM(gen_jets_pt->At(i), gen_jets_eta->At(i), gen_jets_phi->At(i), gen_jets_M->At(i));
+                genJets.push_back(gj);
+            }
         }
     }
 
@@ -2096,7 +2117,7 @@ void Analysis::GenWeightApply()
 {    
     //std::cout << "start GenWieghtApply !!" << std::endl; 
     double genweight = 1.0;
-    if ( !TString(FileName_).Contains( "Data") ){
+    if (!isData){
         if (**floatSingles["Generator_weight"] > 0.0){genweight =1;}
         else {genweight =-1;}
         evt_weight_ = evt_weight_*genweight;
