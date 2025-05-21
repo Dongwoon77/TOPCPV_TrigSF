@@ -41,6 +41,7 @@ int main(int argc, char **argv)
        printf("4. SE directory output name\n");
        printf("5. RunPeriod\n");
        printf("6. Max Number Events\n");
+       printf("7. Brach List\n");
     
 /*       printf("4. Muon Candidate Eta Cut On or Off\n");
        printf("5. Muon Candidate Eta Cut \n");
@@ -76,8 +77,11 @@ int main(int argc, char **argv)
 
     //int *runPeriod = argv[5];
     int maxEvt = std::stoi(argv[6]);
-
     printf("Max Events = %d\n", maxEvt);
+
+    char *brachList = argv[7];
+    printf("Brach List File = %s\n", brachList);
+
     
     //merge files
     FILE *filelist;
@@ -98,15 +102,15 @@ int main(int argc, char **argv)
     std::vector<double> entries_pertree;
     
     entries_pertree.clear();
-    
-    while(filelist==NULL)
+    if(filelist == NULL) {std::cout << "no filelist " << filelistPath<< std::endl; return 0;} 
+    /*while(filelist==NULL)
     {
        cout << "File not found, please try again." << endl;
        cout << "Filelist you want to use: " << filelistDir;
        cin >> filelistName;      
        filelistPath = filelistDir + filelistName;
        filelist=fopen(filelistPath.c_str(),"r");
-    }
+    }*/
     
 //    TChain *chgen = new TChain("demo/SSBGenTree");
     //TChain *ch    = new TChain("ssbanalyzer/NanoAODTree"   );
@@ -125,7 +129,7 @@ int main(int argc, char **argv)
     cout << "Total number of events after merging root files: " << ch->GetEntries() << endl;
 
     // 
-    Analysis analysis(ch, filelistName, sedirname, outname, "./branchlist/branch_list.txt", confname, maxEvt);
+    Analysis analysis(ch, filelistName, sedirname, outname, Form("./branchlist/%s", brachList), confname, maxEvt);
 
     analysis.SetVariables();
     // Execute Loop function //
