@@ -1606,14 +1606,17 @@ void Analysis::JetSelector()
 */
     Int_t nJets = jets_pt->GetSize();
 //    std::cout << "Number of jets to process: " << nJets << std::endl;
-
     // Process all jets
     for (int i = 0; i < nJets; i++)
     {
         // Get basic kinematic properties
-        float jetPt = jets_pt->At(i);
-        float jetEta = jets_eta->At(i);
+        //float jetPt = jets_pt->At(i);
+        //float jetEta = jets_eta->At(i);
 
+        // Apply jet cleaning using a copy of the jet
+        TLorentzVector jetVec = pre_jets[i];
+	float jetPt = jetVec.Pt();
+	float jetEta = jetVec.Eta();
         // Apply kinematic cuts first (efficiency)
         if (!passKinematicCuts(jetPt, jetEta)) {
             continue;
@@ -1641,12 +1644,10 @@ void Analysis::JetSelector()
             continue;
         }
 
-        // Apply jet cleaning using a copy of the jet
-        TLorentzVector jetVec = pre_jets[i];
         if (!JetCleaning(&jetVec)) {
             continue;  // Skip this jet if it overlaps with any lepton
         }
-
+/*
         // Optionally apply JER smearing for MC
         if (!TString(FileName_).Contains("Data") && dojer) {
             try {
@@ -1656,7 +1657,7 @@ void Analysis::JetSelector()
                 std::cerr << "Error in JER smearing: " << e.what() << std::endl;
                 // Continue with unsmeared jet
             }
-        }
+        }*/
 
         // Add to selected jets
         v_jet_idx.push_back(i);
