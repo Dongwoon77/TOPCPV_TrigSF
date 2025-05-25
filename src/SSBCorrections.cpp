@@ -78,30 +78,30 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
 
     bool is_data = inputfileName.find("Data") != std::string::npos;
 
-std::string era = "Unknown";
+    std::string era = "Unknown";
 
-if (is_data) {
-    // For data: extract year and era from the input file name, e.g. "Run2016F-HIPM"
-    size_t run_pos = inputfileName.find("Run");
-    if (run_pos != std::string::npos && run_pos + 7 <= inputfileName.size()) {
-        // Extract year: 4 digits following "Run"
-        std::string year_digits = inputfileName.substr(run_pos + 3, 4); // e.g., "2016", "2017"
+    if (is_data) {
+   	 // For data: extract year and era from the input file name, e.g. "Run2016F-HIPM"
+    	size_t run_pos = inputfileName.find("Run");
+    	if (run_pos != std::string::npos && run_pos + 7 <= inputfileName.size()) {
+        	// Extract year: 4 digits following "Run"
+        	std::string year_digits = inputfileName.substr(run_pos + 3, 4); // e.g., "2016", "2017"
 
-        // Extract era: characters immediately after "RunYYYY"
-        era = inputfileName.substr(run_pos + 7); // e.g., "B", "F-HIPM"
-        size_t delim = era.find_first_of("._/");
-        if (delim != std::string::npos) {
-            era = era.substr(0, delim); // Trim suffix after era
-        }
+        	// Extract era: characters immediately after "RunYYYY"
+        	era = inputfileName.substr(run_pos + 7); // e.g., "B", "F-HIPM"
+        	size_t delim = era.find_first_of("._/");
+        	if (delim != std::string::npos) {
+            		era = era.substr(0, delim); // Trim suffix after era
+        	}
+    	}
+    } else {
+        // For MC: use the RunPeriod directly (e.g., "2016PreVFP", "2016PostVFP", "2017", "2018")
+       era = "MC";  // Dummy placeholder; era is not needed for MC in most JEC logic
     }
-} else {
-    // For MC: use the RunPeriod directly (e.g., "2016PreVFP", "2016PostVFP", "2017", "2018")
-    era = "MC";  // Dummy placeholder; era is not needed for MC in most JEC logic
-}
 
     std::cout << "era : " << era <<  std::endl;
     std::cout << "jec_name: " << jec_name << std::endl; 
-    jec_name = ExpandJECName(jec_name, era, is_data); 
+    jec_name = ExpandJECName(jec_name, RunPeriod, era, is_data); 
     std::cout << "after ExpandJECName jec_name: " << jec_name << std::endl; 
     
 
@@ -113,7 +113,6 @@ if (is_data) {
 
 
     auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
-    //jec_ = jec_set->compound().at("Summer19UL16APV_V7_MC_L1L2L3Res_AK4PFchs");
     jec_ = jec_set->compound().at(jec_name);
 
     auto jer_set = correction::CorrectionSet::from_file(jsonDir + jer_path);
@@ -125,28 +124,14 @@ if (is_data) {
     // Load muon SF
     //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
     std::cout << "jsonDir+muon_path " << jsonDir+muon_path << std::endl; 
-    //muon_id_sf_  = muon_set->at("NUM_TightID_DEN_TrackerMuons_abseta_pt");
-    //muon_iso_sf_ = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt");
-    //muon_reco_ = muon_set->at("NUM_TrackerMuons_DEN_genTracks");
-    //muon_id_   = muon_set->at("NUM_TightID_DEN_TrackerMuons");
-    //muon_iso_  = muon_set->at("NUM_TightRelIso_DEN_TightID");
-
     auto muon_set = correction::CorrectionSet::from_file(jsonDir + muon_path);
-
-    //muon_reco_ = muon_set->at("NUM_TightID_DEN_TrackerMuons");
-    //std::string muon_id_corName = "";
-    //std::string muon_iso_corName = "";
 
     std::cout << "muon_id_corName : " << muon_id_corName << std::endl;
     std::cout << "muon_iso_corName : " << muon_iso_corName << std::endl;
-    //muon_id_   = muon_set->at("NUM_TightID_DEN_TrackerMuons");
-    //muon_iso_  = muon_set->at("NUM_TightRelIso_DEN_TightIDandIPCut");
 
     muon_id_   = muon_set->at(muon_id_corName);
     muon_iso_  = muon_set->at(muon_iso_corName);
-    //std::string path = "jsonpog-integration/POG/EGM/" + year + "_UL/electron.json.gz";
-    //std::cout << "electron SF path : " << jsonDir + elec_path << std::endl;
-    //year_ = "2016preVFP";
+
     auto cset = correction::CorrectionSet::from_file(jsonDir + elec_path);
     //std::cout << "sk ele 1 ele_sf_name_ : " << ele_sf_name_ << std::endl;
     ele_sf_ = cset->at(ele_sf_name_);
@@ -515,7 +500,7 @@ double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
     return trgsf + trgsferr;
 }
 
-std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, const std::string& era, bool is_data) {
+std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, const std::string runPeriod, const std::string& era, bool is_data) {
     //  "Summer19UL16_v7" -> prefix = "Summer19UL16", version = "7"
     size_t pos = base_jec_name.find("_V");
     if (pos == std::string::npos) {
@@ -530,14 +515,14 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
     std::string expanded = prefix;  // prefix
 
     // Year-specific logic
-    if (prefix.find("UL16") != std::string::npos) {
+    if (runPeriod.find("16Pre") != std::string::npos) {
         if (is_data) {
             if (era == "B" || era == "C" || era == "D") {
-                expanded += "APV_RunBCD";
+                expanded += "_RunBCD";
             } else if (era == "E") {
-                expanded += "APV_RunEF";
+                expanded += "_RunEF";
             } else if (era.find("F") == 0) {
-                expanded += "_RunF";
+                expanded += "_RunEF";
             } else if (era == "G" || era == "H") {
                 expanded += "_RunGH";
             } else {
@@ -546,7 +531,20 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
         } else {
             expanded += (era == "B" || era == "C" || era == "D" || era == "E") ? "APV" : "";
         }
-    } else if (prefix.find("UL17") != std::string::npos) {
+    } else if (runPeriod.find("16Post") != std::string::npos){
+        if (is_data) {
+	    if (era.find("F") == 0) {
+                expanded += "_RunFGH";
+            } else if (era == "G" || era == "H") {
+                expanded += "_RunFGH";
+            } else {
+                expanded += "_RunFGH";  // fallback
+            }
+        } else {
+            expanded += (era == "F" || era == "G" || era == "H") ? "APV" : "";
+        }
+
+    } else if (runPeriod.find("2017") != std::string::npos) {
         if (is_data) {
             if (era == "B" ) {
                 expanded += "_RunB";
@@ -563,7 +561,7 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
             }
         
         }
-    } else if (prefix.find("UL18") != std::string::npos) {
+    } else if (runPeriod.find("2018") != std::string::npos) {
         if (is_data) {
             if (era == "A" ) {
                 expanded += "_RunA";
