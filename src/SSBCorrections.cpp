@@ -121,6 +121,9 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     auto jer_sf_set = correction::CorrectionSet::from_file(jsonDir + jer_sf_path);
     jer_sf_ = jer_sf_set->at(jer_name);
 
+    auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jer_sf_path);
+    pujetid_sf_ = jmar_sf_set->at(jer_name);
+
     // Load muon SF
     //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
     std::cout << "jsonDir+muon_path " << jsonDir+muon_path << std::endl; 
@@ -187,6 +190,57 @@ TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_ph
     }
     TLorentzVector correctedMET = rawMET + correctionSum;
     return correctedMET;
+}
+
+float SSBCorrections::GetPUJetIDSF(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst) const {
+    if (!pujetid_sf_) {
+        std::cerr << "[SSBCorrections::GetPUJetIDSF] PUJetID correction not loaded." << std::endl;
+        return 1.0;
+    }
+    if (wp.empty()) {
+        std::cerr << "[SSBCorrections::GetPUJetIDSF] PUJetID working point not loaded. check out wp in PU jet id!!" << std::endl;// wp L, M, T (Loose, Medium, Tight)
+        return 1.0;
+    }
+    if (pt >= 50.0 || !passPU || !genMatched) return 1.0;
+
+    try {
+        std::variant<double, std::vector<double>> val = pujetid_sf_->evaluate({eta, pt, syst, "L"});
+        return std::get<double>(val);
+    } catch (const std::exception& e) {
+        std::cerr << "[SSBCorrections::GetPUJetIDSF] Evaluation failed: " << e.what() << std::endl;
+        return 1.0;
+    }
+}
+
+float SSBCorrections::GetEventPUJetIDWeight(
+    const std::vector<TLorentzVector>& jets,
+    const std::vector<bool>& passPUJetID,
+    const std::vector<bool>& genMatched,
+    const std::vector<float>& jetPt,
+    const std::vector<float>& jetEta,
+    const std::string& wp,
+    const std::string& syst
+) const {
+    if (jets.size() != passPUJetID.size() ||
+        jets.size() != genMatched.size() ||
+        jets.size() != jetPt.size() ||
+        jets.size() != jetEta.size()) {
+        std::cerr << "[SSBCorrections::GetEventPUJetIDWeight] Vector size mismatch!" << std::endl;
+        return 1.0;
+    }
+
+    float weight = 1.0;
+
+    for (size_t i = 0; i < jets.size(); ++i) {
+        float pt  = jetPt[i];
+        float eta = jetEta[i];
+
+        // Requirement : pt < 50 && passPUJetID && genMatched
+        float sf = GetPUJetIDSF(pt, eta, passPUJetID[i], genMatched[i], wp, syst);
+        weight *= sf;
+    }
+
+    return weight;
 }
 
 /*TLorentzVector SSBCorrections::BuildCorrectedJetWithJER(double raw_pt, double raw_mass, double eta, double phi, double area, double rho, double gen_pt, const std::string& jer_tag) const {
