@@ -115,6 +115,16 @@ public:
                                 bool isData,
                                 int npv) const;
 
+    float GetPUJetIDSF(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst) const;
+
+    float GetEventPUJetIDWeight(
+        const std::vector<TLorentzVector>& jets,
+        const std::vector<bool>& passPUJetID,
+        const std::vector<bool>& genMatched,
+        const std::vector<float>& jetPt,
+        const std::vector<float>& jetEta,
+        const std::string& wp,
+        const std::string& syst) const;
 
 private:
     //std::shared_ptr<const correction::Correction> jec_;
@@ -141,6 +151,7 @@ private:
     std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor
+    std::shared_ptr<const correction::Correction> pujetid_sf_;  // JER scale factor
 
     std::shared_ptr<const correction::Correction> metphi_corr_;
 };
