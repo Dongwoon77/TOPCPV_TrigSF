@@ -19,6 +19,7 @@ class TextReader;
 struct JetCorrectionOutput {
     std::vector<TLorentzVector> corrected_jets;
     TLorentzVector corrected_met;
+    double pujetEvtWeight;
 };
 
 // A utility class for loading and applying correctionlib-based

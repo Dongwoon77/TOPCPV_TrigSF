@@ -177,7 +177,7 @@ double SSBCorrections::SmearJER(double reco_pt, double gen_pt, double eta, doubl
     double smear_factor = 1.0 + std::sqrt(sf * sf - 1.0) * gRandom->Gaus(0, 1) * resolution;
     return std::max(0.0, reco_pt * smear_factor);
 }
-
+/*
 TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_phi,
                                             const std::vector<TLorentzVector>& rawJets,
                                             const std::vector<TLorentzVector>& corrJets) const {
@@ -189,6 +189,31 @@ TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_ph
         correctionSum += (rawJets[i] - corrJets[i]);
     }
     TLorentzVector correctedMET = rawMET + correctionSum;
+    return correctedMET;
+}
+*/
+TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_phi,
+                                            const std::vector<TLorentzVector>& rawJets,
+                                            const std::vector<TLorentzVector>& corrJets) const {
+    // Convert raw MET to px, py components
+    double met_px = raw_met_pt * std::cos(raw_met_phi);
+    double met_py = raw_met_pt * std::sin(raw_met_phi);
+
+    // Calculate correction in px, py only
+    for (size_t i = 0; i < rawJets.size(); ++i) {
+        // Add back the difference in transverse momentum
+        // (raw jet was subtracted from original MET, now we subtract corrected jet)
+        met_px += (rawJets[i].Px() - corrJets[i].Px());
+        met_py += (rawJets[i].Py() - corrJets[i].Py());
+    }
+
+    // Create corrected MET with mass = 0
+    double corrected_met_pt = std::sqrt(met_px * met_px + met_py * met_py);
+    double corrected_met_phi = std::atan2(met_py, met_px);
+
+    TLorentzVector correctedMET;
+    correctedMET.SetPtEtaPhiM(corrected_met_pt, 0, corrected_met_phi, 0);
+
     return correctedMET;
 }
 
@@ -452,7 +477,6 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     }
 
     TLorentzVector correctedMET = RecomputeMET(raw_met_pt, raw_met_phi, rawJetsRebuilt, correctedJets);
-
     JetCorrectionOutput result;
     result.corrected_jets = correctedJets;
     result.corrected_met = correctedMET;
