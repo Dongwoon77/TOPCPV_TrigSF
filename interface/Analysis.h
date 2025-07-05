@@ -69,6 +69,18 @@ private:
     TString cutflowName[10];
 
     int num_pv;
+
+
+    // PUID related state variables
+    bool jets_selected_ = false;
+    bool jet_puid_weight_applied_ = false;
+    bool object_variables_set_ = false;
+
+    // PUID related configuration
+    std::string puid_wp_ = "L";  // working point
+    bool apply_puid_ = true;     // whether to apply PUID
+
+
     // Maps for dynamic branch storage
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> boolSingles;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Int_t>>> intSingles;
@@ -108,6 +120,11 @@ private:
     void MakeMuonCollection(); // Muon  
     void MakeElecCollection(); // Electron 
     void JetSelector(); // Jet
+
+    // PUID related functions
+    bool PassPileupID(float pt, int puId, const std::string& wp = "L") const;
+    void ApplyJetPUIDEventWeights();
+
     void MakeJetCollection(); // Jet 
     //void MakeGenJetCollection(); // Jet 
     bool JetCleaning(TLorentzVector* jet_);

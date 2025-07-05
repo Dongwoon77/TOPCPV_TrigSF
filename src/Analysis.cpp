@@ -562,7 +562,8 @@ void Analysis::SetObjectVariable() {
               << " with cut value " << bdisccut << std::endl;*/
     /// MET ///
     met_pt  = floatSingles["MET_pt"].get(); 
-    met_phi  = floatSingles["MET_phi"].get(); 
+    met_phi  = floatSingles["MET_phi"].get();
+    object_variables_set_ = true; 
 //    std::cout << " met_pt : " << met_pt << std::endl; 
 //    std::cout << " met_phi : " << met_phi << std::endl; 
 
@@ -1501,7 +1502,7 @@ void Analysis::MakeJetCollection() {
     double rho = (floatSingles.count("fixedGridRhoFastjetAll") > 0) ? **floatSingles["fixedGridRhoFastjetAll"] : 0.0;
     double raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
     double raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
-    bool isData = TString(FileName_).Contains("Data");
+    //bool isData = TString(FileName_).Contains("Data");
 
     JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
         rawJets,
@@ -1556,8 +1557,111 @@ bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFT
     return numLeptons;
 }
 
+void Analysis::JetSelector() {
+    // Pre-conditions check
+    if (!object_variables_set_) {
+        std::cerr << "ERROR: JetSelector() called before SetObjectVariable()!" << std::endl;
+        throw std::runtime_error("SetObjectVariable() must be called before JetSelector()");
+    }
 
-void Analysis::JetSelector()
+    // Reset state
+    jets_selected_ = false;
+    jet_puid_weight_applied_ = false;
+    
+    // Check if necessary pointers are initialized
+    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
+        std::cerr << "Error: Basic jet variables (pt, eta, phi, M) are not initialized. Make sure SetObjectVariable() was called." << std::endl;
+        return;
+    }
+
+    MakeJetCollection();
+    v_jet_idx.clear();
+    jets.clear();
+    
+    // Lambda functions for common jet selection checks
+    auto passKinematicCuts = [this](float pt, float eta) -> bool {
+        return pt > jet_pt && fabs(eta) < jet_eta;
+    };
+
+    Int_t nJets = jets_pt->GetSize();
+    
+    // PUID event weight calculation (첫 번째 코드 로직)
+    float total_puid_weight = 1.0;
+    
+    for (int i = 0; i < nJets; i++) {
+        TLorentzVector jetVec = pre_jets[i];
+        float jetPt = jetVec.Pt();
+        float jetEta = jetVec.Eta();
+        
+        // Apply kinematic cuts first
+        if (!passKinematicCuts(jetPt, jetEta)) {
+            continue;
+        }
+
+        // Check jet ID
+        if (jets_Id != nullptr && jets_Id->At(i) < jet_id) {
+            continue;
+        }
+
+        // Jet cleaning
+        if (!JetCleaning(&jetVec)) {
+            continue;
+        }
+
+        // PUID weight calculation for ALL jets (before selection)
+        if (apply_puid_ && jetPt <= 50.0 && !isData) {
+            int puId = (jets_puId != nullptr) ? jets_puId->At(i) : 0;
+            bool passPUID = PassPileupID(jetPt, puId, puid_wp_);
+            int genIdx = (intVectors.count("Jet_genJetIdx")) ? 
+                         intVectors["Jet_genJetIdx"]->At(i) : -1;
+            
+            if (genIdx < 0) {  // Pileup jet
+                // tempSF = 1, tempEff = 0
+                total_puid_weight *= 1.0;
+            } else {  // Real jet
+                //float tempSF = SSBCorr->GetPUJetIDSF(jetPt, jetEta, passPUID, true, puid_wp_, "nominal");
+		float tempSF = SSBCorr->GetPUJetIDSFAndEff(jetPt, jetEta, passPUID, true, puid_wp_, "nom", false);
+                //float tempEff = SSBCorr->GetPUJetIDEff(jetPt, jetEta, puid_wp_);
+		float tempEff = SSBCorr->GetPUJetIDSFAndEff(jetPt, jetEta, passPUID, true, puid_wp_, "MCEff", true);
+
+                
+                if (!passPUID) {
+                    // (1-SF*Eff)/(1-Eff) formula from first code
+                    total_puid_weight *= (1.0 - tempSF * tempEff) / (1.0 - tempEff);
+                } else {
+                    // Just apply SF
+                    total_puid_weight *= tempSF;
+                }
+            }
+        }
+
+        // PUID selection (separate from weight calculation)
+        if (apply_puid_ && jetPt <= 50.0) {
+            int puId = (jets_puId != nullptr) ? jets_puId->At(i) : 0;
+            bool passPUID = PassPileupID(jetPt, puId, puid_wp_);
+            
+            if (!passPUID) {
+                continue;  // Skip this jet if PUID fails
+            }
+        }
+
+        // Add to selected jets
+        v_jet_idx.push_back(i);
+        jets.push_back(pre_jets[i]);
+    }
+
+    // Apply PUID event weight and set states
+    jets_selected_ = true;
+    if (!isData && apply_puid_) {
+	//std::cout << "total_puid_weight :" << total_puid_weight << std::endl;
+        evt_weight_ *= total_puid_weight;
+    }
+    jet_puid_weight_applied_ = true;
+    
+    //std::cout << "JetSelector completed: " << v_jet_idx.size() << " jets selected" << std::endl;
+
+}
+/*void Analysis::JetSelector()
 {
     // Check if necessary pointers are initialized
     if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
@@ -1595,47 +1699,24 @@ void Analysis::JetSelector()
             return (puId & (1 << 0)) != 0;
         }
     };
-
-/*
-    auto passPuId = [](int puId, float pt) -> bool {
-        // For jets with pT > 50 GeV, no PU ID required
-        if (pt > 50.0) return true;
-        // For jets with pT <= 50 GeV, check if PU ID exists
-        return (puId & (1 << 0)) != 0;
-    };
-*/
+    
     Int_t nJets = jets_pt->GetSize();
 //    std::cout << "Number of jets to process: " << nJets << std::endl;
     // Process all jets
     for (int i = 0; i < nJets; i++)
     {
         // Get basic kinematic properties
-        //float jetPt = jets_pt->At(i);
-        //float jetEta = jets_eta->At(i);
-
         // Apply jet cleaning using a copy of the jet
         TLorentzVector jetVec = pre_jets[i];
 	float jetPt = jetVec.Pt();
 	float jetEta = jetVec.Eta();
         // Apply kinematic cuts first (efficiency)
-        if (!passKinematicCuts(jetPt, jetEta)) {
-            continue;
-        }
+        if (!passKinematicCuts(jetPt, jetEta)) { continue; }
 
         // Check jet ID if available
         if (jets_Id != nullptr) {
             int jetId = jets_Id->At(i);
-            if (jetId < jet_id) {
-                continue;
-            }
-        }
-
-        // Apply PU ID for low pT jets if available
-        if (jets_puId != nullptr && jetPt <= 50.0) {
-            int jetPuId = jets_puId->At(i);
-            if ((jetPuId & (1 << 0)) == 0) {
-                continue;
-            }
+            if (jetId < jet_id) { continue; }
         }
 
         // Check if pre_jets vector is properly initialized
@@ -1647,17 +1728,13 @@ void Analysis::JetSelector()
         if (!JetCleaning(&jetVec)) {
             continue;  // Skip this jet if it overlaps with any lepton
         }
-/*
-        // Optionally apply JER smearing for MC
-        if (!TString(FileName_).Contains("Data") && dojer) {
-            try {
-                TLorentzVector smearedJet = JERSmearing(&jetVec, i, "Norm");
-                pre_jets[i] = smearedJet; // Update the jet with smeared version
-            } catch (const std::exception& e) {
-                std::cerr << "Error in JER smearing: " << e.what() << std::endl;
-                // Continue with unsmeared jet
-            }
-        }*/
+
+	// Apply PU ID for low pT jets if available
+        if (jets_puId != nullptr && jetPt <= 50.0) {
+            int jetPuId = jets_puId->At(i);
+            if (!passPuId(jetPuId, jetPt)) {continue; }
+        }
+
 
         // Add to selected jets
         v_jet_idx.push_back(i);
@@ -1665,7 +1742,7 @@ void Analysis::JetSelector()
     }
 
 //    std::cout << "Selected " << v_jet_idx.size() << " jets after cuts" << std::endl;
-}
+}*/
 
 bool Analysis::JetCleaning(TLorentzVector* jet_)
 {
@@ -2360,4 +2437,42 @@ void Analysis::TriggerSFApply()
         evt_weight_ *= triggersf_;  // Apply the trigger scale factor
     }
     // For Data, no correction is applied
+}
+
+// PUID related functions implementation
+bool Analysis::PassPileupID(float pt, int puId, const std::string& wp) const {
+    // High-pT jets don't need PUID
+    if (pt > 50.0) return true;
+
+    // For Run3 (2022, 2023) - no PUID branch exists for PUPPI jets
+    if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) {
+        return true;  // No PUID needed for PUPPI jets
+    }
+
+    // For 2016 - special handling due to potential bugs in NanoAODv9
+    if (RunPeriod.Contains("2016")) {
+        // Conservative approach: use bitmask check for 2016
+        if (wp == "L") return (puId & 4) != 0;  // bit 2
+        if (wp == "M") return (puId & 2) != 0;  // bit 1
+        if (wp == "T") return (puId & 1) != 0;  // bit 0
+        return false;
+    }
+
+    // For 2017, 2018 - use documented formula
+    // puId = passlooseID*4 + passmediumID*2 + passtightID*1
+    if (wp == "L") return puId >= 4;  // Loose: need at least 4 (100, 110, 111)
+    if (wp == "M") return puId >= 6;  // Medium: need at least 6 (110, 111)
+    if (wp == "T") return puId == 7;  // Tight: need exactly 7 (111)
+
+    return false;
+}
+
+void Analysis::ApplyJetPUIDEventWeights() {
+    // This function is now called automatically at the end of JetSelector()
+    // Check if already applied
+    if (jet_puid_weight_applied_) {
+        return;  // Already applied in JetSelector()
+    }
+
+    std::cerr << "WARNING: ApplyJetPUIDEventWeights() called but PUID weights should be applied in JetSelector()!" << std::endl;
 }

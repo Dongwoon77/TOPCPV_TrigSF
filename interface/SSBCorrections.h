@@ -19,7 +19,6 @@ class TextReader;
 struct JetCorrectionOutput {
     std::vector<TLorentzVector> corrected_jets;
     TLorentzVector corrected_met;
-    double pujetEvtWeight;
 };
 
 // A utility class for loading and applying correctionlib-based
@@ -116,16 +115,10 @@ public:
                                 bool isData,
                                 int npv) const;
 
-    float GetPUJetIDSF(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst) const;
-
-    float GetEventPUJetIDWeight(
-        const std::vector<TLorentzVector>& jets,
-        const std::vector<bool>& passPUJetID,
-        const std::vector<bool>& genMatched,
-        const std::vector<float>& jetPt,
-        const std::vector<float>& jetEta,
-        const std::string& wp,
-        const std::string& syst) const;
+    //float GetPUJetIDSF(float pt, float eta, bool passPU, const std::string& wp, const std::string& syst) const;
+//    float GetPUJetIDSF(float pt, float eta, int passPU, const std::string& wp, const std::string& syst) const;
+//    float GetPUJetIDEff(float pt, float eta, const std::string& wp, const std::string& syst) const; 
+    float GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff = false) const;
 
 private:
     //std::shared_ptr<const correction::Correction> jec_;
