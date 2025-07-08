@@ -38,6 +38,7 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string jec_name     = reader->GetText("JECName");
     std::string jer_name     = reader->GetText("JERName");
     std::string jer_res_name = reader->GetText("JERResName");
+    std::string jet_btag_conf = reader->GetText("Jet_btag");  // e.g., "deepCSVL", "deepJetM"
     std::string muon_path    = reader->GetText("MuonSFPath");
     std::string elec_path    = reader->GetText("ElecSFPath");
     std::string RunPeriod    = reader->GetText("RunRange");
@@ -54,6 +55,8 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     // Trigger SF // 
     std::string Trig_sf_name_      = reader->GetText( "TrigSFFile"  );  
     std::string Trig_sf_histname_  = reader->GetText( "TrigSFHist"  );  
+
+
 
     //if inputfileName    
 
@@ -125,6 +128,38 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
     pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
 
+
+
+    std::string btag_algo = "";
+    std::string btag_wp = "";
+
+    if (jet_btag_conf.find("deepCSV") != std::string::npos) {
+        btag_algo = "DeepCSV";
+    } else if (jet_btag_conf.find("deepJet") != std::string::npos) {
+        btag_algo = "DeepJet";
+    } else if (jet_btag_conf.find("pfCSVV2") != std::string::npos) {
+        btag_algo = "CSVv2";
+    } else {
+        std::cerr << "[WARNING] Unknown b-tag algorithm in Jet_btag: " << jet_btag_conf << std::endl;
+    }
+
+    char last = jet_btag_conf.back();
+    if (last == 'L' || last == 'l') btag_wp = "Loose";
+    else if (last == 'M' || last == 'm') btag_wp = "Medium";
+    else if (last == 'T' || last == 't') btag_wp = "Tight";
+    else {
+        std::cerr << "[WARNING] Unknown WP in Jet_btag: " << jet_btag_conf << std::endl;
+    }
+
+    std::string btag_sf_json = "BTV/" + year_ + "_UL/btagging.json.gz";
+    std::string btag_tagger = (btag_algo == "DeepJet") ? "deepJet_comb" : "deepCSV_comb";
+    std::string btag_eff_path = "CorrectionFiles/BTag/UL" + year_ + "/btagEff_" + btag_algo + ".root";
+    std::cout << "btag_eff_path : " << btag_eff_path << std::endl;
+
+    InitBtagSFCorrection(jsonDir + btag_sf_json, btag_tagger);
+    //LoadMCBtagEfficiencies(btag_eff_root, btag_algo);
+    LoadMCBtagEfficiencies(btag_eff_path, btag_algo);
+
     // Load muon SF
     //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
     std::cout << "jsonDir+muon_path " << jsonDir+muon_path << std::endl; 
@@ -178,21 +213,7 @@ double SSBCorrections::SmearJER(double reco_pt, double gen_pt, double eta, doubl
     double smear_factor = 1.0 + std::sqrt(sf * sf - 1.0) * gRandom->Gaus(0, 1) * resolution;
     return std::max(0.0, reco_pt * smear_factor);
 }
-/*
-TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_phi,
-                                            const std::vector<TLorentzVector>& rawJets,
-                                            const std::vector<TLorentzVector>& corrJets) const {
-    TLorentzVector rawMET;
-    rawMET.SetPtEtaPhiM(raw_met_pt, 0, raw_met_phi, 0);
 
-    TLorentzVector correctionSum;
-    for (size_t i = 0; i < rawJets.size(); ++i) {
-        correctionSum += (rawJets[i] - corrJets[i]);
-    }
-    TLorentzVector correctedMET = rawMET + correctionSum;
-    return correctedMET;
-}
-*/
 TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_phi,
                                             const std::vector<TLorentzVector>& rawJets,
                                             const std::vector<TLorentzVector>& corrJets) const {
@@ -217,57 +238,6 @@ TLorentzVector SSBCorrections::RecomputeMET(double raw_met_pt, double raw_met_ph
 
     return correctedMET;
 }
-/*
-float SSBCorrections::GetPUJetIDSF(float pt, float eta, int passPU, const std::string& wp, const std::string& syst) const {
-    if (!pujetid_sf_) {
-        std::cerr << "[SSBCorrections::GetPUJetIDSF] PUJetID correction not loaded." << std::endl;
-        return 1.0;
-    }
-    if (wp.empty()) {
-        std::cerr << "[SSBCorrections::GetPUJetIDSF] PUJetID working point not loaded. check out wp in PU jet id!!" << std::endl;// wp L, M, T (Loose, Medium, Tight)
-        return 1.0;
-    }
-    if (pt >= 50.0 || passPU > 0) return 1.0;
-
-    try {
-        std::variant<double, std::vector<double>> val = pujetid_sf_->evaluate({eta, pt, syst, "L"});
-        return std::get<double>(val);
-    } catch (const std::exception& e) {
-        std::cerr << "[SSBCorrections::GetPUJetIDSF] Evaluation failed: " << e.what() << std::endl;
-        return 1.0;
-    }
-}
-
-float SSBCorrections::GetEventPUJetIDWeight(
-    const std::vector<TLorentzVector>& jets,
-    const std::vector<int>& passPUJetID,
-    const std::string& wp,
-    const std::string& syst
-) const {
-    if (jets.size() != passPUJetID.size()) {
-        std::cerr << "[SSBCorrections::GetEventPUJetIDWeight] Vector size mismatch!" << std::endl;
-        return 1.0;
-    }
-
-    float weight = 1.0;
-    //std::cout << "wp : " << wp << " syst " << syst << std::endl;
-    for (size_t i = 0; i < jets.size(); ++i) {
-        //float pt  = jetPt[i]jets.at(i).Pt();
-        float pt  = jets.at(i).Pt();
-        float eta = jets.at(i).Eta();
-
-        // Requirement : pt < 50 && passPUJetID && genMatched
-        float sf = GetPUJetIDSF(pt, eta, passPUJetID[i], wp, syst);
-	std::cout << "sf in GetEventPUJetIDWeight "<< sf << std::endl;
-        weight *= sf;
-    }
-    std::cout << "weight : " << weight << std::endl;
-    return weight;
-}
-*/
-//////
-//
-//
 
 float SSBCorrections::GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff) const {
     if (!pujetid_sf_) {
@@ -495,6 +465,159 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     return result;
 }
 
+void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name) {
+    std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
+    
+    auto cset = correction::CorrectionSet::from_file(json_path);
+    
+    // Create correction names
+    std::string comb_name = tagger_name; // e.g., "deepCSV_comb"
+    std::string incl_name = tagger_name;
+    incl_name.replace(incl_name.find("comb"), 4, "incl"); // "deepCSV_incl"
+    
+    // Store corrections in map
+    btag_corrections_["comb"] = cset->at(comb_name);
+    btag_corrections_["incl"] = cset->at(incl_name);
+    
+    std::cout << "[SSBCorrections] Loaded corrections: " << comb_name 
+              << " and " << incl_name << std::endl;
+}
+
+std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
+    return (flavor == 0) ? "incl" : "comb";
+}
+
+float SSBCorrections::GetBtagSF(float pt, float eta, int flav, const std::string& wp, const std::string& syst) const {
+    float pt_clamped = std::clamp(pt, 20.0f, 1000.0f);
+    float eta_abs = std::fabs(eta);
+
+    std::string corr_name = getBtagCorrectionName(flav);
+    auto it = btag_corrections_.find(corr_name);
+    
+    if (it == btag_corrections_.end()) {
+        std::cerr << "[ERROR] B-tag correction not found: " << corr_name << std::endl;
+        return 1.0;
+    }
+
+    try {
+        //std::cout << "[DEBUG] Using " << corr_name << " correction for flavor " << flav << std::endl;
+        return it->second->evaluate({syst, wp, flav, eta_abs, pt_clamped});
+    } catch (const std::exception& e) {
+        std::cerr << "[WARNING] GetBtagSF failed: " << e.what() << std::endl;
+        return 1.0;
+    }
+}
+
+float SSBCorrections::ComputeBTagEventWeight(const std::vector<float>& pts,
+                                             const std::vector<float>& etas,
+                                             const std::vector<int>& flavs,
+                                             const std::vector<bool>& isTagged,
+                                             const std::string& algo,
+                                             const std::string& wp,
+                                             const std::string& syst) const {
+    
+    // Check input vector sizes
+    if (pts.size() != etas.size() || 
+        pts.size() != flavs.size() || 
+        pts.size() != isTagged.size()) {
+        std::cout << "Input vectors have different sizes" << std::endl;
+        return 1.0;
+    }
+    //std::cout << "start ! " << std::endl; 
+    // Initialize probabilities
+    float p_mc = 1.0;
+    float p_data = 1.0;
+    
+    // Loop over all jets
+    for (size_t i = 0; i < pts.size(); ++i) {
+        float pt   = pts[i];
+        float eta  = etas[i];
+        int flav   = flavs[i];
+        bool tagged = isTagged[i];
+         
+        // Get MC efficiency
+        float eff = GetMCBtagEfficiency(pt, eta, flav, algo, wp);
+        
+        // Get scale factor
+        float sf = GetBtagSF(pt, eta, flav, wp, syst);
+        
+        // Avoid division by zero
+        if (eff < 1e-5) eff = 1e-5;
+        if (eff > 1.0 - 1e-5) eff = 1.0 - 1e-5;
+        
+        // Calculate probabilities
+        if (tagged) {
+            // Tagged jet contribution
+            p_mc *= eff;
+            p_data *= (eff * sf);
+        } else {
+            // Not tagged jet contribution
+            p_mc *= (1.0f - eff);
+            p_data *= (1.0f - eff * sf);
+        }
+        
+        /*std::cout << "  Jet " << i << ": pt=" << pt << ", eta=" << eta 
+                  << ", flav=" << flav << ", tagged=" << tagged 
+                  << ", SF=" << sf << ", Eff=" << eff 
+                  << ", p_mc=" << p_mc << ", p_data=" << p_data << std::endl;*/
+    }
+    
+    // Calculate final event weight
+    float btag_evt_weight = (p_mc > 1e-10) ? p_data / p_mc : 1.0;
+    
+    return btag_evt_weight;
+}
+
+void SSBCorrections::LoadMCBtagEfficiencies(const std::string& filepath, const std::string& algo) {
+    TFile* f = TFile::Open(filepath.c_str(), "READ");
+    if (!f || f->IsZombie()) {
+        std::cerr << "[ERROR] Failed to open efficiency file: " << filepath << std::endl;
+        return;
+    }
+
+    for (const std::string& flav : {"b", "c", "l"}) {
+        for (const std::string& wp : {"Loose", "Medium", "Tight"}) {
+            std::string name = "eff_" + algo + "_" + flav + "_" + wp;
+	    //std::cout << "name in LoadMCBtagEfficiencies : " << name << std::endl;
+            TH2D* hist = (TH2D*)f->Get(name.c_str());
+            if (hist) {
+                hist->SetDirectory(0); // Detach histogram from file
+                eff_histograms_[algo + "_" + flav + "_" + wp] = hist;
+                //std::cout << "[INFO] Loaded hist: " << name << std::endl;
+            } else {
+                std::cerr << "[WARNING] Histogram not found: " << name << std::endl;
+            }
+        }
+    }
+    f->Close();
+}
+
+float SSBCorrections::GetMCBtagEfficiency(float pt, float eta, int flav, const std::string& algo, const std::string& wp) const {
+    std::string flav_str = "l";
+    if (flav == 5) flav_str = "b";
+    else if (flav == 4) flav_str = "c";
+
+    // Convert single character WP to full name for efficiency lookup
+    std::string wp_full = wp;
+    if (wp == "L") wp_full = "Loose";
+    else if (wp == "M") wp_full = "Medium";
+    else if (wp == "T") wp_full = "Tight";
+
+    std::string key = algo + "_" + flav_str + "_" + wp_full;
+    //std::cout << "[Info] key in GetMCBtagEfficiency " << key << std::endl;
+    auto it = eff_histograms_.find(key);
+    if (it == eff_histograms_.end()) {
+        std::cerr << "[WARNING] Efficiency hist not found: " << key << std::endl;
+        return 1.0;
+    }
+
+    TH2D* hist = it->second;
+    int bin_x = hist->GetXaxis()->FindBin(pt);
+    int bin_y = hist->GetYaxis()->FindBin(eta);
+    float eff = hist->GetBinContent(bin_x, bin_y);
+
+    return std::clamp(eff, 0.0f, 1.0f);
+}
 
 TLorentzVector SSBCorrections::METXYCorrection(const TLorentzVector& type1_met,
                                                const std::string& era,

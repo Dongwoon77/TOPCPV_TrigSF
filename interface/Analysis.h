@@ -332,7 +332,13 @@ private:
     double evt_weight_beforeL1PreFire_;
     double evt_weight_beforeTrigger_;
     double evt_weight_beforeLepsf_;
+    // B-tagging SF related variables
     double evt_weight_beforeBtag_;
+    double btag_sf_weight_;
+    
+    // B-tagging SF application function
+    void BTaggingSFApply();
+
     double lep_sf;
 
     //Kinetic Variables                                                                                                               
@@ -369,6 +375,7 @@ private:
     double el_id_jetcl_2;
 
 
+    TH1D *h_bTagEvtWeight;
     TH1D *h_Lep1pt[10];
     TH1D *h_Lep2pt[10];
     TH1D *h_Lep1eta[10];

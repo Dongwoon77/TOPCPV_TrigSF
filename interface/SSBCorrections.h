@@ -120,6 +120,31 @@ public:
 //    float GetPUJetIDEff(float pt, float eta, const std::string& wp, const std::string& syst) const; 
     float GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff = false) const;
 
+
+    // Initialize correctionlib-based b-tagging SF (e.g. deepJet_comb)
+    void InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name);
+
+    float GetBtagSF(float pt, float eta, int flav, const std::string& wp, const std::string& syst = "nominal") const;
+    // Load MC b-tag efficiency histograms from ROOT file
+    void LoadMCBtagEfficiencies(const std::string& filepath, const std::string& algo);
+    float GetMCBtagEfficiency(float pt, float eta, int flav, const std::string& algo, const std::string& wp) const;
+    /*float ComputeBTagEventWeight(
+    const std::vector<float>& jet_pts,
+    const std::vector<float>& jet_etas,
+    const std::vector<int>& jet_flavs,
+    const std::vector<float>& btag_scores,
+    const std::string& algo,  // "DeepJet" or "DeepCSV"
+    const std::string& wp     // "medium", "loose", etc.
+) const;*/
+
+    float ComputeBTagEventWeight(const std::vector<float>& pts,
+                             const std::vector<float>& etas,
+                             const std::vector<int>& flavs,
+                             const std::vector<bool>& isTagged,
+                             const std::string& algo,
+                             const std::string& wp,
+                             const std::string& syst = "nominal") const;
+
 private:
     //std::shared_ptr<const correction::Correction> jec_;
     //std::shared_ptr<correction::CompoundCorrection::Ref> jec_;
@@ -128,6 +153,8 @@ private:
     //std::shared_ptr<const correction::Correction> jec_;
     //std::shared_ptr<const correction::CorrectionSet> c_jec_;
     std::string year_;
+
+    /// Varibles & Functions for Trigger 
     double GetTrgEff(double pt1, double pt2, TString Sys_);
     TH2D* H_trig;
 
@@ -146,8 +173,26 @@ private:
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor
     std::shared_ptr<const correction::Correction> pujetid_sf_;  // JER scale factor
+    
+
+    // B-tagging corrections map
+    std::map<std::string, std::shared_ptr<const correction::Correction>> btag_corrections_;
+    
+    // Helper function to get appropriate correction name
+    std::string getBtagCorrectionName(int flavor) const;
+
+
+
+    // Maps [tagger_flavour_WP] → TH2D histogram for MC efficiency
+    std::map<std::string, TH2D*> eff_histograms_;
+
+
+
 
     std::shared_ptr<const correction::Correction> metphi_corr_;
+
+
+
 };
 
 #endif  // SSBCORRECTIONS_H

@@ -45,7 +45,7 @@ Analysis::~Analysis() {
 
     if (fout) {
         fout->Write();
-        std::cout << "fout write !!" <<  fout->GetName() << std::endl;
+        std::cout << "[fout write ! output file Name: ]" <<  fout->GetName() << std::endl;
         fout->Close(); // Close the file before deleting
         delete fout;
         fout = nullptr;
@@ -710,6 +710,8 @@ void Analysis::Loop() {
 
         FillHisto( h_METpt[4]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[4]  ,   Met.Phi()  , evt_weight_ );
+
+        BTaggingSFApply();
 
         if (NumbJetCut(v_bjet_idx) == false) {continue;}
 
@@ -1661,88 +1663,6 @@ void Analysis::JetSelector() {
     //std::cout << "JetSelector completed: " << v_jet_idx.size() << " jets selected" << std::endl;
 
 }
-/*void Analysis::JetSelector()
-{
-    // Check if necessary pointers are initialized
-    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
-        std::cerr << "Error: Basic jet variables (pt, eta, phi, M) are not initialized. Make sure SetObjectVariable() was called." << std::endl;
-        return;
-    }
-
-    MakeJetCollection();
-    v_jet_idx.clear();
-    jets.clear();
-    // Lambda functions for common jet selection checks
-    auto passKinematicCuts = [this](float pt, float eta) -> bool {
-        return pt > jet_pt && fabs(eta) < jet_eta;
-    };
-
-    // Add safety check
-    if (jets_Id == nullptr) {
-        std::cerr << "Warning: jets_Id is null. Skipping jet ID check." << std::endl;
-
-        // Default implementation - always pass without ID check
-        auto passJetId = [](int id) -> bool { return true; };
-    } else {
-        auto passJetId = [this](int id) -> bool {
-            return id >= jet_id;
-        };
-    }
-
-    // Add safety check
-    auto passPuId = [&](int puId, float pt) -> bool {
-        if (pt > 50.0) return true;
-        if (RunPeriod.Contains("2016")) {
-            // 2016 : loose <-> tight
-            return (puId & (1 << 2)) != 0;
-        } else {
-            return (puId & (1 << 0)) != 0;
-        }
-    };
-    
-    Int_t nJets = jets_pt->GetSize();
-//    std::cout << "Number of jets to process: " << nJets << std::endl;
-    // Process all jets
-    for (int i = 0; i < nJets; i++)
-    {
-        // Get basic kinematic properties
-        // Apply jet cleaning using a copy of the jet
-        TLorentzVector jetVec = pre_jets[i];
-	float jetPt = jetVec.Pt();
-	float jetEta = jetVec.Eta();
-        // Apply kinematic cuts first (efficiency)
-        if (!passKinematicCuts(jetPt, jetEta)) { continue; }
-
-        // Check jet ID if available
-        if (jets_Id != nullptr) {
-            int jetId = jets_Id->At(i);
-            if (jetId < jet_id) { continue; }
-        }
-
-        // Check if pre_jets vector is properly initialized
-        if (i >= pre_jets.size()) {
-            std::cerr << "Error: Index " << i << " out of range for pre_jets (size: " << pre_jets.size() << ")" << std::endl;
-            continue;
-        }
-
-        if (!JetCleaning(&jetVec)) {
-            continue;  // Skip this jet if it overlaps with any lepton
-        }
-
-	// Apply PU ID for low pT jets if available
-        if (jets_puId != nullptr && jetPt <= 50.0) {
-            int jetPuId = jets_puId->At(i);
-            if (!passPuId(jetPuId, jetPt)) {continue; }
-        }
-
-
-        // Add to selected jets
-        v_jet_idx.push_back(i);
-        jets.push_back(pre_jets[i]);
-    }
-
-//    std::cout << "Selected " << v_jet_idx.size() << " jets after cuts" << std::endl;
-}*/
 
 bool Analysis::JetCleaning(TLorentzVector* jet_)
 {
@@ -1859,6 +1779,8 @@ void Analysis::DeclareHistos()
       h_Num_Jets[i]  = new TH1D(Form("h_Num_Jets_%d",i), Form("Num. of Jets after %s",cutflowName[i].Data()), 20, 0.0, 20); h_Num_Jets[i]->Sumw2();
       h_Num_bJets[i] = new TH1D(Form("h_Num_bJets_%d",i),Form("Num. of b Jets after %s",cutflowName[i].Data()), 20, 0.0, 20); h_Num_bJets[i]->Sumw2();
     }
+
+    h_bTagEvtWeight  = new TH1D(Form("h_bTagEvtWeight"), Form("b-Tagging Events Weight "), 200, 0.0, 2.0); h_bTagEvtWeight->Sumw2(); 
     h_Top1Mass     = new TH1D(Form("h_Top1Mass"   ), Form("Top1 Mass"   ), 1000, 0.0, 1000); h_Top1Mass->Sumw2();
     h_Top1pt       = new TH1D(Form("h_Top1pt"   ), Form("Top1 pt"   ), 1000, 0.0, 1000); h_Top1pt->Sumw2();
     h_Top1Rapidity = new TH1D(Form("h_Top1Rapidity"   ), Form("Top1 Rapidity"   ), 100, -5, 5); h_Top1Rapidity->Sumw2();
@@ -2475,4 +2397,117 @@ void Analysis::ApplyJetPUIDEventWeights() {
     }
 
     std::cerr << "WARNING: ApplyJetPUIDEventWeights() called but PUID weights should be applied in JetSelector()!" << std::endl;
+}
+
+void Analysis::BTaggingSFApply() {
+    evt_weight_beforeBtag_ = evt_weight_; // Store weight before btag SF
+    btag_sf_weight_ = 1.0;
+    
+    // No b-tagging SF applied for Data
+    if (isData) {
+        return;
+    }
+    
+    // Check if jets and btag info are available
+    if (v_jet_idx.empty() || jets_btag == nullptr) {
+        std::cout << "No jets selected or btag info unavailable - B-tagging SF = 1.0" << std::endl;
+        return;
+    }
+    
+    // Prepare vectors for SF calculation
+    std::vector<float> jet_pts, jet_etas;
+    std::vector<int> jet_flavors;
+    std::vector<bool> jet_isTagged;
+    
+    jet_pts.reserve(v_jet_idx.size());
+    jet_etas.reserve(v_jet_idx.size());
+    jet_flavors.reserve(v_jet_idx.size());
+    jet_isTagged.reserve(v_jet_idx.size());
+    
+    // Check if hadron flavor branch exists (MC only)
+    bool hasHadronFlavour = (intVectors.count("Jet_hadronFlavour") && 
+                             intVectors["Jet_hadronFlavour"] && 
+                             intVectors["Jet_hadronFlavour"]->GetSize() > 0);
+    
+    if (!hasHadronFlavour) {
+        std::cout << "WARNING: Jet_hadronFlavour branch not available - using flavor=0 for all jets" << std::endl;
+    }
+    
+    // Collect jet information
+    for (size_t i = 0; i < v_jet_idx.size(); ++i) {
+        int jet_idx = v_jet_idx[i];
+        
+        float jet_pt = jets[i].Pt();
+        float jet_eta = jets[i].Eta();
+        
+        // Get jet flavor (MC only)
+        int flavor = 0; // Default to light flavor
+        if (hasHadronFlavour && jet_idx < intVectors["Jet_hadronFlavour"]->GetSize()) {
+            flavor = intVectors["Jet_hadronFlavour"]->At(jet_idx);
+        }
+        
+        bool isTagged = (jets_btag->At(jet_idx) > bdisccut);
+        
+        // Fill vectors
+        jet_pts.push_back(jet_pt);
+        jet_etas.push_back(jet_eta);
+        jet_flavors.push_back(flavor);
+        jet_isTagged.push_back(isTagged);
+        
+        /*std::cout << "  Jet " << i << ": pT=" << jet_pt 
+                  << ", eta=" << jet_eta 
+                  << ", flavor=" << flavor
+                  << ", isTagged=" << isTagged 
+                  << " (btag_score=" << jets_btag->At(jet_idx) 
+                  << ", cut=" << bdisccut << ")" << std::endl;*/
+    }
+    
+    // Determine b-tagging algorithm and working point
+    std::string btag_algo = "DeepCSV";  // Default
+    std::string btag_wp = "M";          // Default to Medium
+    
+    if (TString(JetbTag).Contains("deepCSV")) {
+        btag_algo = "DeepCSV";
+    } else if (TString(JetbTag).Contains("deepJet")) {
+        btag_algo = "DeepJet";
+    } else if (TString(JetbTag).Contains("pfCSVV2")) {
+        btag_algo = "CSVv2";
+    }
+    
+    // Determine working point - use single character for CMS correctionlib
+    if (TString(JetbTag).Contains("L")) {
+        btag_wp = "L";
+    } else if (TString(JetbTag).Contains("M")) {
+        btag_wp = "M";  
+    } else if (TString(JetbTag).Contains("T")) {
+        btag_wp = "T";
+    }
+    
+    // Set systematic variation - use "central" instead of "nominal"
+    std::string syst_variation = "central";
+    if (TString(BTagSFSys).Contains("up", TString::kIgnoreCase)) {
+        syst_variation = "up";
+    } else if (TString(BTagSFSys).Contains("down", TString::kIgnoreCase)) {
+        syst_variation = "down";
+    }
+    
+    // Calculate B-tagging event weight
+    try {
+        btag_sf_weight_ = SSBCorr->ComputeBTagEventWeight(
+            jet_pts, jet_etas, jet_flavors, jet_isTagged,
+            btag_algo, btag_wp, syst_variation
+        );
+        
+        // Apply weight
+        evt_weight_ *= btag_sf_weight_;
+        
+        /*std::cout << "B-tagging SF computed: " << btag_sf_weight_ 
+                  << " (total evt_weight: " << evt_weight_ << ")" << std::endl;*/
+                  
+    } catch (const std::exception& e) {
+        std::cerr << "Error in BTaggingSFApply: " << e.what() << std::endl;
+        btag_sf_weight_ = 1.0; // Default on error
+    }
+    
+    FillHisto(h_bTagEvtWeight, btag_sf_weight_);
 }
