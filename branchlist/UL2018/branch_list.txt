@@ -73,6 +73,7 @@ Jet_btagDeepFlavB, jet, Float_t, vector
 Jet_btagDeepFlavCvB, jet, Float_t, vector
 Jet_btagDeepFlavCvL, jet, Float_t, vector
 Jet_btagDeepFlavQG, jet, Float_t, vector
+Jet_hadronFlavour, jet, Int_t, vector
 Jet_genJetIdx, jet, Int_t, vector
 fixedGridRhoFastjetAll, Jet, Float_t, single
 nGenJet, genjet, UInt_t, single

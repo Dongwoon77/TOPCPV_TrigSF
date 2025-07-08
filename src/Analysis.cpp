@@ -445,25 +445,7 @@ void Analysis::SetObjectVariable() {
         std::cout << "RunPeriod not recognized!" << std::endl;
     }
 
-    /// btagging WP ///
-/*
-    if      ( TString(JetbTag).Contains( "CSVL"  ) )    { bdisccut = 0.244; }
-    else if ( TString(JetbTag).Contains( "CSVM"  ) )    { bdisccut = 0.679; }
-    else if ( TString(JetbTag).Contains( "CSVT"  ) )    { bdisccut = 0.898; }
-    else if ( TString(JetbTag).Contains( "CISVL" ) )    { bdisccut = 0.423; }
-    else if ( TString(JetbTag).Contains( "CISVM" ) )    { bdisccut = 0.814; }
-    else if ( TString(JetbTag).Contains( "CISVT" ) )    { bdisccut = 0.941; }
-    else if ( TString(JetbTag).Contains( "pfCSVV2L" ) ) { bdisccut = 0.5426; }
-    else if ( TString(JetbTag).Contains( "pfCSVV2M" ) ) { bdisccut = 0.8484; }
-    else if ( TString(JetbTag).Contains( "pfCSVV2T" ) ) { bdisccut = 0.9535; }
-    else if ( TString(JetbTag).Contains( "deepCSVL" ) ) { bdisccut = 0.2027; }
-    else if ( TString(JetbTag).Contains( "deepCSVM" ) ) { bdisccut = 0.6001; }
-    else if ( TString(JetbTag).Contains( "deepCSVT" ) ) { bdisccut = 0.8819; }
-    else if ( TString(JetbTag).Contains( "deepJetL" ) ) { bdisccut = 0.0508; }
-    else if ( TString(JetbTag).Contains( "deepJetM" ) ) { bdisccut = 0.2598; }
-    else if ( TString(JetbTag).Contains( "deepJetT" ) ) { bdisccut = 0.6502; }
-    else { std::cout << "bscriminator error !!" << std::endl; }
-*/
+
     // Set b-tag discriminator and threshold based on algorithm, WP and RunPeriod
     
     // First set the appropriate b-tag discriminator variable
@@ -488,7 +470,36 @@ void Analysis::SetObjectVariable() {
         bdisccut = -1.0;
         return;
     }
+   
+
+    // Parse B-tagging algorithm from JetbTag
+    btag_algo_ = "DeepCSV";  // Default
+    if (TString(JetbTag).Contains("deepCSV")) {
+        btag_algo_ = "DeepCSV";
+    } else if (TString(JetbTag).Contains("deepJet")) {
+        btag_algo_ = "DeepJet";
+    } else if (TString(JetbTag).Contains("pfCSVV2")) {
+        btag_algo_ = "CSVv2";
+    } else {
+        std::cerr << "Unknown b-tagging algorithm in JetbTag: " << JetbTag << std::endl;
+    }
     
+    // Parse working point from JetbTag
+    btag_wp_ = "M";  // Default to Medium
+    if (TString(JetbTag).Contains("L")) {
+        btag_wp_ = "L";
+    } else if (TString(JetbTag).Contains("M")) {
+        btag_wp_ = "M";
+    } else if (TString(JetbTag).Contains("T")) {
+        btag_wp_ = "T";
+    } else {
+        std::cerr << "Unknown working point in JetbTag: " << JetbTag << std::endl;
+    }
+    
+    // Debug output (optional)
+    //std::cout << "Parsed B-tag config: " << btag_algo_ 
+    //          << " " << btag_wp_ << std::endl;
+ 
     // Set appropriate bdisccut value based on RunPeriod, algorithm, and WP
     if (TString(RunPeriod).Contains("2016PreVFP")) {
         if (TString(JetbTag).Contains("deepCSV")) {
@@ -2462,27 +2473,7 @@ void Analysis::BTaggingSFApply() {
                   << ", cut=" << bdisccut << ")" << std::endl;*/
     }
     
-    // Determine b-tagging algorithm and working point
-    std::string btag_algo = "DeepCSV";  // Default
-    std::string btag_wp = "M";          // Default to Medium
-    
-    if (TString(JetbTag).Contains("deepCSV")) {
-        btag_algo = "DeepCSV";
-    } else if (TString(JetbTag).Contains("deepJet")) {
-        btag_algo = "DeepJet";
-    } else if (TString(JetbTag).Contains("pfCSVV2")) {
-        btag_algo = "CSVv2";
-    }
-    
-    // Determine working point - use single character for CMS correctionlib
-    if (TString(JetbTag).Contains("L")) {
-        btag_wp = "L";
-    } else if (TString(JetbTag).Contains("M")) {
-        btag_wp = "M";  
-    } else if (TString(JetbTag).Contains("T")) {
-        btag_wp = "T";
-    }
-    
+
     // Set systematic variation - use "central" instead of "nominal"
     std::string syst_variation = "central";
     if (TString(BTagSFSys).Contains("up", TString::kIgnoreCase)) {
@@ -2495,7 +2486,8 @@ void Analysis::BTaggingSFApply() {
     try {
         btag_sf_weight_ = SSBCorr->ComputeBTagEventWeight(
             jet_pts, jet_etas, jet_flavors, jet_isTagged,
-            btag_algo, btag_wp, syst_variation
+            //btag_algo, btag_wp, syst_variation
+            btag_algo_, btag_wp_, syst_variation
         );
         
         // Apply weight

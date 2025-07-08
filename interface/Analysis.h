@@ -164,13 +164,11 @@ private:
     std::vector<double> v_btagging_KIN; 
 
 
-
-
+    ////////////////////////////
+    /// Trigger & MET Filter ///
+    ////////////////////////////
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> triggerList;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> noiseFilters;
-    //std::vector<int> v_lep_idx_temp;
-    //std::vector<int> v_muon_idx_temp;
-    //std::vector<int> v_electron_idx_temp;
 
     TLorentzVector Lep1; // 
     TLorentzVector Lep2; //
@@ -373,6 +371,10 @@ private:
     int    n_el_id_jetcl;
     double el_id_jetcl_1;
     double el_id_jetcl_2;
+
+    /// BTag -- Variables ///
+    std::string btag_algo_;     // "DeepCSV", "DeepJet", "CSVv2"
+    std::string btag_wp_; // "L", "M", "T"
 
 
     TH1D *h_bTagEvtWeight;
