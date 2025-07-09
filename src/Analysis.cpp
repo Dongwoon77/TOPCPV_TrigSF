@@ -106,6 +106,7 @@ void Analysis::InitBranches(const std::string &branchListFile) {
 	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
 	    if (isData && branchName.find("gen") != std::string::npos) {continue;}
 	    if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
+	    if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
             // Initialize based on data type and variable type
             if (dataType == "Bool_t" && varType == "single") {
                 boolSingles[branchName] = std::make_unique<TTreeReaderValue<Bool_t>>(fReader, branchName.c_str());
