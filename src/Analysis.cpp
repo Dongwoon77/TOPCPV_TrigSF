@@ -222,6 +222,38 @@ void Analysis::SetVariables() {
     PileUpSys = SSBConfReader->GetText("PileupSys");
     TrigSFSys = SSBConfReader->GetText("TrigSFSys");
 
+
+    // ============================================================================
+    // Step 1: Add PUID configuration (newly added section)
+    // ============================================================================
+    
+    // PUID configuration
+    puid_wp_ = SSBConfReader->GetText("PUIDWorkingPoint");
+    PUIDSFSys = SSBConfReader->GetText("PUIDSFSys"); 
+    apply_puid_ = SSBConfReader->GetBool("ApplyPUID");
+    puid_pt_threshold_ = SSBConfReader->GetNumber("PUIDPtThreshold");
+
+    // Validate PUID settings
+    if (puid_wp_ != "L" && puid_wp_ != "M" && puid_wp_ != "T") {
+        std::cerr << "[WARNING] Invalid PUID working point: " << puid_wp_ 
+                  << ". Using default 'L'." << std::endl;
+        puid_wp_ = "L";
+    }
+    
+    if (puid_pt_threshold_ <= 0 || puid_pt_threshold_ > 200) {
+        std::cerr << "[WARNING] Invalid PUID pT threshold: " << puid_pt_threshold_ 
+                  << ". Using default 50.0 GeV." << std::endl;
+        puid_pt_threshold_ = 50.0;
+    }
+    
+    // Print PUID configuration
+    std::cout << "PUID Configuration:" << std::endl;
+    std::cout << "  Working Point: " << puid_wp_ << std::endl;
+    std::cout << "  Systematic: " << PUIDSFSys << std::endl;
+    std::cout << "  Apply PUID: " << (apply_puid_ ? "true" : "false") << std::endl;
+    std::cout << "  pT Threshold: " << puid_pt_threshold_ << " GeV" << std::endl;
+
+
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
     //SetObjectVariable();
@@ -612,7 +644,9 @@ void Analysis::Loop() {
         LeptonSelector(); 
 
         LeptonOrder();
-        JetSelector(); 
+        JetSelector();
+        PUIDSFApply();  // Apply PUID event weight using collected information
+ 
         JetOrder(); 
         bJetSelector(); 
         //METDefiner();
@@ -956,109 +990,6 @@ bool Analysis::Trigger()
    }
 }
 
-/*
-bool Analysis::Trigger()
-{
-   /// Variable for Trigger Function
-   bool singleTrig_ = false;
-   bool doubleTrig_ = false;
-   bool ispassselTrig_ = false;
-   bool ispassvetoTrig_ = false;
-   bool trigpass = false;
-   std::vector<std::string> seltrigName;
-   std::vector<std::string> vetotrigName;
- 
-   if (!TString(FileName_).Contains( "Data" ) ) { 
-       //trigpass = true; return trigpass;
-       ispassvetoTrig_ = false; 
-       seltrigName = trigName;
-       trigpass = SelTrigger(seltrigName);
-   }
-   else {
-      // Set veto trigger & selected trigger //
-      // Channel Index //
-      if ( RunPeriod.Contains("2018") )/// Only 2018, SingleEG and Double EG combined 
-      {
-         if (TString(Decaymode).Contains("dimuon")){ // Dimuon // 
-            if ( TString(FileName_).Contains( "Single") ) {
-               seltrigName = SLtrigName;
-               vetotrigName = DLtrigName;
-               ispassselTrig_ = SelTrigger(seltrigName);
-               ispassvetoTrig_ = SelTrigger(vetotrigName);
-            }
-            else if( TString(FileName_).Contains( "Double") ) {
-               seltrigName = DLtrigName;
-               vetotrigName = SLtrigName;
-               ispassselTrig_ = SelTrigger(seltrigName);
-               ispassvetoTrig_ = SelTrigger(vetotrigName);
-            }
-            else { std::cout << "Check out FileName_ in Trigger ()" << std::endl;}
-         }
-         else if(TString(Decaymode).Contains("muel")) {
-            if ( TString(FileName_).Contains( "MuonEG") ) {
-               seltrigName = DLtrigName;
-               vetotrigName = SLtrigName;
-               ispassselTrig_ = SelTrigger(seltrigName);
-               ispassvetoTrig_ = SelTrigger(vetotrigName);
-            }
-            else if( TString(FileName_).Contains( "EGamma") ) {
-               seltrigName = SLtrigName;
-               vetotrigName = DLtrigName;
-               ispassselTrig_ = SelTrigger(seltrigName);
-               ispassvetoTrig_ = SelTrigger(vetotrigName);
-            }
-            else { std::cout << "Check out FileName_ in Trigger ()" << std::endl;}
-         }
-         else if(TString(Decaymode).Contains("dielec")) { 
-            //seltrigName = DLtrigName;
-            //vetotrigName = SLtrigName;
-            if( TString(FileName_).Contains( "EGamma") ) {
-               singleTrig_ = false;
-               doubleTrig_ = false;
-               singleTrig_ = SelTrigger(SLtrigName);
-               doubleTrig_ = SelTrigger(DLtrigName);
-               if (singleTrig_&&(!doubleTrig_)) {trigpass = true;}
-               else if ((!singleTrig_)&&(doubleTrig_)) {trigpass = true;}
-               else {trigpass = false;}
-               ispassvetoTrig_ = false;
-            }
-         }
-         else { std::cout << "Check out Decaymode in 2018-Trigger()" << std::endl; }
-      }
-
-
-      else {/// 2016 (AVP, NonAPV) && 2017 
-         if ( TString(FileName_).Contains( "Single") ) {
-            seltrigName = SLtrigName;
-            vetotrigName = DLtrigName;
-            //std::cout << "selected!! " << std::endl;
-            ispassselTrig_ = SelTrigger(seltrigName);
-            //std::cout << "ispassselTrig_ : " << ispassselTrig_ << std::endl;
-            //std::cout << "veto !! " << std::endl;
-            ispassvetoTrig_ = SelTrigger(vetotrigName);
-            //std::cout << "ispassvetoTrig_ : " << ispassvetoTrig_ << std::endl;
-            trigpass = ispassselTrig_;
-         }
-         else if( TString(FileName_).Contains( "Double") || TString(FileName_).Contains( "MuonEG")) {
-            //std::cout << "SK : FileName_ "  << std::endl;
-            seltrigName = DLtrigName;
-            vetotrigName = SLtrigName;
-            //std::cout << "SK : seltrigName:" << seltrigName  << std::endl;
-            //std::cout << "SK : vetotrigName:" << vetotrigName  << std::endl;
-            ispassselTrig_ = SelTrigger(trigName);
-            //ispassvetoTrig_ = SelTrigger(vetotrigName);
-            trigpass = ispassselTrig_;
-         }
-         else { std::cout << "Check out FileName_ in Trigger ()" << std::endl;}
-
-      }
-
-      if (ispassvetoTrig_ == true) {trigpass = false;}
-   }
-   //cout << "ispassselTrig_ : " << ispassselTrig_ << " ispassvetoTrig_ : " << ispassvetoTrig_ << "trigger : " << trigpass << endl; 
-   return trigpass;
-}
-*/
 TString Analysis::SetInputFileName(std::string inname)
 {  
    TString inputName = inname;
@@ -1579,7 +1510,6 @@ void Analysis::JetSelector() {
 
     // Reset state
     jets_selected_ = false;
-    jet_puid_weight_applied_ = false;
     
     // Check if necessary pointers are initialized
     if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
@@ -1588,6 +1518,12 @@ void Analysis::JetSelector() {
     }
 
     MakeJetCollection();
+    
+    // ============================================================================
+    // Step 4: Collect PUID candidate information (for weight calculation in PUIDSFApply)
+    // ============================================================================
+    CollectPUIDCandidates();
+    
     v_jet_idx.clear();
     jets.clear();
     
@@ -1598,9 +1534,9 @@ void Analysis::JetSelector() {
 
     Int_t nJets = jets_pt->GetSize();
     
-    // PUID event weight calculation (첫 번째 코드 로직)
-    float total_puid_weight = 1.0;
-    
+    // ============================================================================
+    // Step 4: CLEAN JET SELECTION LOOP - No PUID weight calculation
+    // ============================================================================
     for (int i = 0; i < nJets; i++) {
         TLorentzVector jetVec = pre_jets[i];
         float jetPt = jetVec.Pt();
@@ -1621,35 +1557,10 @@ void Analysis::JetSelector() {
             continue;
         }
 
-        // PUID weight calculation for ALL jets (before selection)
-        if (apply_puid_ && jetPt <= 50.0 && !isData) {
-            int puId = (jets_puId != nullptr) ? jets_puId->At(i) : 0;
-            bool passPUID = PassPileupID(jetPt, puId, puid_wp_);
-            int genIdx = (intVectors.count("Jet_genJetIdx")) ? 
-                         intVectors["Jet_genJetIdx"]->At(i) : -1;
-            
-            if (genIdx < 0) {  // Pileup jet
-                // tempSF = 1, tempEff = 0
-                total_puid_weight *= 1.0;
-            } else {  // Real jet
-                //float tempSF = SSBCorr->GetPUJetIDSF(jetPt, jetEta, passPUID, true, puid_wp_, "nominal");
-		float tempSF = SSBCorr->GetPUJetIDSFAndEff(jetPt, jetEta, passPUID, true, puid_wp_, "nom", false);
-                //float tempEff = SSBCorr->GetPUJetIDEff(jetPt, jetEta, puid_wp_);
-		float tempEff = SSBCorr->GetPUJetIDSFAndEff(jetPt, jetEta, passPUID, true, puid_wp_, "MCEff", true);
-
-                
-                if (!passPUID) {
-                    // (1-SF*Eff)/(1-Eff) formula from first code
-                    total_puid_weight *= (1.0 - tempSF * tempEff) / (1.0 - tempEff);
-                } else {
-                    // Just apply SF
-                    total_puid_weight *= tempSF;
-                }
-            }
-        }
-
-        // PUID selection (separate from weight calculation)
-        if (apply_puid_ && jetPt <= 50.0) {
+        // ============================================================================
+        // Step 4: PUID selection ONLY (no weight calculation)
+        // ============================================================================
+        if (apply_puid_ && jetPt <= puid_pt_threshold_) {
             int puId = (jets_puId != nullptr) ? jets_puId->At(i) : 0;
             bool passPUID = PassPileupID(jetPt, puId, puid_wp_);
             
@@ -1663,17 +1574,16 @@ void Analysis::JetSelector() {
         jets.push_back(pre_jets[i]);
     }
 
-    // Apply PUID event weight and set states
+    // ============================================================================
+    // Step 4: Clean completion - No PUID weight application here
+    // ============================================================================
     jets_selected_ = true;
-    if (!isData && apply_puid_) {
-	//std::cout << "total_puid_weight :" << total_puid_weight << std::endl;
-        evt_weight_ *= total_puid_weight;
-    }
-    jet_puid_weight_applied_ = true;
     
     //std::cout << "JetSelector completed: " << v_jet_idx.size() << " jets selected" << std::endl;
-
+    
+    // NOTE: PUID weight calculation is now handled by PUIDSFApply() function
 }
+
 
 bool Analysis::JetCleaning(TLorentzVector* jet_)
 {
@@ -1791,6 +1701,7 @@ void Analysis::DeclareHistos()
       h_Num_bJets[i] = new TH1D(Form("h_Num_bJets_%d",i),Form("Num. of b Jets after %s",cutflowName[i].Data()), 20, 0.0, 20); h_Num_bJets[i]->Sumw2();
     }
 
+    h_JetPUIDEvtWeight  = new TH1D(Form("h_JetPUIDEvtWeight"), Form("PUJetID Events Weight "), 200, 0.0, 2.0); h_JetPUIDEvtWeight->Sumw2(); 
     h_bTagEvtWeight  = new TH1D(Form("h_bTagEvtWeight"), Form("b-Tagging Events Weight "), 200, 0.0, 2.0); h_bTagEvtWeight->Sumw2(); 
     h_Top1Mass     = new TH1D(Form("h_Top1Mass"   ), Form("Top1 Mass"   ), 1000, 0.0, 1000); h_Top1Mass->Sumw2();
     h_Top1pt       = new TH1D(Form("h_Top1pt"   ), Form("Top1 pt"   ), 1000, 0.0, 1000); h_Top1pt->Sumw2();
@@ -2503,3 +2414,152 @@ void Analysis::BTaggingSFApply() {
     
     FillHisto(h_bTagEvtWeight, btag_sf_weight_);
 }
+
+bool Analysis::IsHardScatterJet(int jet_idx) const {
+    // Check if jet is matched to gen jet (CMS criteria: ΔR < 0.4)
+    auto it = intVectors.find("Jet_genJetIdx");
+    if (it == intVectors.end() || !it->second || 
+        jet_idx >= it->second->GetSize()) {
+        return false;  // No gen matching info = consider as PileUp
+    }
+    
+    int gen_jet_idx = it->second->At(jet_idx);
+    return gen_jet_idx >= 0;  // Gen matched = HardScatter, otherwise PileUp
+}
+
+void Analysis::CollectPUIDCandidates() {
+    puid_hardscatter_jets_.clear();
+    
+    // Skip collection for Data or when PUID is disabled
+    if (isData || !apply_puid_) {
+        return;
+    }
+    
+    // Check if jet collections are ready
+    if (pre_jets.empty() || jets_pt == nullptr) {
+        std::cerr << "[WARNING] CollectPUIDCandidates: Jet collections not ready" << std::endl;
+        return;
+    }
+    
+    Int_t nJets = jets_pt->GetSize();
+    
+    // Lambda for basic jet cuts (same as JetSelector)
+    auto passBasicJetCuts = [this](int i, float jetPt, float jetEta) -> bool {
+        // Kinematic cuts
+        if (jetPt <= jet_pt || fabs(jetEta) >= jet_eta) return false;
+        
+        // Jet ID
+        if (jets_Id != nullptr && jets_Id->At(i) < jet_id) return false;
+        
+        // Jet cleaning (need TLorentzVector)
+        TLorentzVector jetVec = pre_jets[i];
+        if (!JetCleaning(&jetVec)) return false;
+        
+        return true;
+    };
+    
+    for (int i = 0; i < nJets; i++) {
+        float jetPt = pre_jets[i].Pt();
+        float jetEta = pre_jets[i].Eta();
+        
+        // Only consider jets that need PUID (CMS criteria)
+        if (jetPt > puid_pt_threshold_) continue;
+        
+        // Skip Run3 PUPPI jets (no PUID needed)
+        if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) continue;
+        
+        // Must pass basic jet cuts to be PUID candidate
+        if (!passBasicJetCuts(i, jetPt, jetEta)) continue;
+        
+        // Check if this is HardScatter jet (CMS criteria)
+        bool is_hardscatter = IsHardScatterJet(i);
+        if (!is_hardscatter) continue;  // Only collect HardScatter jets for weight calculation
+        
+        // Get PUID result
+        int puId = (jets_puId != nullptr && i < jets_puId->GetSize()) ? jets_puId->At(i) : 0;
+        bool passes_puid = PassPileupID(jetPt, puId, puid_wp_);
+        
+        // Store information
+        puid_hardscatter_jets_.emplace_back(i, jetPt, jetEta, passes_puid, is_hardscatter);
+    }
+    
+    //std::cout << "[PUID] Collected " << puid_hardscatter_jets_.size() 
+    //          << " HardScatter candidate jets for weight calculation" << std::endl;
+}
+
+
+void Analysis::PUIDSFApply() {
+    evt_weight_beforePUID_ = evt_weight_;  // Store weight before PUID SF
+    puid_sf_weight_ = 1.0;
+    
+    // Skip PUID SF for Data or when PUID is disabled
+    if (isData || !apply_puid_) {
+        return;
+    }
+    
+    // Skip if no HardScatter candidate jets collected
+    if (puid_hardscatter_jets_.empty()) {
+        //std::cout << "[PUID] No HardScatter candidate jets - PUID SF = 1.0" << std::endl;
+        return;
+    }
+    
+    // CMS Event Reweighting formula: P(DATA) / P(MC)
+    float p_mc = 1.0;
+    float p_data = 1.0;
+    
+    //std::cout << "[PUID] Computing event weight for " << puid_hardscatter_jets_.size() 
+    //          << " HardScatter jets" << std::endl;
+    
+    for (const auto& jet_info : puid_hardscatter_jets_) {
+        try {
+            // Get scale factor and efficiency using SSBCorrections
+            float eff = SSBCorr->GetPUJetIDSFAndEff(
+                jet_info.pt, jet_info.eta, jet_info.passes_puid, 
+                true, puid_wp_, "MCEff", true);
+                
+            // Use systematic variation for scale factor
+            std::string syst_variation = PUIDSFSys;
+            if (syst_variation == "Central") syst_variation = "nominal";  // Handle legacy naming
+            
+            float sf = SSBCorr->GetPUJetIDSFAndEff(
+                jet_info.pt, jet_info.eta, jet_info.passes_puid, 
+                true, puid_wp_, syst_variation, false);
+            
+            // Validate efficiency values
+            if (eff < 1e-5) eff = 1e-5;
+            if (eff > 1.0 - 1e-5) eff = 1.0 - 1e-5;
+            
+            // Apply CMS Event Reweighting formula
+            if (jet_info.passes_puid) {
+                // Tagged: εᵢ vs SFᵢεᵢ
+                p_mc *= eff;
+                p_data *= (sf * eff);
+            } else {
+                // Not tagged: (1-εⱼ) vs (1-SFⱼεⱼ)  
+                p_mc *= (1.0 - eff);
+                p_data *= (1.0 - sf * eff);
+            }
+            
+            // Debug output (can be removed for production)
+            /*std::cout << "  Jet " << jet_info.original_index 
+                      << ": pT=" << jet_info.pt << ", eta=" << jet_info.eta
+                      << ", passes=" << jet_info.passes_puid 
+                      << ", SF=" << sf << ", Eff=" << eff << std::endl;*/
+            
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] PUID SF calculation failed for jet " 
+                      << jet_info.original_index << ": " << e.what() << std::endl;
+            continue;  // Skip this jet on error
+        }
+    }
+    
+    // Calculate final event weight
+    puid_sf_weight_ = (p_mc > 1e-10) ? p_data / p_mc : 1.0;
+    
+    // Apply weight to event
+    evt_weight_ *= puid_sf_weight_;
+    FillHisto(h_JetPUIDEvtWeight, puid_sf_weight_); 
+    //std::cout << "[PUID] Event weight: " << puid_sf_weight_ 
+    //          << " (p_mc=" << p_mc << ", p_data=" << p_data << ")" << std::endl;
+}
+

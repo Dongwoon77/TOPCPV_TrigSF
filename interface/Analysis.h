@@ -77,8 +77,38 @@ private:
     bool object_variables_set_ = false;
 
     // PUID related configuration
-    std::string puid_wp_ = "L";  // working point
     bool apply_puid_ = true;     // whether to apply PUID
+
+
+    // PUID related variables (from Step 1)
+    std::string puid_wp_;
+    std::string PUIDSFSys;
+    float puid_pt_threshold_;
+    double evt_weight_beforePUID_;
+    double puid_sf_weight_;
+    
+    // ============================================================================
+    // Step 2: NEW - PUID candidate jets information structure
+    // ============================================================================
+    struct PUIDJetInfo {
+        int original_index;     // Original jet index in jets collection
+        float pt, eta;         // Jet kinematics
+        bool passes_puid;      // Whether jet passes PUID
+        bool is_hardscatter;   // Whether jet is matched to gen jet (HardScatter)
+        
+        // Constructor for easy initialization
+        PUIDJetInfo(int idx, float p, float e, bool pass, bool hard) 
+            : original_index(idx), pt(p), eta(e), passes_puid(pass), is_hardscatter(hard) {}
+    };
+    
+    std::vector<PUIDJetInfo> puid_hardscatter_jets_;  // HardScatter jets for weight calculation
+    
+    // ============================================================================
+    // Step 2: NEW - Function declarations
+    // ============================================================================
+    void CollectPUIDCandidates();
+    bool IsHardScatterJet(int jet_idx) const;
+
 
 
     // Maps for dynamic branch storage
@@ -333,7 +363,8 @@ private:
     // B-tagging SF related variables
     double evt_weight_beforeBtag_;
     double btag_sf_weight_;
-    
+   
+    void PUIDSFApply(); 
     // B-tagging SF application function
     void BTaggingSFApply();
 
@@ -377,6 +408,7 @@ private:
     std::string btag_wp_; // "L", "M", "T"
 
 
+    TH1D *h_JetPUIDEvtWeight;
     TH1D *h_bTagEvtWeight;
     TH1D *h_Lep1pt[10];
     TH1D *h_Lep2pt[10];
