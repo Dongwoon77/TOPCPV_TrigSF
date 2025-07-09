@@ -1388,7 +1388,7 @@ void Analysis::MakeElecCollection() {
 //    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
-
+/*
 void Analysis::MakeJetCollection() {
     pre_jets.clear();
 
@@ -1464,7 +1464,119 @@ void Analysis::MakeJetCollection() {
 
     pre_jets = corr_output.corrected_jets;
     Met = corr_output.corrected_met;
+}*/
+
+void Analysis::MakeJetCollection() {
+    pre_jets.clear();
+
+    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
+        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
+        return;
+    }
+
+    Int_t nJets = jets_pt->GetSize();
+    std::vector<TLorentzVector> rawJets;
+    std::vector<float> rawFactors;
+    std::vector<float> jetAreas;
+    std::vector<TLorentzVector> genJets;
+    std::vector<int> genJetIndices;
+
+    rawJets.reserve(nJets);
+    rawFactors.reserve(nJets);
+    jetAreas.reserve(nJets);
+    genJets.reserve(nJets);
+    genJetIndices.reserve(nJets);
+
+    // ============================================================================
+    // SOLUTION 1: Ensure all jets are included, even with invalid data
+    // ============================================================================
+    for (int ijet = 0; ijet < nJets; ++ijet) {
+        try {
+            TLorentzVector rawJet;
+            rawJet.SetPtEtaPhiM(jets_pt->At(ijet), jets_eta->At(ijet), jets_phi->At(ijet), jets_M->At(ijet));
+            rawJets.push_back(rawJet);
+
+            float rawFactor = (floatVectors.count("Jet_rawFactor") && floatVectors["Jet_rawFactor"]->GetSize() > ijet)
+                                ? floatVectors["Jet_rawFactor"]->At(ijet) : 0.0;
+            rawFactors.push_back(rawFactor);
+
+            float area = (floatVectors.count("Jet_area") && floatVectors["Jet_area"]->GetSize() > ijet)
+                           ? floatVectors["Jet_area"]->At(ijet) : 0.5;
+            jetAreas.push_back(area);
+
+            int genIdx = (intVectors.count("Jet_genJetIdx") && intVectors["Jet_genJetIdx"]->GetSize() > ijet)
+                           ? intVectors["Jet_genJetIdx"]->At(ijet) : -1;
+            genJetIndices.push_back(genIdx);
+            
+        } catch (const std::exception& e) {
+            std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
+            std::cout << "erro ! "  << std::endl;
+                std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
+    std::cout << ">>> CREATING DUMMY JET AT INDEX " << ijet << " <<<" << std::endl;  // 추가
+ 
+            // ============================================================================
+            // FIX: Add invalid dummy jet with -999 values to maintain size consistency
+            // ============================================================================
+            TLorentzVector dummyJet;
+            dummyJet.SetPtEtaPhiM(-999.0, -999.0, -999.0, -999.0);  // Clearly invalid jet
+            rawJets.push_back(dummyJet);
+            rawFactors.push_back(0.0);
+            jetAreas.push_back(0.5);
+            genJetIndices.push_back(-1);
+        }
+    }
+
+    // Verify size consistency before proceeding
+    if (rawJets.size() != static_cast<size_t>(nJets)) {
+        std::cerr << "[ERROR] Size mismatch after jet reading: expected " << nJets 
+                  << ", got " << rawJets.size() << std::endl;
+        pre_jets.clear();
+        return;
+    }
+
+    if(!isData){
+        if (gen_jets_pt && gen_jets_eta && gen_jets_phi && gen_jets_M) {
+            Int_t nGenJets = gen_jets_pt->GetSize();
+            for (int i = 0; i < nGenJets; ++i) {
+                TLorentzVector gj;
+                gj.SetPtEtaPhiM(gen_jets_pt->At(i), gen_jets_eta->At(i), gen_jets_phi->At(i), gen_jets_M->At(i));
+                genJets.push_back(gj);
+            }
+        }
+    }
+
+    double rho = (floatSingles.count("fixedGridRhoFastjetAll") > 0) ? **floatSingles["fixedGridRhoFastjetAll"] : 0.0;
+    double raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
+    double raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
+
+    JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
+        rawJets,
+        rawFactors,
+        jetAreas,
+        rho,
+        isData,
+        true,
+        true,
+        raw_met_pt,
+        raw_met_phi,
+        genJets,
+        genJetIndices
+    );
+
+    pre_jets = corr_output.corrected_jets;
+    Met = corr_output.corrected_met;
+    
+    // ============================================================================
+    // VERIFICATION: Check final size consistency
+    // ============================================================================
+    if (pre_jets.size() != static_cast<size_t>(nJets)) {
+        std::cout << "[INFO] MakeJetCollection: Input jets=" << nJets 
+                  << ", Output corrected jets=" << pre_jets.size() 
+                  << " (some jets may have been filtered by JEC/JER)" << std::endl;
+    }
 }
+
+
 bool Analysis::NumIsoLeptons(int nNLepsCut) // YOU SHOULD CALL THIS FUNCTION AFTER LEPTONSELETOR //
 {
     bool numLeptons = true;
@@ -2427,7 +2539,7 @@ bool Analysis::IsHardScatterJet(int jet_idx) const {
     return gen_jet_idx >= 0;  // Gen matched = HardScatter, otherwise PileUp
 }
 
-void Analysis::CollectPUIDCandidates() {
+/*void Analysis::CollectPUIDCandidates() {
     puid_hardscatter_jets_.clear();
     
     // Skip collection for Data or when PUID is disabled
@@ -2485,6 +2597,87 @@ void Analysis::CollectPUIDCandidates() {
     
     //std::cout << "[PUID] Collected " << puid_hardscatter_jets_.size() 
     //          << " HardScatter candidate jets for weight calculation" << std::endl;
+}*/
+
+void Analysis::CollectPUIDCandidates() {
+    puid_hardscatter_jets_.clear();
+    
+    // Skip collection for Data or when PUID is disabled
+    if (isData || !apply_puid_) {
+        return;
+    }
+    
+    // Check if jet collections are ready
+    if (pre_jets.empty()) {
+        // Normal case: event has no jets
+        return;
+    }
+    
+    if (jets_pt == nullptr) {
+        std::cerr << "[WARNING] CollectPUIDCandidates: jets_pt is nullptr" << std::endl;
+        return;
+    }
+    
+    Int_t nJets_original = jets_pt->GetSize();
+    Int_t nJets_corrected = static_cast<Int_t>(pre_jets.size());
+    
+    // ============================================================================
+    // HANDLE SIZE MISMATCH: Use the smaller size for safety
+    // ============================================================================
+    Int_t nJets_safe = std::min(nJets_original, nJets_corrected);
+    
+    if (nJets_original != nJets_corrected) {
+        std::cout << "[INFO] CollectPUIDCandidates: Size mismatch detected - "
+                  << "original=" << nJets_original << ", corrected=" << nJets_corrected 
+                  << ", using=" << nJets_safe << std::endl;
+    }
+    
+    // Lambda for basic jet cuts (same as JetSelector)
+    auto passBasicJetCuts = [this](int i, float jetPt, float jetEta) -> bool {
+        // Kinematic cuts
+        if (jetPt <= jet_pt || fabs(jetEta) >= jet_eta) return false;
+        
+        // Jet ID check with bounds checking
+        if (jets_Id != nullptr && i < jets_Id->GetSize() && jets_Id->At(i) < jet_id) return false;
+        
+        // Jet cleaning (need TLorentzVector)
+        if (i >= static_cast<int>(pre_jets.size())) return false;
+        TLorentzVector jetVec = pre_jets[i];
+        if (!JetCleaning(&jetVec)) return false;
+        
+        return true;
+    };
+    
+    for (int i = 0; i < nJets_safe; i++) {
+        // Skip invalid dummy jets (pT = -999 from error handling)
+        if (pre_jets[i].Pt() < 0.0) continue;
+        
+        float jetPt = pre_jets[i].Pt();
+        float jetEta = pre_jets[i].Eta();
+        
+        // Only consider jets that need PUID (CMS criteria)
+        if (jetPt > puid_pt_threshold_) continue;
+        
+        // Skip Run3 PUPPI jets (no PUID needed)
+        if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) continue;
+        
+        // Must pass basic jet cuts to be PUID candidate
+        if (!passBasicJetCuts(i, jetPt, jetEta)) continue;
+        
+        // Check if this is HardScatter jet (CMS criteria)
+        bool is_hardscatter = IsHardScatterJet(i);
+        if (!is_hardscatter) continue;  // Only collect HardScatter jets for weight calculation
+        
+        // Get PUID result with bounds checking
+        int puId = 0;
+        if (jets_puId != nullptr && i < jets_puId->GetSize()) {
+            puId = jets_puId->At(i);
+        }
+        bool passes_puid = PassPileupID(jetPt, puId, puid_wp_);
+        
+        // Store information
+        puid_hardscatter_jets_.emplace_back(i, jetPt, jetEta, passes_puid, is_hardscatter);
+    }
 }
 
 
