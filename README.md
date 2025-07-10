@@ -35,6 +35,12 @@ git clone --branch Run2_ULSummer20_v6 https://github.com/physicist87/SSBNanoAODA
 cd SSBNanoAODANCode
 ```
 
+If this repository is forked to your account:
+```sh
+git clone --branch Run2_ULSummer20_v6 https://github.com/<username>/SSBNanoAODANCode.git
+cd SSBNanoAODANCode
+```
+
 ### Compilation Instructions
 To compile the analysis program, use the provided `Makefile`:
 ```sh
