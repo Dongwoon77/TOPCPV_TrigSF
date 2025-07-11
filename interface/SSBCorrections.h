@@ -153,6 +153,7 @@ private:
     //std::shared_ptr<const correction::Correction> jec_;
     //std::shared_ptr<const correction::CorrectionSet> c_jec_;
     std::string year_;
+    std::string btag_sf_type_;  // Added: "comb" or "mujets"
 
     /// Varibles & Functions for Trigger 
     double GetTrgEff(double pt1, double pt2, TString Sys_);
@@ -169,6 +170,7 @@ private:
     std::shared_ptr<const correction::Correction> ele_sf_;
     std::shared_ptr<const correction::Correction> ele_reco_sf_;
 
+    std::shared_ptr<const correction::Correction> jetveto_;
     std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor

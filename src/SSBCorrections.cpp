@@ -43,6 +43,7 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string elec_path    = reader->GetText("ElecSFPath");
     std::string RunPeriod    = reader->GetText("RunRange");
     std::string puJson  =  "";
+    btag_sf_type_            = reader->GetText("BTagSFType");
 
     // Muon Infor. ID  ISO // 
     std::string muon_id_corName  = reader->GetText( "MuonIDSFName"  );
@@ -50,7 +51,7 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     
     // Electron ID ISO // 
     std::string ele_sf_name_      = reader->GetText( "ElecIDSFName"  );  
-    std::string ele_reco_sf_name_    = reader->GetText( "ElecRecoSFName" );
+    //std::string ele_reco_sf_name_    = reader->GetText( "ElecRecoSFName" );
 
     // Trigger SF // 
     std::string Trig_sf_name_      = reader->GetText( "TrigSFFile"  );  
@@ -128,6 +129,20 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
     pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
 
+
+      
+    if (btag_sf_type_ != "comb" && btag_sf_type_ != "mujets") {
+        std::cerr << "[WARNING] Invalid BTagSFType: " << btag_sf_type_ 
+                  << ". Using default 'comb'." << std::endl;
+        btag_sf_type_ = "comb";
+    }
+
+    // Analysis type specific recommendation
+    if (btag_sf_type_ == "comb") {
+        std::cout << "[INFO] Using 'comb' SF (QCD + ttbar enriched regions)" << std::endl;
+    } else {
+        std::cout << "[INFO] Using 'mujets' SF (QCD enriched regions, bias avoidance)" << std::endl;
+    }
 
 
     std::string btag_algo = "";
@@ -465,7 +480,7 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     return result;
 }
 
-void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name) {
+/*void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name) {
     std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
     
     auto cset = correction::CorrectionSet::from_file(json_path);
@@ -481,13 +496,50 @@ void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, const st
     
     std::cout << "[SSBCorrections] Loaded corrections: " << comb_name 
               << " and " << incl_name << std::endl;
+}*/
+void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, 
+                                          const std::string& tagger_name) {
+    std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
+    
+    auto cset = correction::CorrectionSet::from_file(json_path);
+    
+    // Heavy flavor correction name (config-based selection)
+    std::string heavy_flavor_name = tagger_name;  // e.g., "deepJet_comb"
+    
+    // Replace "comb" with config-specified type
+    size_t pos = heavy_flavor_name.find("comb");
+    if (pos != std::string::npos) {
+        heavy_flavor_name.replace(pos, 4, btag_sf_type_);
+    } else {
+        std::cerr << "[ERROR] Expected 'comb' in tagger_name: " << tagger_name << std::endl;
+        return;
+    }
+    
+    // Light flavor correction name (always "incl")
+    std::string light_flavor_name = tagger_name;
+    pos = light_flavor_name.find("comb");
+    if (pos != std::string::npos) {
+        light_flavor_name.replace(pos, 4, "incl");
+    }
+    
+    // Load corrections with generic keys
+    btag_corrections_["heavy"] = cset->at(heavy_flavor_name);
+    btag_corrections_["light"] = cset->at(light_flavor_name);
+    
+    std::cout << "[SSBCorrections] Loaded corrections: " 
+              << heavy_flavor_name << " and " << light_flavor_name << std::endl;
 }
 
-std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
+
+/*std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
     return (flavor == 0) ? "incl" : "comb";
+}*/
+std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
+    // 0 = light flavor (u,d,s,g), others = heavy flavor (b,c)
+    return (flavor == 0) ? "light" : "heavy";
 }
 
-float SSBCorrections::GetBtagSF(float pt, float eta, int flav, const std::string& wp, const std::string& syst) const {
+/*float SSBCorrections::GetBtagSF(float pt, float eta, int flav, const std::string& wp, const std::string& syst) const {
     float pt_clamped = std::clamp(pt, 20.0f, 1000.0f);
     float eta_abs = std::fabs(eta);
 
@@ -501,6 +553,27 @@ float SSBCorrections::GetBtagSF(float pt, float eta, int flav, const std::string
 
     try {
         //std::cout << "[DEBUG] Using " << corr_name << " correction for flavor " << flav << std::endl;
+        return it->second->evaluate({syst, wp, flav, eta_abs, pt_clamped});
+    } catch (const std::exception& e) {
+        std::cerr << "[WARNING] GetBtagSF failed: " << e.what() << std::endl;
+        return 1.0;
+    }
+}*/
+
+float SSBCorrections::GetBtagSF(float pt, float eta, int flav, 
+                                const std::string& wp, const std::string& syst) const {
+    float pt_clamped = std::clamp(pt, 20.0f, 1000.0f);
+    float eta_abs = std::fabs(eta);
+
+    std::string corr_name = getBtagCorrectionName(flav);  // "heavy" or "light"
+    auto it = btag_corrections_.find(corr_name);
+    
+    if (it == btag_corrections_.end()) {
+        std::cerr << "[ERROR] B-tag correction not found: " << corr_name << std::endl;
+        return 1.0;
+    }
+
+    try {
         return it->second->evaluate({syst, wp, flav, eta_abs, pt_clamped});
     } catch (const std::exception& e) {
         std::cerr << "[WARNING] GetBtagSF failed: " << e.what() << std::endl;
