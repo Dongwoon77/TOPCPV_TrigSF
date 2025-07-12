@@ -45,7 +45,7 @@ Analysis::~Analysis() {
 
     if (fout) {
         fout->Write();
-        std::cout << "[fout write ! output file Name: ]" <<  fout->GetName() << std::endl;
+        std::cout << "[Info. output file Name] : " <<  fout->GetName() << std::endl;
         fout->Close(); // Close the file before deleting
         delete fout;
         fout = nullptr;
@@ -103,10 +103,11 @@ void Analysis::InitBranches(const std::string &branchListFile) {
             trim(objectType);
             trim(dataType);
             trim(varType);
-	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
-	    if (isData && branchName.find("gen") != std::string::npos) {continue;}
-	    if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
-	    if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
+      	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
+	          if (isData && branchName.find("gen") != std::string::npos) {continue;}
+	          if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
+	          if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
+	          if (isData && branchName.find("L1PreFiringWeight") != std::string::npos) {continue;}
             // Initialize based on data type and variable type
             if (dataType == "Bool_t" && varType == "single") {
                 boolSingles[branchName] = std::make_unique<TTreeReaderValue<Bool_t>>(fReader, branchName.c_str());
@@ -171,7 +172,7 @@ void Analysis::SetVariables() {
     }
 
     for (int i = 0; i < trigName.size(); ++i){
-	std::cout << "test trigName[i] " << trigName[i] << std::endl;
+        std::cout << "test trigName[i] " << trigName[i] << std::endl;
         triggerList[trigName[i]] =DeepCopy<bool>( boolSingles[trigName[i]]);
     }
 
@@ -220,8 +221,9 @@ void Analysis::SetVariables() {
 
     dojer = SSBConfReader->GetBool("DoJER");
     
-    PileUpSys = SSBConfReader->GetText("PileupSys");
-    TrigSFSys = SSBConfReader->GetText("TrigSFSys");
+    PileUpSys    = SSBConfReader->GetText("PileupSys");
+    L1PreFireSys = SSBConfReader->GetText("L1PreFireSys");
+    TrigSFSys    = SSBConfReader->GetText("TrigSFSys");
 
 
     // ============================================================================
@@ -640,6 +642,7 @@ void Analysis::Loop() {
 
         GenWeightApply();
         PUWeightApply();
+        L1PreFireApply();
 
         SetObjectVariable(); //
         LeptonSelector(); 
@@ -1100,6 +1103,45 @@ void Analysis::MCSFApply()
     else {evt_weight_ = 1;}
 }
 
+void Analysis::L1PreFireApply()
+{   
+    evt_weight_beforeL1PreFire_ = evt_weight_; // keep event weight
+
+    // Early return for Data or 2018+ (no L1 prefiring correction needed)
+    if (isData || TString(RunPeriod).Contains("2018")) {return;}
+
+    // Apply L1 prefiring correction for specific years
+    bool needsL1PreFire = TString(RunPeriod).Contains("2016") || TString(RunPeriod).Contains("2017");
+                         // Add Run3 years here if needed: || TString(RunPeriod).Contains("2022") || ...
+
+    if (!needsL1PreFire) {
+        return; // Skip L1 prefiring for years that don't need it
+    }
+
+    // Apply L1 prefiring weight for 2016/2017 MC only
+    double l1prefire_ = 1.0;
+    
+    // Use const char* comparison for better performance
+    const char* sys = L1PreFireSys.Data();
+
+    if (strstr(sys, "central")) {
+        l1prefire_ = **floatSingles["L1PreFiringWeight_Nom"];
+    }
+    else if (strstr(sys, "up")) {
+        l1prefire_ = **floatSingles["L1PreFiringWeight_Up"];
+    }
+    else if (strstr(sys, "down")) {
+        l1prefire_ = **floatSingles["L1PreFiringWeight_Dn"];
+    }
+    else if (!strstr(sys, "none")) {
+        // Only print error if not "none"
+        std::cout << "L1Prefiring sys Error ... Default is Weight_L1Prefiring ... : " << L1PreFireSys << std::endl;
+        l1prefire_ = **floatSingles["L1PreFiringWeight_Nom"];
+    }
+    //std::cout << "l1prefire_ : " << l1prefire_ << std::endl;
+    evt_weight_ *= l1prefire_;
+}
+
 // Safely create a TLorentzVector
 TLorentzVector Analysis::createLorentzVector(float pt, float eta, float phi, float mass) {
     //std::cout << "createLorentzVector " << std::endl;
@@ -1512,8 +1554,8 @@ void Analysis::MakeJetCollection() {
         } catch (const std::exception& e) {
             std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
             std::cout << "erro ! "  << std::endl;
-                std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
-    std::cout << ">>> CREATING DUMMY JET AT INDEX " << ijet << " <<<" << std::endl;  // 추가
+            std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
+            std::cout << ">>> CREATING DUMMY JET AT INDEX " << ijet << " <<<" << std::endl;  // 추가
  
             // ============================================================================
             // FIX: Add invalid dummy jet with -999 values to maintain size consistency

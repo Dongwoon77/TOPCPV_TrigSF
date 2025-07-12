@@ -139,6 +139,7 @@ private:
     void MCSFApply();
     void GenWeightApply();
     void PUWeightApply();
+    void L1PreFireApply();
     void NumPVCount();
     void LeptonSelector(); //(muon & electron)
     void LeptonOrder(); // Lepton (muon & electron)

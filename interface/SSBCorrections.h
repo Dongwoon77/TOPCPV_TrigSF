@@ -170,7 +170,7 @@ private:
     std::shared_ptr<const correction::Correction> ele_sf_;
     std::shared_ptr<const correction::Correction> ele_reco_sf_;
 
-    std::shared_ptr<const correction::Correction> jetveto_;
+    std::shared_ptr<const correction::Correction> jetvetomap_;
     std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_;
     std::shared_ptr<const correction::Correction> jer_sf_;  // JER scale factor

@@ -34,6 +34,8 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string jec_path     = reader->GetText("JECPath");
     std::string jer_path     = reader->GetText("JERPath");
     std::string jmar_path     = reader->GetText("JMARPath");
+    std::string jveto_path    = reader->GetText("JetVetoPath");
+    std::string jveto_key    = reader->GetText("JetVetoName");
     std::string jer_sf_path  = reader->GetText("JERSFPath");
     std::string jec_name     = reader->GetText("JECName");
     std::string jer_name     = reader->GetText("JERName");
@@ -129,6 +131,8 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
     pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
 
+//    auto jetveto_set = correction::CorrectionSet::from_file(jsonDir + jveto_path);
+//    jetvetomap_ = jmar_sf_set->at("Summer19UL18_V1");
 
       
     if (btag_sf_type_ != "comb" && btag_sf_type_ != "mujets") {
