@@ -50,7 +50,8 @@ OBJS = \
     KinematicReconstruction_MeanSol.o \
     KinematicReconstructionSolution.o \
     KinematicReconstruction.o \
-    SSBCorrections.o
+    SSBCorrections.o \
+    SSBCPVCalc.o
 
 # Input source and header dependencies
 INPUTS = \
@@ -62,7 +63,8 @@ INPUTS = \
     ./KinSolv/KinematicReconstruction_MeanSol.h ./KinSolv/KinematicReconstruction_MeanSol.cc \
     ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc \
     ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc \
-    ./interface/SSBCorrections.h ./src/SSBCorrections.cpp
+    ./interface/SSBCorrections.h ./src/SSBCorrections.cpp \
+    ./interface/SSBCPVCalc.h ./src/SSBCPVCalc.cpp
 
 # Default rule: build all object files and link them into the final program
 all: $(OBJS)
@@ -102,6 +104,10 @@ KinematicReconstruction.o: ./KinSolv/KinematicReconstruction.h ./KinSolv/Kinemat
 # New correctionlib component
 SSBCorrections.o: ./interface/SSBCorrections.h ./src/SSBCorrections.cpp
 	$(CC) $(CXXFLAGS) -c ./src/SSBCorrections.cpp -o SSBCorrections.o
+
+# SSB CPV Observables Calculator 
+SSBCPVCalc.o: ./interface/SSBCPVCalc.h ./src/SSBCPVCalc.cpp
+	$(CC) $(CXXFLAGS) -c ./src/SSBCPVCalc.cpp -o SSBCPVCalc.o
 
 # Clean all build products
 clean:

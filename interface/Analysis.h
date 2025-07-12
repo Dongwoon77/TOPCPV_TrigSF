@@ -30,6 +30,9 @@
 // Textreader
 #include "./../TextReader/TextReader.hpp"
 
+// CPVObservables Calculator 
+#include "./../interface/SSBCPVCalc.h"
+
 
 class Analysis {
 public:
@@ -58,6 +61,7 @@ private:
     //TextReader from Jaehoon.
     TextReader *SSBConfReader;
     SSBCorrections *SSBCorr;
+    SSBCPVCalc *SSBCPVCal;
     int NumEvt; //
 
     double Lumi;

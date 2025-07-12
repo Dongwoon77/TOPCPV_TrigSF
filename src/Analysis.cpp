@@ -23,6 +23,7 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     SSBConfReader->ReadVariables();
     SSBConfReader->PrintoutVariables();
     SSBCorr = new SSBCorrections(SSBConfReader, FileName_.Data());
+    SSBCPVCal = new SSBCPVCalc();
     // Initialize branches based on branch list file
     InitBranches(branchListFile);
     cutflowName[0] = "Step_0";
@@ -68,6 +69,11 @@ Analysis::~Analysis() {
 /*    else {
     std::cout << "Error !! SSBConfReader " << std::endl;
     }*/
+    if (SSBCPVCal) {
+        delete SSBCPVCal;
+        SSBCPVCal = nullptr;
+        std::cout << "SSBCPVCal successfully deleted." << std::endl;
+    }
     // Add other cleanup as needed for dynamically allocated objects
     std::cout << "Analysis destructor completed." << std::endl;
 }
@@ -839,6 +845,28 @@ void Analysis::Loop() {
             FillHisto( h_AnLepEnergy  , AnLep.Energy()  , evt_weight_ );
             FillHisto( h_NuEnergy     , Nu.Energy()     , evt_weight_ );
             FillHisto( h_AnNuEnergy   , AnNu.Energy()   , evt_weight_ );
+
+            std::vector<double> v_recocp_O;
+            v_recocp_O.push_back( SSBCPVCal->getO1Vari( Top, AnTop, AnLep, Lep )  );
+            v_recocp_O.push_back( SSBCPVCal->getO2Vari( Top, AnTop, bJet, AnbJet ) );
+            v_recocp_O.push_back( SSBCPVCal->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO7Vari( Top , AnTop, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
+            v_recocp_O.push_back( SSBCPVCal->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
+            v_recocp_O.push_back( SSBCPVCal->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
+            v_recocp_O.push_back( SSBCPVCal->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
+            v_recocp_O.push_back( SSBCPVCal->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
+            v_recocp_O.push_back( SSBCPVCal->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
+
+            for (int i = 0; i < v_recocp_O.size(); ++ i)
+            {
+               FillHisto( h_Reco_CPO_[i], v_recocp_O[i] , evt_weight_ );
+               FillHisto( h_Reco_CPO_ReRange_[i], v_recocp_O[i] , evt_weight_ );
+            } 
+
                   
  
         }
@@ -1906,7 +1934,11 @@ void Analysis::DeclareHistos()
     h_NuEnergy   = new TH1D(Form("h_NuEnergy" ), Form("Nuetrino Energy"   ), 400, 0.0, 400); h_NuEnergy->Sumw2();
     h_AnNuEnergy = new TH1D(Form("h_AnNuEnergy" ), Form("anti-Nuetrino Energy" ), 400, 0.0, 400); h_AnNuEnergy->Sumw2();
 
-
+    for (int i =0; i < 13; ++i)
+    {                 
+        h_Reco_CPO_[i] = new TH1D(Form("h_Reco_CPO%d",i+1 ), Form("CPO%d",i+1   ), 200, -10, 10); h_Reco_CPO_[i]->Sumw2();
+        h_Reco_CPO_ReRange_[i] = new TH1D(Form("h_Reco_CPO%d_ReRange",i+1 ), Form("CPO%d",i+1   ), 40, -2, 2); h_Reco_CPO_ReRange_[i]->Sumw2();
+    }   
 }
 
 
