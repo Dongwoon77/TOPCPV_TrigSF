@@ -1,8 +1,0 @@
-SomeSetting : value
-### Corrections & SFs with correctionlib ###
-PileupSys : "nominal"
-# This is a comment about PileupSys
-
-L1PreFireSys : "central" ## central ,up,down, none
-TrigSFSys : "nominal"
-OtherSetting : 0
