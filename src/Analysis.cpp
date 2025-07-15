@@ -155,6 +155,10 @@ void Analysis::SetVariables() {
     RunPeriod = SSBConfReader->GetText( "RunRange" );
     Decaymode = SSBConfReader->GetText( "Channel" ); // Channel
     XsecTable_ = SSBConfReader->GetText( "XSecTablesName" );
+    METtype = SSBConfReader->GetText( "METtype",false );// Error Print is false in this version, 
+    if (METtype == "DUMMY") METtype == "PF"; 	// in case the MET type is not specified yet. This line wiil be removed
+
+
     /// Set Trigger List ///
     num_dleptrig = SSBConfReader->Size( "dileptrigger" );
     num_sleptrig = SSBConfReader->Size( "singleleptrigger" );
@@ -613,8 +617,13 @@ void Analysis::SetObjectVariable() {
     /*std::cout << "Setup B-tagging: " << JetbTag << " for period " << RunPeriod 
               << " with cut value " << bdisccut << std::endl;*/
     /// MET ///
-    met_pt  = floatSingles["MET_pt"].get(); 
-    met_phi  = floatSingles["MET_phi"].get();
+    if (METtype == "PF"){
+        met_pt  = floatSingles["MET_pt"].get(); 
+        met_phi  = floatSingles["MET_phi"].get();}
+    else if (METtype == "Puppi"){
+	met_pt  = floatSingles["PuppiMET_pt"].get();
+        met_phi  = floatSingles["PuppiMET_phi"].get();}
+    
     object_variables_set_ = true; 
 //    std::cout << " met_pt : " << met_pt << std::endl; 
 //    std::cout << " met_phi : " << met_phi << std::endl; 
@@ -1617,8 +1626,15 @@ void Analysis::MakeJetCollection() {
     }
 
     double rho = (floatSingles.count("fixedGridRhoFastjetAll") > 0) ? **floatSingles["fixedGridRhoFastjetAll"] : 0.0;
-    double raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
-    double raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
+    double raw_met_pt; double raw_met_phi;
+    if (METtype =="PF"){
+        raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
+        raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
+    }
+    else if (METtype =="Puppi"){
+        raw_met_pt = (floatSingles.count("PuppiMET_pt") > 0)  ? **floatSingles["PuppiMET_pt"]  : 0.0;
+        raw_met_phi = (floatSingles.count("PuppiMET_phi") > 0) ? **floatSingles["PuppiMET_phi"] : 0.0;
+    }
 
     JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
         rawJets,

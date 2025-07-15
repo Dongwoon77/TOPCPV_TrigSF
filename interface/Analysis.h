@@ -69,6 +69,7 @@ private:
     TString RunPeriod;
     TString Decaymode;
     TString XsecTable_;
+    TString METtype;
 
     TString cutflowName[10];
 
