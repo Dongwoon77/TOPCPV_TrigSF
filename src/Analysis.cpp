@@ -155,8 +155,6 @@ void Analysis::SetVariables() {
     RunPeriod = SSBConfReader->GetText( "RunRange" );
     Decaymode = SSBConfReader->GetText( "Channel" ); // Channel
     XsecTable_ = SSBConfReader->GetText( "XSecTablesName" );
-    METtype = SSBConfReader->GetText( "METtype",false );// Error Print is false in this version, 
-    if (METtype == "DUMMY") METtype == "PF"; 	// in case the MET type is not specified yet. This line wiil be removed
 
 
     /// Set Trigger List ///
@@ -266,7 +264,10 @@ void Analysis::SetVariables() {
     std::cout << "  Apply PUID: " << (apply_puid_ ? "true" : "false") << std::endl;
     std::cout << "  pT Threshold: " << puid_pt_threshold_ << " GeV" << std::endl;
 
-
+    // Select MET Type //
+    METtype = SSBConfReader->GetText("METtype");// Error Print is false in this version, 
+    if (METtype == "DUMMY") METtype = "PF"; 	// in case the MET type is not specified yet. This line wiil be removed
+    std::cout << "[WARNING] METtype COULD NOT FIND CONFIGRUATION!! DEFALT IS PFMET!!  " << METtype << std::endl;
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
     //SetObjectVariable();
@@ -1468,83 +1469,6 @@ void Analysis::MakeElecCollection() {
 //    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
-/*
-void Analysis::MakeJetCollection() {
-    pre_jets.clear();
-
-    if (jets_pt == nullptr || jets_eta == nullptr || jets_phi == nullptr || jets_M == nullptr) {
-        std::cerr << "Error: Some jet branch pointers are null in MakeJetCollection()" << std::endl;
-        return;
-    }
-
-    Int_t nJets = jets_pt->GetSize();
-    std::vector<TLorentzVector> rawJets;
-    std::vector<float> rawFactors;
-    std::vector<float> jetAreas;
-    std::vector<TLorentzVector> genJets;
-    std::vector<int> genJetIndices;
-
-    rawJets.reserve(nJets);
-    rawFactors.reserve(nJets);
-    jetAreas.reserve(nJets);
-    genJets.reserve(nJets);
-    genJetIndices.reserve(nJets);
-
-    for (int ijet = 0; ijet < nJets; ++ijet) {
-        try {
-            TLorentzVector rawJet;
-            rawJet.SetPtEtaPhiM(jets_pt->At(ijet), jets_eta->At(ijet), jets_phi->At(ijet), jets_M->At(ijet));
-            rawJets.push_back(rawJet);
-
-            float rawFactor = (floatVectors.count("Jet_rawFactor") && floatVectors["Jet_rawFactor"]->GetSize() > ijet)
-                                ? floatVectors["Jet_rawFactor"]->At(ijet) : 0.0;
-            rawFactors.push_back(rawFactor);
-
-            float area = (floatVectors.count("Jet_area") && floatVectors["Jet_area"]->GetSize() > ijet)
-                           ? floatVectors["Jet_area"]->At(ijet) : 0.5;
-            jetAreas.push_back(area);
-
-            int genIdx = (intVectors.count("Jet_genJetIdx") && intVectors["Jet_genJetIdx"]->GetSize() > ijet)
-                           ? intVectors["Jet_genJetIdx"]->At(ijet) : -1;
-            genJetIndices.push_back(genIdx);
-        } catch (const std::exception& e) {
-            std::cerr << "Error reading jet at index " << ijet << ": " << e.what() << std::endl;
-        }
-    }
-
-    if(!isData){
-        if (gen_jets_pt && gen_jets_eta && gen_jets_phi && gen_jets_M) {
-            Int_t nGenJets = gen_jets_pt->GetSize();
-            for (int i = 0; i < nGenJets; ++i) {
-                TLorentzVector gj;
-                gj.SetPtEtaPhiM(gen_jets_pt->At(i), gen_jets_eta->At(i), gen_jets_phi->At(i), gen_jets_M->At(i));
-                genJets.push_back(gj);
-            }
-        }
-    }
-
-    double rho = (floatSingles.count("fixedGridRhoFastjetAll") > 0) ? **floatSingles["fixedGridRhoFastjetAll"] : 0.0;
-    double raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
-    double raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
-    //bool isData = TString(FileName_).Contains("Data");
-
-    JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
-        rawJets,
-        rawFactors,
-        jetAreas,
-        rho,
-        isData,
-        true,
-        true,
-        raw_met_pt,
-        raw_met_phi,
-        genJets,
-        genJetIndices
-    );
-
-    pre_jets = corr_output.corrected_jets;
-    Met = corr_output.corrected_met;
-}*/
 
 void Analysis::MakeJetCollection() {
     pre_jets.clear();
@@ -1634,6 +1558,11 @@ void Analysis::MakeJetCollection() {
     else if (METtype =="Puppi"){
         raw_met_pt = (floatSingles.count("PuppiMET_pt") > 0)  ? **floatSingles["PuppiMET_pt"]  : 0.0;
         raw_met_phi = (floatSingles.count("PuppiMET_phi") > 0) ? **floatSingles["PuppiMET_phi"] : 0.0;
+    }
+    else {
+	    std::cerr << "[ERROR] There is no MET type. Check out your Configuration! Defalt is PFMET " << std::endl;
+        raw_met_pt = (floatSingles.count("MET_pt") > 0)  ? **floatSingles["MET_pt"]  : 0.0;
+        raw_met_phi = (floatSingles.count("MET_phi") > 0) ? **floatSingles["MET_phi"] : 0.0;
     }
 
     JetCorrectionOutput corr_output = SSBCorr->ApplyJetCorrectionsWithMET(
