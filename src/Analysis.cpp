@@ -266,11 +266,20 @@ void Analysis::SetVariables() {
 
     // Select MET Type //
     METtype = SSBConfReader->GetText("METtype");// Error Print is false in this version, 
-    if (METtype == "DUMMY") METtype = "PF"; 	// in case the MET type is not specified yet. This line wiil be removed
-    std::cout << "[WARNING] METtype COULD NOT FIND CONFIGRUATION!! DEFALT IS PFMET!!  " << METtype << std::endl;
+    std::cout << "  MET type: " << METtype << std::endl;
+    if (METtype == "DUMMY"){
+	    METtype = "PF"; 	// in case the MET type is not specified yet. This line wiil be removed
+            std::cout << "[WARNING] METtype COULD NOT FIND CONFIGRUATION!! DEFALT IS PFMET!!  " << METtype << std::endl;
+    }
     ///
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
     //SetObjectVariable();
+    applyMETXY = SSBConfReader->GetText("applyMETXY");
+    std::cout << "  apply MET XY correction: " << applyMETXY << std::endl;
+    if (applyMETXY == "DUMMY") {
+	    applyMETXY == "False";
+            std::cout << "[WARNING] applyMETXY COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyMETXY << std::endl;
+    }
 }
 
 void Analysis::SetObjectVariable() {
@@ -1582,6 +1591,18 @@ void Analysis::MakeJetCollection() {
     pre_jets = corr_output.corrected_jets;
     Met = corr_output.corrected_met;
     
+    TString yearForm;
+
+    if (RunPeriod.Contains("2016Pre")) yearForm = "2016APV";
+    else if (RunPeriod.Contains("2016Post")) yearForm = "2016nonAPV";
+    if (RunPeriod.Contains("2017")) yearForm = "2017";
+    if (RunPeriod.Contains("2018")) yearForm = "2018";
+    else cout << "[Warning check the RunPeriod]"   << endl;
+    bool isMC = !isData; bool isUL = true; bool isPuppi = METtype == "Puppi";
+
+
+    if (applyMETXY == "True") Met = SSBCorr->METXYCorrection(Met, **uintSingles["run"], yearForm, isMC, **intSingles["PV_npvsGood"], isUL, isPuppi);
+
     // ============================================================================
     // VERIFICATION: Check final size consistency
     // ============================================================================

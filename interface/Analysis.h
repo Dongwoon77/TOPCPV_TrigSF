@@ -70,6 +70,7 @@ private:
     TString Decaymode;
     TString XsecTable_;
     TString METtype;
+    TString applyMETXY;
 
     TString cutflowName[10];
 

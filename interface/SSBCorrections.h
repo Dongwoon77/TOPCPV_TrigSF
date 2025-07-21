@@ -109,8 +109,12 @@ public:
                                 bool applyJES, bool applyJER) const;
 
 
-
     TLorentzVector METXYCorrection(const TLorentzVector& type1_met,
+                                               int runnb, TString year, bool isMC, int npv, bool isUL, bool ispuppi
+                                               ) const;
+
+
+    TLorentzVector METXYCorrection_corrlib(const TLorentzVector& type1_met,
                                 const std::string& era,
                                 bool isData,
                                 int npv) const;

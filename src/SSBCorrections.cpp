@@ -1,5 +1,6 @@
 #include "../interface/SSBCorrections.h"
 #include "../TextReader/TextReader.hpp"
+#include "../CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.h"
 
 #include "correction.h"
 #include "TRandom3.h"
@@ -697,6 +698,22 @@ float SSBCorrections::GetMCBtagEfficiency(float pt, float eta, int flav, const s
 }
 
 TLorentzVector SSBCorrections::METXYCorrection(const TLorentzVector& type1_met,
+                                               int runnb, TString year, bool isMC, int npv, bool isUL, bool ispuppi
+                                               ) const {
+
+
+    std::pair<double, double> correctedMET = METXYCorr_Met_MetPhi(type1_met.Pt(),type1_met.Phi(),runnb,year,isMC,npv,isUL,ispuppi);
+
+    double met_pt  = correctedMET.first;
+    double met_phi = correctedMET.second;
+
+    TLorentzVector corrected_met;
+    corrected_met.SetPtEtaPhiM(met_pt,0,met_phi,0);
+    return corrected_met;
+}
+
+
+TLorentzVector SSBCorrections::METXYCorrection_corrlib(const TLorentzVector& type1_met,
                                                const std::string& era,
                                                bool isData,
                                                int npv) const {
