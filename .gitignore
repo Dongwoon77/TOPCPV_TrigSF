@@ -1,0 +1,6 @@
+*.o
+ssb_analysis
+output/
+input/
+CondorJobs/condorLog/
+CondorJobs/condorSubmit/
