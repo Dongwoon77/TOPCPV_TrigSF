@@ -612,8 +612,7 @@ Queue InputListName from (
 
 def main():
     # ===== Main Configuration =====
-    MainPath = "/cms/ldap_home/sha/Develop/CPViolation/AnlaysisCode/v6/CMSSW_13_3_0/src/ANCode/v6p2/SSBNanoAODANCode/"
-    MainPath = "/u/user/sha/Develop/CPviolation/SSB/AnalysisCode/ForRun2UL/NanoAOD/2025_0515_v1/CMSSW_13_3_0/src/v6/SSBNanoAODANCode/"
+    MainPath = "/cms/ldap_home/sha/Develop/CPViolation/AnlaysisCode/v6/CMSSW_13_3_0/src/ANCode/v6p3/SSBNanoAODANCode/"
     inputList = os.path.join(MainPath, "input/")
     logDir = os.path.join(os.getcwd(), "condorLog")
     submitDir = os.path.join(os.getcwd(), "condorSubmit")
@@ -621,22 +620,22 @@ def main():
     outputPath = "./"
     runPeriod = "UL2018"
     studyName = "NanoAOD_v3p5"
-    runPeriod = "UL2017"
-    studyName = "NanoAOD_v3p5"
+    studyName = "JetVetoMapTest_Jet"
+    studyName = "JetVetoMapTest_Evt"
     channel = "MuMu"
     maxEvents = "-1"
 
     samples = [
         "DYJetsToLL_M_10To50",
         "DYJetsToLL_M_50",
-        #"Data_DoubleMuon_Run2018A",
-        #"Data_DoubleMuon_Run2018B",
-        #"Data_DoubleMuon_Run2018C",
-        #"Data_DoubleMuon_Run2018D",
-        #"Data_SingleMuon_Run2018A",
-        #"Data_SingleMuon_Run2018B",
-        #"Data_SingleMuon_Run2018C",
-        #"Data_SingleMuon_Run2018D",
+        "Data_DoubleMuon_Run2018A",
+        "Data_DoubleMuon_Run2018B",
+        "Data_DoubleMuon_Run2018C",
+        "Data_DoubleMuon_Run2018D",
+        "Data_SingleMuon_Run2018A",
+        "Data_SingleMuon_Run2018B",
+        "Data_SingleMuon_Run2018C",
+        "Data_SingleMuon_Run2018D",
         "ST_s-channel_4f_leptonDecays",
         "ST_t-channel_antitop_4f_InclusiveDecays",
         "ST_t-channel_top_4f_InclusiveDecays",
@@ -657,27 +656,9 @@ def main():
         "WZ",
         "ZZ"
     ]
-    samples = [
-        #"Data_DoubleMuon_Run2017B",
-        "Data_DoubleMuon_Run2017C",
-        "Data_DoubleMuon_Run2017D",
-        "Data_DoubleMuon_Run2017E",
-        "Data_DoubleMuon_Run2017F",
-        #"Data_SingleMuon_Run2017B",
-        "Data_SingleMuon_Run2017C",
-        "Data_SingleMuon_Run2017D",
-        "Data_SingleMuon_Run2017E",
-        "Data_SingleMuon_Run2017F",
- 
-            ]
-    #branchList = "UL2018/branch_list.txt"
-    branchList = "UL2017/branch_list.txt"
-    branchList = "UL2017/branch_list_Run2017CtoF.txt"
-    #branchList = "UL2017/branch_list_2017B.txt"
-
+    branchList = "UL2018/branch_list.txt"
     configFile = "dimuon.config"
-    configFile = "dimuon_Data_RunCtoF.config"
-    #configFile = "dimuon_Data_RunB.config"
+    configFile = "dimuon_jetvetoEvt.config"
     debug = True
 
     # Set check_status=True to check job completion status
@@ -700,8 +681,8 @@ def main():
         debug=debug,
         resubmit=False,     # Change to True for resubmission
         #resubmit=True,     # Change to True for resubmission
-        check_status=True  # Change to True to check job status only
-        #check_status=False  # Change to True to check job status only
+        #check_status=True  # Change to True to check job status only
+        check_status=False  # Change to True to check job status only
     )
 
 if __name__ == "__main__":

@@ -36,7 +36,14 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string jer_path     = reader->GetText("JERPath");
     std::string jmar_path     = reader->GetText("JMARPath");
     std::string jveto_path    = reader->GetText("JetVetoPath");
-    std::string jveto_key    = reader->GetText("JetVetoName");
+    //std::string jveto_key    = reader->GetText("JetVetoName");
+    //std::string jveto_map_key = reader->GetText("JetVetoKey");
+    std::string jveto_name    = reader->GetText("JetVetoName");
+    std::string jveto_map_key = reader->GetText("JetVetoKey");
+    std::string jveto_type     = reader->GetText("JetVetoType");
+
+
+
     std::string jer_sf_path  = reader->GetText("JERSFPath");
     std::string jec_name     = reader->GetText("JECName");
     std::string jer_name     = reader->GetText("JERName");
@@ -132,10 +139,25 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
     pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
 
-//    auto jetveto_set = correction::CorrectionSet::from_file(jsonDir + jveto_path);
-//    jetvetomap_ = jmar_sf_set->at("Summer19UL18_V1");
+    jveto_name_ = jveto_name;
+    jveto_key_ = jveto_map_key;
 
-      
+    if (!jveto_path.empty() && !jveto_name.empty()) {
+       try {
+           auto jetveto_set = correction::CorrectionSet::from_file(jsonDir + jveto_path);
+           jetvetomap_ = jetveto_set->at(jveto_name);  // jveto_name 사용
+           std::cout << "[INFO] Loaded jet veto map: " << jveto_name
+                     << " with key: " << jveto_map_key
+                     << " type: " << jveto_type << std::endl;
+       } catch (const std::exception& e) {
+           std::cerr << "[WARNING] Failed to load jet veto map: " << e.what() << std::endl;
+           jetvetomap_ = nullptr;
+       }
+    } else {
+       std::cout << "[INFO] Jet veto map not configured, skipping..." << std::endl;
+       jetvetomap_ = nullptr;
+    }
+
     if (btag_sf_type_ != "comb" && btag_sf_type_ != "mujets") {
         std::cerr << "[WARNING] Invalid BTagSFType: " << btag_sf_type_ 
                   << ". Using default 'comb'." << std::endl;
@@ -485,23 +507,52 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     return result;
 }
 
-/*void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name) {
-    std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
+
+bool SSBCorrections::ShouldVetoJet(const TLorentzVector& jet) const {
+    // Only apply for 2018 data/MC
+    if (year_ != "2018") {
+        return false;
+    }
     
-    auto cset = correction::CorrectionSet::from_file(json_path);
+    // Check if jetvetomap is loaded
+    if (!jetvetomap_) {
+        std::cerr << "[WARNING] Jet veto map not loaded, skipping HEM veto" << std::endl;
+        return false;
+    }
     
-    // Create correction names
-    std::string comb_name = tagger_name; // e.g., "deepCSV_comb"
-    std::string incl_name = tagger_name;
-    incl_name.replace(incl_name.find("comb"), 4, "incl"); // "deepCSV_incl"
+    float eta = jet.Eta();
+    float phi = jet.Phi();
     
-    // Store corrections in map
-    btag_corrections_["comb"] = cset->at(comb_name);
-    btag_corrections_["incl"] = cset->at(incl_name);
-    
-    std::cout << "[SSBCorrections] Loaded corrections: " << comb_name 
-              << " and " << incl_name << std::endl;
-}*/
+    try {
+        // Use configured key
+        std::variant<double, std::vector<double>> val = jetvetomap_->evaluate({
+            jveto_key_, eta, phi
+        });
+        
+        double veto_flag = std::get<double>(val);
+        
+        // Debug output to see what values we're getting
+//        std::cout << "[DEBUG] Jet eta=" << eta << ", phi=" << phi 
+//                  << " -> veto_flag=" << veto_flag << std::endl;
+        
+        // Return true if jet should be vetoed (non-zero value)
+        bool should_veto = (veto_flag > 0.0);
+        
+//        if (should_veto) {
+//            std::cout << "[DEBUG] -> VETOED (flag=" << veto_flag << ")" << std::endl;
+//        }
+        
+        return should_veto;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[WARNING] Jet veto map evaluation failed for jet (eta=" 
+                  << eta << ", phi=" << phi << ") with key=" << jveto_key_ 
+                  << ": " << e.what() << std::endl;
+        return false;
+    }
+}
+
+
 void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, 
                                           const std::string& tagger_name) {
     std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
@@ -535,35 +586,10 @@ void SSBCorrections::InitBtagSFCorrection(const std::string& json_path,
               << heavy_flavor_name << " and " << light_flavor_name << std::endl;
 }
 
-
-/*std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
-    return (flavor == 0) ? "incl" : "comb";
-}*/
 std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
     // 0 = light flavor (u,d,s,g), others = heavy flavor (b,c)
     return (flavor == 0) ? "light" : "heavy";
 }
-
-/*float SSBCorrections::GetBtagSF(float pt, float eta, int flav, const std::string& wp, const std::string& syst) const {
-    float pt_clamped = std::clamp(pt, 20.0f, 1000.0f);
-    float eta_abs = std::fabs(eta);
-
-    std::string corr_name = getBtagCorrectionName(flav);
-    auto it = btag_corrections_.find(corr_name);
-    
-    if (it == btag_corrections_.end()) {
-        std::cerr << "[ERROR] B-tag correction not found: " << corr_name << std::endl;
-        return 1.0;
-    }
-
-    try {
-        //std::cout << "[DEBUG] Using " << corr_name << " correction for flavor " << flav << std::endl;
-        return it->second->evaluate({syst, wp, flav, eta_abs, pt_clamped});
-    } catch (const std::exception& e) {
-        std::cerr << "[WARNING] GetBtagSF failed: " << e.what() << std::endl;
-        return 1.0;
-    }
-}*/
 
 float SSBCorrections::GetBtagSF(float pt, float eta, int flav, 
                                 const std::string& wp, const std::string& syst) const {

@@ -41,16 +41,6 @@ public:
 
     // Smear JER for a MC jet using hybrid method (with optional JER systematic variation)
     double SmearJER(double reco_pt, double gen_pt, double eta, double rho, const std::string& jer_tag = "nominal") const;
-/*    JetCorrectionOutput ApplyJetCorrections(
-    const std::vector<TLorentzVector>& raw_jets,
-    const TLorentzVector& original_met,
-    const std::vector<float>& rawFactors,
-    const std::vector<float>& etas,
-    const std::vector<float>& areas,
-    float rho,
-    bool isData,
-    bool applyJES,
-    bool applyJER) const;*/
 
     // Reco/gen matching for JER hybrid smearing
     float MatchGenPt(const TLorentzVector& reco_jet,
@@ -73,11 +63,6 @@ public:
         const std::vector<int>& genJetIndices
     ) const;
 
-    /*// Muon ID scale factor
-    double GetMuonIDSF(double eta, double pt) const;
-
-    // Muon isolation scale factor
-    double GetMuonIsoSF(double eta, double pt) const;*/
     double GetMuonRecoSF(double pt, double eta) const;
     double GetMuonIDSF(double pt, double eta, const std::string& tag = "nominal") const;
     double GetMuonIsoSF(double pt, double eta, const std::string& tag = "nominal") const;
@@ -119,10 +104,11 @@ public:
                                 bool isData,
                                 int npv) const;
 
-    //float GetPUJetIDSF(float pt, float eta, bool passPU, const std::string& wp, const std::string& syst) const;
-//    float GetPUJetIDSF(float pt, float eta, int passPU, const std::string& wp, const std::string& syst) const;
-//    float GetPUJetIDEff(float pt, float eta, const std::string& wp, const std::string& syst) const; 
     float GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff = false) const;
+
+    //Jet Veto Map functionality
+    bool ShouldVetoJet(const TLorentzVector& jet) const;
+    std::string GetJetVetoType() const { return jveto_type_; }
 
 
     // Initialize correctionlib-based b-tagging SF (e.g. deepJet_comb)
@@ -132,14 +118,6 @@ public:
     // Load MC b-tag efficiency histograms from ROOT file
     void LoadMCBtagEfficiencies(const std::string& filepath, const std::string& algo);
     float GetMCBtagEfficiency(float pt, float eta, int flav, const std::string& algo, const std::string& wp) const;
-    /*float ComputeBTagEventWeight(
-    const std::vector<float>& jet_pts,
-    const std::vector<float>& jet_etas,
-    const std::vector<int>& jet_flavs,
-    const std::vector<float>& btag_scores,
-    const std::string& algo,  // "DeepJet" or "DeepCSV"
-    const std::string& wp     // "medium", "loose", etc.
-) const;*/
 
     float ComputeBTagEventWeight(const std::vector<float>& pts,
                              const std::vector<float>& etas,
@@ -150,13 +128,12 @@ public:
                              const std::string& syst = "nominal") const;
 
 private:
-    //std::shared_ptr<const correction::Correction> jec_;
-    //std::shared_ptr<correction::CompoundCorrection::Ref> jec_;
-    //correction::CompoundCorrection::Ref jec_;
-    //std::unique_ptr<correction::CorrectionSet> jec_;
-    //std::shared_ptr<const correction::Correction> jec_;
-    //std::shared_ptr<const correction::CorrectionSet> c_jec_;
+
     std::string year_;
+    std::string jveto_name_;  // correction name (e.g., "Summer19UL18_V1")
+    std::string jveto_key_;   // veto map key (e.g., "jetvetomap", "hem1516")
+    std::string jveto_type_;   // "jet" or "event"
+
     std::string btag_sf_type_;  // Added: "comb" or "mujets"
 
     /// Varibles & Functions for Trigger 

@@ -658,6 +658,8 @@ void Analysis::Loop() {
     for (Long64_t ientry = 0; ientry < ((NumEvt == -1 || NumEvt > nEntries) ? nEntries : NumEvt); ++ientry) {
 
 
+	current_entry_ = ientry;
+
         if (!fReader.Next()) { // Move to the next entry
             std::cerr << "Error: Failed to read entry " << ientry << std::endl;
             break;
@@ -674,6 +676,9 @@ void Analysis::Loop() {
 
         LeptonOrder();
         JetSelector();
+	if (isjetveto_event_) {
+            continue; // Skip entire event having jetveto map jet 
+        }
         PUIDSFApply();  // Apply PUID event weight using collected information
  
         JetOrder(); 
@@ -1718,6 +1723,34 @@ void Analysis::JetSelector() {
             }
         }
 
+	// Initialize jet veto event flag
+        isjetveto_event_ = false;
+
+        // Apply HEM15/16 veto based on configuration type
+        bool should_apply_hem = false;
+        if (RunPeriod.Contains("2018")) {
+            if (isData) {
+                if (uintSingles.find("run") != uintSingles.end() && uintSingles["run"]) {
+                    unsigned int run_num = **uintSingles["run"];
+                    should_apply_hem = (run_num >= 319077);
+                }
+            } else {
+                should_apply_hem = ((current_entry_ % 10000) < 6478);  // 64.78%
+            }
+        }
+
+        if (should_apply_hem && SSBCorr->ShouldVetoJet(jetVec)) {
+            if (SSBCorr->GetJetVetoType() == "jet") {
+                std::cout << "[INFO] Jet vetoed due to HEM15/16: pt=" << jetPt
+                          << ", eta=" << jetEta << ", phi=" << jetVec.Phi() << std::endl;
+                continue; // Skip this jet
+            } else { // "event" type
+                std::cout << "[INFO] Event " << current_entry_
+                          << " vetoed due to HEM15/16 jet: pt=" << jetPt << std::endl;
+                isjetveto_event_ = true;
+                return; // Exit JetSelector early
+            }
+        }
         // Add to selected jets
         v_jet_idx.push_back(i);
         jets.push_back(pre_jets[i]);

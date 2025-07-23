@@ -15,7 +15,9 @@ def get_sample_list(base_dir):
     ])
 
 def get_listfiles(sample, run_period, listfile_root):
+    print("in get_listfiles sample runperiod listfile_root : %s %s %s "%(sample, run_period, listfile_root) )
     listdir = os.path.join(listfile_root, run_period, sample)
+    print("in get_listfiles : %s"%(listdir) )
     if not os.path.exists(listdir):
         return []
 
@@ -63,7 +65,7 @@ def main():
     print(f"[INFO] Using base directory: {base_dir}")
     
     sampleList = get_sample_list(base_dir)
-    
+    print("Sample : %s"%sampleList) 
     if not sampleList:
         print(f"[ERROR] No samples found in base directory: {base_dir}")
         return

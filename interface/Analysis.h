@@ -57,6 +57,10 @@ private:
     std::string outdir;
     TTreeReader fReader;
     TFile *fout;
+
+    Long64_t current_entry_;
+    bool isjetveto_event_;
+
     bool isData;
     //TextReader from Jaehoon.
     TextReader *SSBConfReader;
