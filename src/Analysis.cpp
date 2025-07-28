@@ -1740,13 +1740,14 @@ void Analysis::JetSelector() {
         }
 
         if (should_apply_hem && SSBCorr->ShouldVetoJet(jetVec)) {
+		//std::cout << "SSBCorr->GetJetVetoType()" << SSBCorr->GetJetVetoType() << std::endl;
             if (SSBCorr->GetJetVetoType() == "jet") {
-                std::cout << "[INFO] Jet vetoed due to HEM15/16: pt=" << jetPt
-                          << ", eta=" << jetEta << ", phi=" << jetVec.Phi() << std::endl;
+                //std::cout << "[INFO] Jet vetoed due to HEM15/16: pt=" << jetPt
+                //          << ", eta=" << jetEta << ", phi=" << jetVec.Phi() << std::endl;
                 continue; // Skip this jet
             } else { // "event" type
-                std::cout << "[INFO] Event " << current_entry_
-                          << " vetoed due to HEM15/16 jet: pt=" << jetPt << std::endl;
+                //std::cout << "[INFO] Event " << current_entry_
+                //          << " vetoed due to HEM15/16 jet: pt=" << jetPt << std::endl;
                 isjetveto_event_ = true;
                 return; // Exit JetSelector early
             }

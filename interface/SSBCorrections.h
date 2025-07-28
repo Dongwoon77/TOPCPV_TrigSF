@@ -108,7 +108,7 @@ public:
 
     //Jet Veto Map functionality
     bool ShouldVetoJet(const TLorentzVector& jet) const;
-    std::string GetJetVetoType() const { return jveto_type_; }
+    std::string GetJetVetoType() const;
 
 
     // Initialize correctionlib-based b-tagging SF (e.g. deepJet_comb)

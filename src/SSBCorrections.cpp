@@ -141,6 +141,7 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
 
     jveto_name_ = jveto_name;
     jveto_key_ = jveto_map_key;
+    jveto_type_ = jveto_type;	
 
     if (!jveto_path.empty() && !jveto_name.empty()) {
        try {
@@ -916,4 +917,7 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
     expanded += suffix;
 
     return expanded;
+}
+std::string SSBCorrections::GetJetVetoType() const {
+	return jveto_type_; 
 }
