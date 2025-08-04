@@ -17,6 +17,8 @@ CORR_ENV_LIBPATH ?= $(CORRECTION_LIBPATH)
 CORR_CVMFS_INCLUDE := /cvmfs/sft.cern.ch/lcg/releases/correctionlib/2.2.2-13853/x86_64-centos7-gcc11-opt/include
 CORR_CVMFS_LIBPATH := /cvmfs/sft.cern.ch/lcg/releases/correctionlib/2.2.2-13853/x86_64-centos7-gcc11-opt/lib
 
+BOOST_INCLUDE := /cvmfs/cms.cern.ch/el9_amd64_gcc12/external/boost/1.80.0-d43be26d8a1ca943bd8818c606afcd2b/include
+
 ifeq ($(wildcard $(CORR_ENV_INCLUDE)/correction.h),)
   ifeq ($(wildcard $(CORR_CVMFS_INCLUDE)/correction.h),)
     # Mac or pip fallback
@@ -32,7 +34,8 @@ else
 endif
 
 # Compilation and linking flags
-CXXFLAGS = -g -O2 $(ROOTCFLAGS) $(CORRCFLAGS) -std=c++17 
+#CXXFLAGS = -g -O2 $(ROOTCFLAGS) $(CORRCFLAGS) -std=c++17 
+CXXFLAGS = -g -O2 $(ROOTCFLAGS) $(CORRCFLAGS) -I$(BOOST_INCLUDE) -std=c++17 
 LDFLAGS         = $(ROOTLIBS) $(CORRLDFLAGS)
 
 # Additional graphical libraries and GenVector
@@ -51,7 +54,9 @@ OBJS = \
     KinematicReconstructionSolution.o \
     KinematicReconstruction.o \
     SSBCorrections.o \
-    SSBCPVCalc.o
+    SSBCPVCalc.o \
+    RoccoR.o \
+    XYMETCorrection_withUL17andUL18andUL16.o
 
 # Input source and header dependencies
 INPUTS = \
@@ -64,7 +69,9 @@ INPUTS = \
     ./KinSolv/KinematicReconstructionSolution.h ./KinSolv/KinematicReconstructionSolution.cc \
     ./KinSolv/KinematicReconstruction.h ./KinSolv/KinematicReconstruction.cc \
     ./interface/SSBCorrections.h ./src/SSBCorrections.cpp \
-    ./interface/SSBCPVCalc.h ./src/SSBCPVCalc.cpp
+    ./interface/SSBCPVCalc.h ./src/SSBCPVCalc.cpp \
+    ./CorrectionFiles/Rochester/RoccoR.h ./CorrectionFiles/Rochester/RoccoR.cc \
+    ./CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.h ./CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.cpp
 
 # Default rule: build all object files and link them into the final program
 all: $(OBJS)
@@ -108,6 +115,13 @@ SSBCorrections.o: ./interface/SSBCorrections.h ./src/SSBCorrections.cpp
 # SSB CPV Observables Calculator 
 SSBCPVCalc.o: ./interface/SSBCPVCalc.h ./src/SSBCPVCalc.cpp
 	$(CC) $(CXXFLAGS) -c ./src/SSBCPVCalc.cpp -o SSBCPVCalc.o
+
+# SSB CPV Observables Calculator 
+RoccoR.o: ./CorrectionFiles/Rochester/RoccoR.h ./CorrectionFiles/Rochester/RoccoR.cc 
+	$(CC) $(CXXFLAGS) -c ./CorrectionFiles/Rochester/RoccoR.cc -o RoccoR.o
+
+XYMETCorrection_withUL17andUL18andUL16.o: ./CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.h ./CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.cpp
+	$(CC) $(CXXFLAGS) -c ./CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.cpp -o XYMETCorrection_withUL17andUL18andUL16.o
 
 # Clean all build products
 clean:
