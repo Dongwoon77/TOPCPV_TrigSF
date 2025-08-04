@@ -1,7 +1,7 @@
 #include "../interface/SSBCorrections.h"
 #include "../TextReader/TextReader.hpp"
-#include "../CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.h"
-
+#include <fstream>
+#include <cstdlib>
 #include "correction.h"
 #include "TRandom3.h"
 #include <cmath>
@@ -41,9 +41,6 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string jveto_name    = reader->GetText("JetVetoName");
     std::string jveto_map_key = reader->GetText("JetVetoKey");
     std::string jveto_type     = reader->GetText("JetVetoType");
-
-
-
     std::string jer_sf_path  = reader->GetText("JERSFPath");
     std::string jec_name     = reader->GetText("JECName");
     std::string jer_name     = reader->GetText("JERName");
@@ -220,7 +217,27 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     //std::cout << "sk ele 2 ele_reco_sf_name_: " << ele_reco_sf_name_ << std::endl;
     std::string TrigSFPath = std::filesystem::current_path().string() + "/CorrectionFiles/Trig/";
     TFile *f_trg     = new TFile((TrigSFPath+Trig_sf_name_).c_str());
-    H_trig = (TH2D*) f_trg->Get(Trig_sf_histname_.c_str()); 
+    H_trig = (TH2D*) f_trg->Get(Trig_sf_histname_.c_str());
+
+    /// Muon Rochester correction ///
+    std::string rochesterCorrFile;
+    std::cout << "RunPeriod : " << RunPeriod << std::endl;
+    if (RunPeriod.find("2016Pre")  != std::string::npos) {    rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2016aUL.txt";}
+    else if (RunPeriod.find("2016Post") != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2016bUL.txt";}
+    else if (RunPeriod.find("2017")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2017UL.txt";}
+    else if (RunPeriod.find("2018")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else {
+        std::cerr << "[SSBCorrections] Unknown RunPeriod in rochesterCorrFile : " << RunPeriod << std::endl;
+    }
+
+    std::cout << "[Debug!!] in SSBCorrections !! rochesterCorrFile  : " << rochesterCorrFile<< std::endl;
+    std::ifstream file(rochesterCorrFile);
+    if(!file.good()){
+            std::cerr << "ERROR:  Rochester file is not found:" << rochesterCorrFile << std::endl;
+            std::exit(1);
+    }
+
+    rc.init(rochesterCorrFile);
 }
 
 double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const {
@@ -723,6 +740,23 @@ float SSBCorrections::GetMCBtagEfficiency(float pt, float eta, int flav, const s
 
     return std::clamp(eff, 0.0f, 1.0f);
 }
+
+double SSBCorrections::RochesterCorrectionData(TString year, int Q, double pt, double eta, double phi, int s,int m) const{
+        double correction;
+        correction = rc.kScaleDT(Q,pt,eta,phi,s,m); return correction;
+}
+
+double SSBCorrections::RochesterCorrectionMC(TString year, int Q, double pt, double eta,double phi,int genID,double genPt,int nl, int s,int m) const{
+
+    double correction = 1.0; double u =1.0;
+
+    bool genMatch = genID != -1;
+
+    if(genMatch) correction = rc.kSpreadMC(Q,pt,eta,phi,genPt,s,m);
+    else if(!genMatch){u = gRandom->Rndm(); correction = rc.kSmearMC(Q,pt,eta,phi,nl,u,s,m);} //Random number is needed when gen-mathcing is failed
+    return correction;
+}
+
 
 TLorentzVector SSBCorrections::METXYCorrection(const TLorentzVector& type1_met,
                                                int runnb, TString year, bool isMC, int npv, bool isUL, bool ispuppi

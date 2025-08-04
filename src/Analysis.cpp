@@ -110,10 +110,10 @@ void Analysis::InitBranches(const std::string &branchListFile) {
             trim(dataType);
             trim(varType);
       	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
-	          if (isData && branchName.find("gen") != std::string::npos) {continue;}
-	          if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
-	          if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
-	          if (isData && branchName.find("L1PreFiringWeight") != std::string::npos) {continue;}
+	    if (isData && branchName.find("gen") != std::string::npos) {continue;}
+	    if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
+	    if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
+	    if (isData && branchName.find("L1PreFiringWeight") != std::string::npos) {continue;}
             // Initialize based on data type and variable type
             if (dataType == "Bool_t" && varType == "single") {
                 boolSingles[branchName] = std::make_unique<TTreeReaderValue<Bool_t>>(fReader, branchName.c_str());
@@ -280,6 +280,20 @@ void Analysis::SetVariables() {
 	    applyMETXY == "False";
             std::cout << "[WARNING] applyMETXY COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyMETXY << std::endl;
     }
+
+    applyMETXY = SSBConfReader->GetText("applyMETXY");
+    if (applyMETXY == "DUMMY") {
+            applyMETXY == "False";
+            std::cout << "[WARNING] applyMETXY COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyMETXY << std::endl;
+    }
+    std::cout << "  apply MET XY correction: " << applyMETXY << std::endl;
+
+    applyRochester = SSBConfReader->GetText("applyRochester");
+    if (applyRochester == "DUMMY") {
+            applyRochester == "False";
+            std::cout << "[WARNING] applyRochester COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyRochester << std::endl;
+    }
+    std::cout << "  apply Rochester correction: " << applyRochester << std::endl;
 }
 
 void Analysis::SetObjectVariable() {
@@ -1457,7 +1471,52 @@ void Analysis::LeptonOrder() {
 
 }
 
+void Analysis::MakeMuonCollection() {
+    // make muon collection tlorentzvectors with Rochester correction
+    pre_muons.clear();
+    
+    for (int imu = 0; imu < muons_pt->GetSize(); ++imu) {
+        // Create initial Lorentz vector
+        TLorentzVector muon = createLorentzVector(muons_pt->At(imu), muons_eta->At(imu), 
+                                                 muons_phi->At(imu), muons_M->At(imu));
+        
+        // Apply Rochester correction if enabled
+        if (applyRochester == "True") {
+            double RoccoR = 1.0;
+            int muon_charge = (*intVectors["Muon_charge"])[imu];
+            
+            if (isData) {
+                // Data correction
+                RoccoR = SSBCorr->RochesterCorrectionData(RunPeriod, muon_charge, 
+                                                        muon.Pt(), muon.Eta(), muon.Phi(), 0, 0);
+            } 
+            else {
+                // MC correction
+                auto Muon_genId = intVectors["Muon_genPartIdx"].get();
+                auto GenPts = floatVectors["GenPart_pt"].get();
+                auto numberOfLayers = intVectors["Muon_nTrackerLayers"].get();
+                
+                int GenID = Muon_genId->At(imu);
+                double GenPt = (GenID >= 0) ? GenPts->At(GenID) : 0.0;
+                int nLayers = numberOfLayers->At(imu);
+                
+                RoccoR = SSBCorr->RochesterCorrectionMC(RunPeriod, muon_charge, 
+                                                      muon.Pt(), muon.Eta(), muon.Phi(), 
+                                                      GenID, GenPt, nLayers, 0, 0);
+            }
+            
+            // Apply correction to muon momentum
+            muon.SetPtEtaPhiM(muon.Pt() * RoccoR, muon.Eta(), muon.Phi(), muon.M());
+        }
+        
+        pre_muons.push_back(muon);
+    }
+    
+    return;
+}
 
+
+/*
 void Analysis::MakeMuonCollection() {
     // make muon collection tlorentzvectors//
     //std::cout << "Muon Correction !!" << std::endl;
@@ -1469,7 +1528,7 @@ void Analysis::MakeMuonCollection() {
 //    std::cout << "end of MakeMuonCollection !" << std::endl;
 //    std::cout << "size of pre_muons.size : " << muons.size() << std::endl; 
     return;
-}
+}*/
 
 
 void Analysis::MakeElecCollection() {

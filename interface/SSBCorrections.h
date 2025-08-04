@@ -9,6 +9,8 @@
 #include <TFile.h>
 #include <TH2D.h>
 #include <TString.h>
+#include "../CorrectionFiles/Rochester/RoccoR.h"
+#include "../CorrectionFiles/METXY/XYMETCorrection_withUL17andUL18andUL16.h"
 
 
 using correction::CorrectionSet;
@@ -105,6 +107,10 @@ public:
                                 int npv) const;
 
     float GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff = false) const;
+    
+    double RochesterCorrectionData(TString year, int Q, double pt, double eta, double phi, int s,int m) const;
+    double RochesterCorrectionMC(TString year, int Q, double pt, double eta,double phi,int genID,double genPt,int nl, int s,int m) const;
+
 
     //Jet Veto Map functionality
     bool ShouldVetoJet(const TLorentzVector& jet) const;
@@ -138,7 +144,11 @@ private:
 
     /// Varibles & Functions for Trigger 
     double GetTrgEff(double pt1, double pt2, TString Sys_);
-    TH2D* H_trig;
+    TH2D* H_trig;    
+    
+    // rochester correcton //
+
+    RoccoR rc;
 
     std::shared_ptr<const correction::Correction> pu_weight_;
 

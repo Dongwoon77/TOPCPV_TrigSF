@@ -75,6 +75,8 @@ private:
     TString XsecTable_;
     TString METtype;
     TString applyMETXY;
+    TString applyRochester;
+
 
     TString cutflowName[10];
 
