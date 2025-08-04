@@ -612,16 +612,21 @@ Queue InputListName from (
 
 def main():
     # ===== Main Configuration =====
-    MainPath = "/cms/ldap_home/sha/Develop/CPViolation/AnlaysisCode/v6/CMSSW_13_3_0/src/ANCode/v6p3/SSBNanoAODANCode/"
+    MainPath = "/cms/ldap_home/sha/Develop/CPViolation/AnlaysisCode/v6/CMSSW_13_3_0/src/ANCode/v6p2/SSBNanoAODANCode/"
+    MainPath = "/u/user/sha/Develop/CPviolation/SSB/AnalysisCode/ForRun2UL/NanoAOD/2025_0515_v1/CMSSW_13_3_0/src/v6/fromHY/RochesterCorr_Testv1/SSBNanoAODANCode/"
     inputList = os.path.join(MainPath, "input/")
     logDir = os.path.join(os.getcwd(), "condorLog")
     submitDir = os.path.join(os.getcwd(), "condorSubmit")
     runScriptPath = os.path.join(MainPath, "run_cmd_v7.sh")
     outputPath = "./"
+    outputPath = "/pnfs/knu.ac.kr/data/cms/store/user/sha/CPV_Run2/ULSummer20"
+    studyName = "NanoAOD_v3p5"
+    runPeriod = "UL2017"
     runPeriod = "UL2018"
     studyName = "NanoAOD_v3p5"
-    studyName = "JetVetoMapTest_Jet"
-    studyName = "JetVetoMapTest_Evt"
+    studyName = "RochesterNonApplied_v1"
+    studyName = "RochesterNonApplied_v2"
+    #studyName = "RochesterApplied_v2"
     channel = "MuMu"
     maxEvents = "-1"
 
@@ -656,10 +661,30 @@ def main():
         "WZ",
         "ZZ"
     ]
+
+    samples = [
+        "Data_SingleMuon_Run2018A",
+        "Data_SingleMuon_Run2018B",
+        "Data_SingleMuon_Run2018C",
+        "Data_SingleMuon_Run2018D"
+    ]
+    samples = [
+        "TTbar_Signal",
+        "TTbar_AllHadronic",
+        "Data_DoubleMuon_Run2018D"
+            ]
     branchList = "UL2018/branch_list.txt"
+    #branchList = "UL2017/branch_list.txt"
+    #branchList = "UL2017/branch_list_Run2017CtoF.txt"
+    #branchList = "UL2017/branch_list_2017B.txt"
+
     configFile = "dimuon.config"
-    configFile = "dimuon_jetvetoEvt.config"
+    configFile = "PuppiMET_wRoche.config"
+    configFile = "PuppiMET_woRoche.config"
+    #configFile = "dimuon_Data_RunCtoF.config"
+    #configFile = "dimuon_Data_RunB.config"
     debug = True
+    debug = False 
 
     # Set check_status=True to check job completion status
     # Set resubmit=True to use the new resubmission logic
@@ -679,8 +704,8 @@ def main():
         branchList,
         maxEvents=maxEvents,
         debug=debug,
-        resubmit=False,     # Change to True for resubmission
-        #resubmit=True,     # Change to True for resubmission
+        #resubmit=False,     # Change to True for resubmission
+        resubmit=True,     # Change to True for resubmission
         #check_status=True  # Change to True to check job status only
         check_status=False  # Change to True to check job status only
     )
