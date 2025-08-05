@@ -240,6 +240,69 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     rc.init(rochesterCorrFile);
 }
 
+// Destructor ///
+//
+SSBCorrections::~SSBCorrections() {
+    std::cout << "[SSBCorrections] Destructor called - cleaning up memory..." << std::endl;
+    
+    // 1. Safely delete H_trig histogram
+    if (H_trig) {
+        std::cout << "[SSBCorrections] Deleting H_trig histogram..." << std::endl;
+        delete H_trig;
+        H_trig = nullptr;
+    }
+    
+    // 2. Safely delete all TH2D pointers in eff_histograms_ map
+    std::cout << "[SSBCorrections] Cleaning up " << eff_histograms_.size() 
+              << " efficiency histograms..." << std::endl;
+              
+    for (auto& pair : eff_histograms_) {
+        if (pair.second) {
+            std::cout << "[SSBCorrections] Deleting histogram: " << pair.first << std::endl;
+            delete pair.second;
+            pair.second = nullptr;
+        }
+    }
+    
+    // Clear the map itself
+    eff_histograms_.clear();
+    
+    std::cout << "[SSBCorrections] Destructor completed successfully." << std::endl;
+}
+/*
+SSBCorrections::~SSBCorrections() {
+    std::cout << "[SSBCorrections] Destructor called - cleaning up memory..." << std::endl;
+
+    if (H_trig) {
+        // Check if ROOT object is still valid
+        if (gROOT && gROOT->FindObject(H_trig)) {
+            std::cout << "[SSBCorrections] Deleting H_trig histogram..." << std::endl;
+            delete H_trig;
+        }
+        H_trig = nullptr;
+    }
+
+    std::cout << "[SSBCorrections] Cleaning up " << eff_histograms_.size()
+              << " efficiency histograms..." << std::endl;
+
+    for (auto& pair : eff_histograms_) {
+        if (pair.second) {
+            // Check if ROOT object is still valid
+            if (gROOT && gROOT->FindObject(pair.second)) {
+                std::cout << "[SSBCorrections] Deleting histogram: " << pair.first << std::endl;
+                delete pair.second;
+            }
+            pair.second = nullptr;
+        }
+    }
+
+    // Clear the map itself
+    eff_histograms_.clear();
+
+    std::cout << "[SSBCorrections] Destructor completed successfully." << std::endl;
+}
+*/
+
 double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const {
     //std::cout << "in GetCorrectedJetPt raw_pt : " << raw_pt
     //          << " eta " << eta << " area : " << area << " rho : " << rho << std::endl;
@@ -690,6 +753,42 @@ float SSBCorrections::ComputeBTagEventWeight(const std::vector<float>& pts,
     return btag_evt_weight;
 }
 
+
+void SSBCorrections::LoadMCBtagEfficiencies(const std::string& filepath, const std::string& algo) {
+    TFile* f = TFile::Open(filepath.c_str(), "READ");
+    if (!f || f->IsZombie()) {
+        std::cerr << "[ERROR] Failed to open efficiency file: " << filepath << std::endl;
+        return;
+    }
+
+    for (const std::string& flav : {"b", "c", "l"}) {
+        for (const std::string& wp : {"Loose", "Medium", "Tight"}) {
+            std::string name = "eff_" + algo + "_" + flav + "_" + wp;
+            TH2D* hist = (TH2D*)f->Get(name.c_str());
+            if (hist) {
+                // Create a safe copy of the histogram
+                TH2D* hist_copy = (TH2D*)hist->Clone((name + "_copy").c_str());
+                hist_copy->SetDirectory(0); // Remove ROOT ownership
+                
+                // Delete existing histogram if present
+                auto it = eff_histograms_.find(algo + "_" + flav + "_" + wp);
+                if (it != eff_histograms_.end() && it->second) {
+                    delete it->second;
+                }
+                
+                eff_histograms_[algo + "_" + flav + "_" + wp] = hist_copy;
+                std::cout << "[INFO] Loaded and copied hist: " << name << std::endl;
+            } else {
+                std::cerr << "[WARNING] Histogram not found: " << name << std::endl;
+            }
+        }
+    }
+    f->Close();
+    delete f; // Explicitly delete file object
+}
+
+
+/*
 void SSBCorrections::LoadMCBtagEfficiencies(const std::string& filepath, const std::string& algo) {
     TFile* f = TFile::Open(filepath.c_str(), "READ");
     if (!f || f->IsZombie()) {
@@ -713,7 +812,7 @@ void SSBCorrections::LoadMCBtagEfficiencies(const std::string& filepath, const s
     }
     f->Close();
 }
-
+*/
 float SSBCorrections::GetMCBtagEfficiency(float pt, float eta, int flav, const std::string& algo, const std::string& wp) const {
     std::string flav_str = "l";
     if (flav == 5) flav_str = "b";
