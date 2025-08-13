@@ -2,9 +2,11 @@ import os
 import sys
 import subprocess
 import re
+import time
 from collections import defaultdict
 
 def submit_condor_job(submit_file_path):
+    """Submit a job to HTCondor with appropriate settings"""
     # Determine if running on KISTI
     user_home = os.path.expanduser("~")
     is_kisti = user_home.startswith("/cms/ldap_home")
@@ -32,6 +34,7 @@ def submit_condor_job(submit_file_path):
         sys.exit(1)
 
 def isDirectoryInDataList(directory, channel, runPeriod, debug=False):
+    """Check if directory matches the required data list for the channel"""
     dimuonList = ["SingleMuon", "DoubleMuon"]
     dielecList = ["SingleElectron", "DoubleEG"]
     muelecList = ["SingleMuon", "SingleElectron", "MuonEG"]
@@ -51,15 +54,14 @@ def isDirectoryInDataList(directory, channel, runPeriod, debug=False):
     if debug:
         print(f"Data list for {channel}: {dataList}")
 
-    for item in dataList:
-        if item in directory:
-            return True
-    return False
+    return any(item in directory for item in dataList)
 
 def contains_str_prefix(disc, string):
+    """Check if string contains the discriminator prefix"""
     return disc in string
 
 def has_number_suffix(filename):
+    """Check if filename has a number suffix"""
     return bool(re.match(r".+_\d+$", filename))
 
 def check_job_completion(logDir, studyName, runPeriod, channel, sampleDir, listFileName, debug=False):
@@ -138,7 +140,7 @@ def check_job_completion(logDir, studyName, runPeriod, channel, sampleDir, listF
 def check_job_status(logDir, studyName, runPeriod, channel, sampleDir, listFileName, debug=False):
     """
     Check the status of a specific job
-    Returns: 'completed', 'failed', 'not_started', 'no_output', 'zero_events'
+    Returns: 'completed', 'failed', 'not_started', 'no_output', 'zero_events', 'not_submitted'
     """
     jobLogDir = os.path.join(logDir, studyName, runPeriod, channel, sampleDir)
     
@@ -276,8 +278,10 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
         if total_jobs > 0:
             completed = sample_stats['completed']
             failed = sample_stats['failed']
-            missing = sample_stats['missing']
             zero_events = sample_stats['zero_events']
+            not_submitted = sample_stats.get('not_submitted', 0)
+            not_started = sample_stats.get('not_started', 0) 
+            no_output = sample_stats.get('no_output', 0)
             
             completion_rate = (completed / total_jobs) * 100
             
@@ -285,16 +289,8 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
             print(f"  ✅ Completed: {completed} ({completion_rate:.1f}%)")
             if failed > 0:
                 print(f"  ❌ Failed: {failed}")
-            if missing > 0:
-                print(f"  ❓ Missing: {missing}")
             if zero_events > 0:
                 print(f"  🔢 Zero Events: {zero_events}")
-            
-            # Handle new status types
-            not_submitted = sample_stats.get('not_submitted', 0)
-            not_started = sample_stats.get('not_started', 0) 
-            no_output = sample_stats.get('no_output', 0)
-            
             if not_submitted > 0:
                 print(f"  🚫 Not Submitted: {not_submitted}")
             if not_started > 0:
@@ -308,7 +304,6 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
                 for job_num, status in job_details[:10]:  # Show first 10
                     status_icon = {
                         "failed": "❌", 
-                        "missing": "❓", 
                         "zero_events": "🔢",
                         "not_submitted": "🚫",
                         "not_started": "⏸️",
@@ -335,7 +330,6 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
     if total_jobs > 0:
         completed = overall_stats['completed']
         failed = overall_stats['failed']
-        missing = overall_stats.get('missing', 0)
         zero_events = overall_stats['zero_events']
         not_submitted = overall_stats.get('not_submitted', 0)
         not_started = overall_stats.get('not_started', 0)
@@ -347,8 +341,6 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
         print(f"✅ Completed: {completed} ({overall_completion:.1f}%)")
         if failed > 0:
             print(f"❌ Failed: {failed} ({(failed/total_jobs)*100:.1f}%)")
-        if missing > 0:
-            print(f"❓ Missing: {missing} ({(missing/total_jobs)*100:.1f}%)")
         if zero_events > 0:
             print(f"🔢 Zero Events: {zero_events} ({(zero_events/total_jobs)*100:.1f}%)")
         if not_submitted > 0:
@@ -360,7 +352,7 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
         
         # Recommendations
         print(f"\n💡 RECOMMENDATIONS:")
-        problematic_count = failed + missing + zero_events + not_submitted + not_started + no_output
+        problematic_count = failed + zero_events + not_submitted + not_started + no_output
         if problematic_count > 0:
             print(f"   • Run with resubmit=True to resubmit failed jobs")
             if not_submitted > 0:
@@ -385,6 +377,7 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
 def find_resubmission_jobs(logDir, studyName, runPeriod, channel, sampleDir, sampleInputPath, debug=False):
     """
     Find jobs that need resubmission based on log analysis
+    Resubmits all jobs that are not completed
     """
     resubmit_list = []
     
@@ -402,110 +395,25 @@ def find_resubmission_jobs(logDir, studyName, runPeriod, channel, sampleDir, sam
                     print(f"Skipping file without numeric suffix: {listFileName}")
                 continue
             
-            # Check if job needs resubmission using the same logic as check_job_completion
-            if check_job_completion(logDir, studyName, runPeriod, channel, sampleDir, number_part, debug):
+            # Use check_job_status for consistency with status reporting
+            status = check_job_status(logDir, studyName, runPeriod, channel, sampleDir, number_part, debug)
+            
+            # Resubmit everything that's not completed
+            if status != 'completed':
                 resubmit_list.append(number_part)
+                if debug:
+                    print(f"[DEBUG] Job {number_part} needs resubmission: {status}")
+            elif debug:
+                print(f"[DEBUG] Job {number_part} already completed")
     
     return resubmit_list
 
-def check_job_completion(logDir, studyName, runPeriod, channel, sampleDir, listFileName, debug=False):
+def submit_jobs(inputListPath, runScriptPath, logDir, studyName, runPeriod, channel, outputPath, 
+               submitDir, MainPath, samples, configFile, branchList, maxEvents="-1", 
+               debug=False, resubmit=False, check_status=False):
     """
-    Check if a job needs resubmission based on .err and .out files
-    Returns True if resubmission is needed
-    Checks both original and resubmitted job logs
+    Main function to submit, check, or resubmit HTCondor jobs
     """
-    jobLogDir = os.path.join(logDir, studyName, runPeriod, channel, sampleDir)
-    
-    # Check both original and resubmitted logs (prioritize most recent)
-    log_prefixes = ["resubmit_", ""]  # Check resubmit logs first
-    
-    for prefix in log_prefixes:
-        # Check .err file
-        err_file = os.path.join(jobLogDir, f"{prefix}{sampleDir}_{listFileName}.err")
-        out_file = os.path.join(jobLogDir, f"{prefix}{sampleDir}_{listFileName}.out")
-        
-        if not os.path.exists(err_file):
-            if debug and prefix == "":  # Only print for original if no resubmit exists
-                print(f"[DEBUG] Error file not found: {err_file}")
-            continue  # Try next prefix
-        
-        # Check if .err file has content (should be empty)
-        if os.path.getsize(err_file) > 0:
-            if debug:
-                print(f"[DEBUG] Error file has content: {err_file}")
-            return True
-        
-        # Check .out file
-        if not os.path.exists(out_file):
-            if debug:
-                print(f"[DEBUG] Output file not found: {out_file}")
-            return True
-        
-        try:
-            with open(out_file, 'r') as f:
-                content = f.read()
-                
-            # Check for "Total number of events after merging root files: 0"
-            if "Total number of events after merging root files: 0" in content:
-                if debug:
-                    print(f"[DEBUG] Job produced 0 events: {out_file}")
-                return True
-            
-            # Check for completion indicators at the end
-            required_endings = [
-                "fout successfully deleted.",
-                "SSBConfReader successfully deleted.",
-                "SSBCorr successfully deleted.",
-                "SSBCPVCal successfully deleted.",
-                "Analysis destructor completed."
-            ]
-            
-            # Check if all required endings are present
-            for ending in required_endings:
-                if ending not in content:
-                    if debug:
-                        print(f"[DEBUG] Missing completion indicator '{ending}' in: {out_file}")
-                    return True
-            
-            if debug:
-                print(f"[DEBUG] Job completed successfully: {out_file}")
-            return False  # Job completed successfully
-            
-        except Exception as e:
-            if debug:
-                print(f"[DEBUG] Error reading output file {out_file}: {e}")
-            return True
-    
-    # If no log files found at all
-    if debug:
-        print(f"[DEBUG] No log files found for {sampleDir}_{listFileName}")
-    return True
-    """
-    Find jobs that need resubmission based on log analysis
-    """
-    resubmit_list = []
-    
-    for listFile in os.listdir(sampleInputPath):
-        if listFile.endswith(".list"):
-            listFileName = os.path.splitext(listFile)[0]
-            if listFileName == sampleDir or not listFileName.startswith(f"{sampleDir}_"):
-                if debug:
-                    print(f"Skipping file that doesn't match pattern: {listFileName}")
-                continue
-            
-            number_part = listFileName[len(sampleDir)+1:]
-            if not number_part.isdigit():
-                if debug:
-                    print(f"Skipping file without numeric suffix: {listFileName}")
-                continue
-            
-            # Check if job needs resubmission
-            if check_job_completion(logDir, studyName, runPeriod, channel, sampleDir, number_part, debug):
-                resubmit_list.append(number_part)
-    
-    return resubmit_list
-
-def submit_jobs(sampleType, inputListPath, runScriptPath, logDir, studyName, runPeriod, channel, outputPath, submitDir, MainPath, samples, configFile, branchList, maxEvents="-1", debug=False, resubmit=False, check_status=False):
     
     # If only checking status, run the status check and return
     if check_status:
@@ -520,6 +428,8 @@ def submit_jobs(sampleType, inputListPath, runScriptPath, logDir, studyName, run
         samples = os.listdir(inputListPath)
         if debug:
             print(f"Detected 'all' in samples. Using all directories in {inputListPath}: {samples}")
+
+    total_resubmitted = 0
 
     for sampleDir in samples:
         if debug:
@@ -537,6 +447,9 @@ def submit_jobs(sampleType, inputListPath, runScriptPath, logDir, studyName, run
                 print("Detected MC sample")
 
         sampleInputPath = os.path.join(inputListPath, sampleDir)
+        if not os.path.isdir(sampleInputPath):
+            continue
+            
         sampleOutputPath = os.path.join(outputPath, sampleDir)
         jobLogDir = os.path.join(logDir, studyName, runPeriod, channel, sampleDir)
         os.makedirs(jobLogDir, exist_ok=True)
@@ -559,19 +472,19 @@ Queue InputListName from (
 """
 
         if resubmit:
-            # Use new logic to find jobs that need resubmission
+            # Use find_resubmission_jobs function (resubmits all non-completed jobs)
             resubmit_list = find_resubmission_jobs(logDir, studyName, runPeriod, channel, sampleDir, sampleInputPath, debug)
             
             if resubmit_list:
                 if debug:
-                    print(f"Found {len(resubmit_list)} jobs for resubmission in {sampleDir}: {resubmit_list}")
+                    print(f"Found {len(resubmit_list)} jobs for resubmission in {sampleDir}")
+                    print(f"Jobs to resubmit: {sorted(resubmit_list, key=int)}")
                 
                 for file_name in resubmit_list:
                     submit_file_content += f"{file_name}\n"
                 submit_file_content += ")"
                 
                 # Generate unique filename with timestamp to avoid conflicts
-                import time
                 timestamp = int(time.time())
                 submit_file_path = os.path.join(submitDir, f"resubmit_{sampleDir}_{timestamp}.sub")
                 with open(submit_file_path, "w") as submit_file:
@@ -581,11 +494,12 @@ Queue InputListName from (
                 if debug:
                     print(f"[DEBUG] Submit file created: {submit_file_path}")
                 submit_condor_job(submit_file_path)
+                total_resubmitted += len(resubmit_list)
             else:
-                if debug:
-                    print(f"No jobs need resubmission for {sampleDir}")
+                print(f"[INFO] No jobs need resubmission for {sampleDir}")
         else:
             # Normal submission - submit all jobs
+            job_count = 0
             for listFile in os.listdir(sampleInputPath):
                 if listFile.endswith(".list"):
                     listFileName = os.path.splitext(listFile)[0]
@@ -600,37 +514,43 @@ Queue InputListName from (
                         continue
                     
                     submit_file_content += f"{number_part}\n"
+                    job_count += 1
             
-            submit_file_content += ")"
-            submit_file_path = os.path.join(submitDir, f"submit_{sampleDir}.sub")
-            with open(submit_file_path, "w") as submit_file:
-                submit_file.write(submit_file_content)
-            
-            if debug:
-                print(f"Submitting Condor job for {sampleDir}")
-            submit_condor_job(submit_file_path)
+            if job_count > 0:
+                submit_file_content += ")"
+                submit_file_path = os.path.join(submitDir, f"submit_{sampleDir}.sub")
+                with open(submit_file_path, "w") as submit_file:
+                    submit_file.write(submit_file_content)
+                
+                print(f"[INFO] Submitting {job_count} jobs for {sampleDir}")
+                if debug:
+                    print(f"Submitting Condor job for {sampleDir}")
+                submit_condor_job(submit_file_path)
+            else:
+                print(f"[WARNING] No valid job files found for {sampleDir}")
+
+    if resubmit:
+        print(f"\n[SUMMARY] Total jobs resubmitted: {total_resubmitted}")
 
 def main():
+    """Main configuration and execution"""
     # ===== Main Configuration =====
-    this_script_dir = os.path.dirname(os.path.abspath(__file__))  # 
-    MainPath = os.path.abspath(os.path.join(this_script_dir, ".."))  # 
+    this_script_dir = os.path.dirname(os.path.abspath(__file__))
+    MainPath = os.path.abspath(os.path.join(this_script_dir, ".."))
 
     inputList = os.path.join(MainPath, "input/")
     logDir = os.path.join(os.getcwd(), "condorLog")
     submitDir = os.path.join(os.getcwd(), "condorSubmit")
     runScriptPath = os.path.join(MainPath, "run_cmd_v7.sh")
-    outputPath = "./"
     outputPath = "/pnfs/knu.ac.kr/data/cms/store/user/sha/CPV_Run2/ULSummer20"
-    studyName = "NanoAOD_v3p5"
-    runPeriod = "UL2017"
-    runPeriod = "UL2018"
-    studyName = "NanoAOD_v3p5"
-    studyName = "RochesterNonApplied_v1"
-    studyName = "RochesterNonApplied_v2"
+    
+    # Study configuration
     studyName = "RochesterApplied_v3"
+    runPeriod = "UL2018"
     channel = "MuMu"
     maxEvents = "-1"
 
+    # Sample list
     samples = [
         "DYJetsToLL_M_10To50",
         "DYJetsToLL_M_50",
@@ -664,22 +584,11 @@ def main():
     ]
 
     branchList = "UL2018/branch_list.txt"
-    #branchList = "UL2017/branch_list.txt"
-    #branchList = "UL2017/branch_list_Run2017CtoF.txt"
-    #branchList = "UL2017/branch_list_2017B.txt"
-
     configFile = "dimuon.config"
-    #configFile = "PuppiMET_wRoche.config"
-    #configFile = "PuppiMET_woRoche.config"
-    #configFile = "dimuon_Data_RunCtoF.config"
-    #configFile = "dimuon_Data_RunB.config"
-    debug = True
-    debug = False 
+    debug = False
 
-    # Set check_status=True to check job completion status
-    # Set resubmit=True to use the new resubmission logic
+    # Execution settings
     submit_jobs(
-        "None",
         f"{inputList}/{runPeriod}",
         runScriptPath,
         logDir,
@@ -694,10 +603,10 @@ def main():
         branchList,
         maxEvents=maxEvents,
         debug=debug,
-        #resubmit=False,     # Change to True for resubmission
-        resubmit=True,     # Change to True for resubmission
-        #check_status=True  # Change to True to check job status only
+        resubmit=True,      # Change to True for resubmission
+        #resubmit=False,      # Change to True for resubmission
         check_status=False  # Change to True to check job status only
+        #check_status=True  # Change to True to check job status only
     )
 
 if __name__ == "__main__":
