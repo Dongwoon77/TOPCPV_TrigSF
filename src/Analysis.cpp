@@ -231,7 +231,11 @@ void Analysis::SetVariables() {
     
     PileUpSys    = SSBConfReader->GetText("PileupSys");
     L1PreFireSys = SSBConfReader->GetText("L1PreFireSys");
-    TrigSFSys    = SSBConfReader->GetText("TrigSFSys");
+    TrigSFSys    = SSBConfReader->GetText("TrigSFSys");    
+    LepIdSFSys   = SSBConfReader->GetText("LepIDSFSys");
+    LepIsoSFSys  = SSBConfReader->GetText("LepIsoSFSys");
+    LepRecoSFSys  = SSBConfReader->GetText("LepRecoSFSys");
+    LepTrackSFSys  = SSBConfReader->GetText("LepTrackSFSys");
 
 
     // ============================================================================
@@ -1028,10 +1032,11 @@ bool Analysis::Trigger()
          if (TString(FileName_).Contains("EGamma")) {
             bool pass_single = SelTrigger(SLtrigName);
             bool pass_double = SelTrigger(DLtrigName);
-            trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+	    trigpass = pass_single || pass_double;
             return trigpass;
          } else {
-            std::cout << "[Trigger] Check FileName_ for dielec in 2018" << std::endl;
+            std::cout << "[Trigger] Check FileName_ for dielec in 2018 : FileName_ : " << FileName_ << std::endl;
             return false;
          }
       }
@@ -1101,7 +1106,7 @@ TString Analysis::SetInputFileName(std::string inname)
 
 void Analysis::MCSF()
 {
-    if (FileName_.Contains("Data")||FileName_.Contains("Single")||FileName_.Contains("EG")){ mc_sf_ = 1.; return; }
+    if (FileName_.Contains("Data")||FileName_.Contains("Single")||FileName_.Contains("EG")){ mc_sf_ = 1.; std::cout << "mc_sf_ : " << mc_sf_ << std::endl; return; }
     /// Open Xsec Tables ///
     FILE *xsecs_;
     char sampleName[1000];
@@ -1310,7 +1315,6 @@ void Analysis::LeptonSelector() {
                 !(elecCharge((*intVectors["Electron_tightCharge"])[i]))) {
                 continue;
             }
-            
             // Use same logic pattern as dimuon channel
             if (v_electron_idx.empty()) {
                 // Add first selected electron
@@ -1328,6 +1332,8 @@ void Analysis::LeptonSelector() {
                 elecs.push_back(pre_elecs.at(i));
             }
         }
+        v_electron_idx = v_lepton_idx;
+	//std::cout << "v_electron_idx : " << v_electron_idx.size() << " elecs size: "<< elecs.size() << std::endl;
     }
     // Muon-electron channel
     else if (TString(Decaymode).Contains("muel")) {
@@ -1413,14 +1419,11 @@ void Analysis::LeptonOrder() {
 
     }; // end of assignLeptons //
 
-    //std::cout << "sk1 " << std::endl;
 
     // Handle dimuon decay mode
     if (TString(Decaymode).Contains("dimuon")) {
-    //std::cout << "sk2 " << std::endl;
 
         if (v_muon_idx.size() > 1) {
-    //std::cout << "sk3 " << std::endl;
             assignLeptons(pre_muons, "Muon_charge", v_muon_idx, 0, 1);
         } /*else {
             std::cerr << "Lepton TLorentzVector Error: v_muon_idx is empty or too small for Decaymode = dimuon" 
@@ -1433,11 +1436,11 @@ void Analysis::LeptonOrder() {
     // Handle dielectron decay mode
         if (v_electron_idx.size() > 1) {
             assignLeptons(pre_elecs, "Electron_charge", v_electron_idx, 0, 1);
-        } else {
+        } /*else {
             std::cerr << "Lepton TLorentzVector Error: v_electron_idx is empty or too small for Decaymode = dielec" 
                       << " (size: " << v_electron_idx.size() << ")" << std::endl;
             return;
-        }
+        }*/
     }
     else if (TString(Decaymode).Contains("muel")) {
     // Handle muon-electron decay mode
@@ -1472,63 +1475,60 @@ void Analysis::LeptonOrder() {
 }
 
 void Analysis::MakeMuonCollection() {
-    // make muon collection tlorentzvectors with Rochester correction
     pre_muons.clear();
-    
+
     for (int imu = 0; imu < muons_pt->GetSize(); ++imu) {
-        // Create initial Lorentz vector
-        TLorentzVector muon = createLorentzVector(muons_pt->At(imu), muons_eta->At(imu), 
+        TLorentzVector muon = createLorentzVector(muons_pt->At(imu), muons_eta->At(imu),
                                                  muons_phi->At(imu), muons_M->At(imu));
-        
+
         // Apply Rochester correction if enabled
         if (applyRochester == "True") {
             double RoccoR = 1.0;
-            int muon_charge = (*intVectors["Muon_charge"])[imu];
-            
+
+            // Check if Muon_charge exists
+            auto muon_charge_it = intVectors.find("Muon_charge");
+            if (muon_charge_it == intVectors.end() || !muon_charge_it->second) {
+                std::cerr << "ERROR: Muon_charge branch not available!" << std::endl;
+                pre_muons.push_back(muon);
+                continue;
+            }
+
+            int muon_charge = (*muon_charge_it->second)[imu];
+
             if (isData) {
-                // Data correction
-                RoccoR = SSBCorr->RochesterCorrectionData(RunPeriod, muon_charge, 
+                RoccoR = SSBCorr->RochesterCorrectionData(RunPeriod, muon_charge,
                                                         muon.Pt(), muon.Eta(), muon.Phi(), 0, 0);
-            } 
+            }
             else {
-                // MC correction
+                // MC correction - check all required branches exist
                 auto Muon_genId = intVectors["Muon_genPartIdx"].get();
                 auto GenPts = floatVectors["GenPart_pt"].get();
                 auto numberOfLayers = intVectors["Muon_nTrackerLayers"].get();
-                
+
+                if (!Muon_genId || !GenPts || !numberOfLayers) {
+                    std::cerr << "ERROR: Required MC branches for Rochester correction not available!" << std::endl;
+                    std::cerr << "Muon_genPartIdx: " << (Muon_genId ? "OK" : "NULL") << std::endl;
+                    std::cerr << "GenPart_pt: " << (GenPts ? "OK" : "NULL") << std::endl;
+                    std::cerr << "Muon_nTrackerLayers: " << (numberOfLayers ? "OK" : "NULL") << std::endl;
+                    pre_muons.push_back(muon);
+                    continue;
+                }
+
                 int GenID = Muon_genId->At(imu);
                 double GenPt = (GenID >= 0) ? GenPts->At(GenID) : 0.0;
                 int nLayers = numberOfLayers->At(imu);
-                
-                RoccoR = SSBCorr->RochesterCorrectionMC(RunPeriod, muon_charge, 
-                                                      muon.Pt(), muon.Eta(), muon.Phi(), 
+
+                RoccoR = SSBCorr->RochesterCorrectionMC(RunPeriod, muon_charge,
+                                                      muon.Pt(), muon.Eta(), muon.Phi(),
                                                       GenID, GenPt, nLayers, 0, 0);
             }
-            
-            // Apply correction to muon momentum
+
             muon.SetPtEtaPhiM(muon.Pt() * RoccoR, muon.Eta(), muon.Phi(), muon.M());
         }
-        
+
         pre_muons.push_back(muon);
     }
-    
-    return;
 }
-
-
-/*
-void Analysis::MakeMuonCollection() {
-    // make muon collection tlorentzvectors//
-    //std::cout << "Muon Correction !!" << std::endl;
-    pre_muons.clear();
-    for (int imu = 0; imu < muons_pt->GetSize(); ++imu){
-        //std::cout << "imu " << imu << " muons_pt->At(imu) : " << muons_pt->At(imu) << " muons_eta->At(imu) : " << muons_eta->At(imu) << " muons_phi->At(imu) : " << muons_phi->At(imu) << " muons_M->At(imu)  : "<< muons_M->At(imu)  << std::endl; 
-        pre_muons.push_back(createLorentzVector(muons_pt->At(imu), muons_eta->At(imu), muons_phi->At(imu), muons_M->At(imu) )); 
-    }
-//    std::cout << "end of MakeMuonCollection !" << std::endl;
-//    std::cout << "size of pre_muons.size : " << muons.size() << std::endl; 
-    return;
-}*/
 
 
 void Analysis::MakeElecCollection() {
@@ -1538,8 +1538,8 @@ void Analysis::MakeElecCollection() {
         pre_elecs.push_back(createLorentzVector(elecs_pt->At(iele), elecs_eta->At(iele), elecs_phi->At(iele), elecs_M->At(iele) )); 
     }
  
-//    std::cout << "end of MakeElecCollection !" << std::endl;
-//    std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
+    //std::cout << "end of MakeElecCollection !" << std::endl;
+    //std::cout << "size of pre_elecs.size : " << pre_elecs.size() << std::endl; 
     return;
 }
 
@@ -2460,26 +2460,39 @@ void Analysis::LeptonSFApply()
 {
     //std::cout << "start ! LeptonSFApply  " << std::endl;
     lep_sf = 1.0;
-    
-    if (TString(Decaymode).Contains("dimuon")) {
-        //std::cout << "dimuon case !" << std::endl;
-        lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
-    //    std::cout << "lep_sf " << lep_sf << std::endl;
+    if (isData){
+	evt_weight_ = 1.0;
+	return;
     }
-    else if (TString(Decaymode).Contains("dielec")) {
-    //   lep_sf = SSBEffcal->DoubleElec_EffROOT(Lep1, Lep2,
-    //                   Elec_Supercluster_Eta->at(v_lepton_idx[0]),
-    //                   Elec_Supercluster_Eta->at(v_lepton_idx[1]),
-    //                   LepIdSFSys, LepRecoSFSys); // LepRecoSFSys is for Electron
-    }
-    else if (TString(Decaymode).Contains("muel")) {
-    //   lep_sf = SSBEffcal->MuonElec_EffROOT(TMuon, TElectron,
-    //                   Elec_Supercluster_Eta->at(v_electron_idx[0]),
-    //                   LepIdSFSys, LepIsoSFSys, LepTrackSFSys, LepRecoSFSys); // RecoSF is for Electron
-    }
-    else {
-       lep_sf = 1.0;
-       std::cout << "LeptonGetSF error !!!!" << std::endl;
+    else { 
+        if (TString(Decaymode).Contains("dimuon")) {
+            //std::cout << "dimuon case !" << std::endl;
+            lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
+        //    std::cout << "lep_sf " << lep_sf << std::endl;
+        }
+        else if (TString(Decaymode).Contains("dielec")) {
+        //    std::cout << "dielectron case !" << std::endl;
+		//std::cout << "LepIdSFSys.Data : " <<LepIdSFSys << " LepRecoSFSys.Data " <<LepRecoSFSys << std::endl;
+            lep_sf = SSBCorr->DoubleElec_Eff(Lep1, Lep2, 
+                                            (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[0]] + elecs_eta->At(v_electron_idx[0]),  
+            				    (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[1]] + elecs_eta->At(v_electron_idx[1]),
+            		                    ElecId.Data(),LepIdSFSys.Data(), LepRecoSFSys.Data()); // LepRecoSFSys is for Electron
+        }
+        else if (TString(Decaymode).Contains("muel")) {
+        //   lep_sf = SSBEffcal->MuonElec_EffROOT(TMuon, TElectron,
+        //                   Elec_Supercluster_Eta->at(v_electron_idx[0]),
+        //                   LepIdSFSys, LepIsoSFSys, LepTrackSFSys, LepRecoSFSys); // RecoSF is for Electron
+        }
+        else {
+           lep_sf = 1.0;
+          // std::cout << "LeptonGetSF error !!!!" << std::endl;
+	   std::cout << "[WARNING] Unknown decay mode: " << Decaymode
+           << ", setting lep_sf = 1.0" << std::endl;
+
+        }
+	//std::cout << "lep_sf : " << lep_sf << std::endl;
+	evt_weight_beforeLepsf_ = evt_weight_;
+	evt_weight_ = lep_sf*evt_weight_;
     }
 }
 void Analysis::PUWeightApply()

@@ -440,28 +440,156 @@ double SSBCorrections::DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector l
     return mu1id * mu2id * mu1iso * mu2iso * mu1trk * mu2trk;
 }
 
-float SSBCorrections::GetElectronIDSF(float pt, float eta, const std::string& wp) const {
-    if (!ele_sf_) {
-        std::cerr << "[GetElectronIDSF] SF not loaded! Call LoadElectronSF() first.\n";
-        return 1.0;
-    }
+// Add this function to SSBCorrections.cpp
 
-    //float id_sf = ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });
-    //float reco_sf = ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
-    return ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });;
+
+// Add this function to SSBCorrections.cpp
+
+double SSBCorrections::DoubleElec_Eff(
+    const TLorentzVector& lep1, const TLorentzVector& lep2,
+    double ele1sueta, double ele2sueta, 
+    const std::string& id_wp,        // "Tight", "Medium", "Loose"
+    const std::string& id_syst,      // "nominal", "up", "down"
+    const std::string& reco_syst     // "nominal", "up", "down"
+) const {
+    
+    // Step 1: Apply pt/eta limits based on JSON ranges
+    // pT range in JSON: 10.0 to Infinity, but clamp very high values
+    float lep1pt = std::clamp(static_cast<float>(lep1.Pt()), 10.0f, 999.0f);
+    float lep2pt = std::clamp(static_cast<float>(lep2.Pt()), 10.0f, 999.0f);
+    
+    // Eta range in JSON: -Infinity to +Infinity, but avoid extreme values  
+    // Keep within reasonable detector range
+    float lep1sueta_clamped = std::clamp(static_cast<float>(ele1sueta), -3.0f, 3.0f);
+    float lep2sueta_clamped = std::clamp(static_cast<float>(ele2sueta), -3.0f, 3.0f);
+    
+    // Step 2: Calculate ID SF for each electron using GetElectronSF
+    // Check if id_wp is empty and set default
+    std::string actual_id_wp = id_wp;
+    if (actual_id_wp.empty()) {
+        actual_id_wp = "Tight";  // Set default working point
+        std::cout << "[WARNING] Empty ID working point, using default: " << actual_id_wp << std::endl;
+    }
+    
+    // Use working point directly (not with "ID" prefix)
+    float ele1id = GetElectronSF(actual_id_wp, lep1sueta_clamped, lep1pt, id_syst);
+    float ele2id = GetElectronSF(actual_id_wp, lep2sueta_clamped, lep2pt, id_syst);
+    
+    // Step 3: Calculate Reco SF for each electron using GetElectronSF
+    // "Reco" type will automatically choose RecoAbove20/RecoBelow20 based on pt
+    float ele1reco = GetElectronSF("Reco", lep1sueta_clamped, lep1pt, reco_syst);
+    float ele2reco = GetElectronSF("Reco", lep2sueta_clamped, lep2pt, reco_syst);
+    
+    // Step 4: Isolation SF is 1.0 (typically included in ID for electrons)
+    float ele1iso = 1.0f;
+    float ele2iso = 1.0f;
+    
+    // Step 5: Compute total double electron efficiency
+    double doubleEleff = static_cast<double>(ele1id) * static_cast<double>(ele2id) * 
+                        static_cast<double>(ele1iso) * static_cast<double>(ele2iso) * 
+                        static_cast<double>(ele1reco) * static_cast<double>(ele2reco);
+    
+    // Debug output (can be removed in production)
+    /*
+    std::cout << "[DoubleElec_Eff] Debug info:" << std::endl;
+    std::cout << "  Ele1: pt=" << lep1pt << ", eta=" << lep1sueta_clamped 
+              << ", ID_SF=" << ele1id << ", Reco_SF=" << ele1reco << std::endl;
+    std::cout << "  Ele2: pt=" << lep2pt << ", eta=" << lep2sueta_clamped 
+              << ", ID_SF=" << ele2id << ", Reco_SF=" << ele2reco << std::endl;
+    std::cout << "  Total efficiency: " << doubleEleff << std::endl;
+    */ 
+    
+    return doubleEleff;
 }
 
-float SSBCorrections::GetElectronRecoSF(float pt, float eta) const {
-    if (!ele_reco_sf_) {
-        std::cerr << "[GetElectronRecoSF] SF not loaded! Call LoadElectronSF() first.\n";
-        return 1.0;
+float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
+    
+    // Map systematic names: "nominal" -> "sf", "up" -> "sfup", "down" -> "sfdown"
+    std::string valtype = "sf";  // default
+    
+    if (syst == "up") {
+        valtype = "sfup";
+    } else if (syst == "down") {
+        valtype = "sfdown";
+    } else if (syst == "nominal" || syst.empty()) {
+        valtype = "sf";
+    } else {
+        // Handle unknown systematic values
+        std::cerr << "[WARNING] Unknown systematic: '" << syst << "', using nominal (sf)" << std::endl;
+        valtype = "sf";
     }
 
-    //float id_sf = ele_sf_->evaluate({ year_, wp, "nominal", eta, pt });
-    //float reco_sf = ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
-    return ele_reco_sf_->evaluate({ year_, "nominal", eta, pt });
-}
+    // Map working point names from config to JSON format
+    std::string working_point = sf_type;
+    if (sf_type == "Reco") {
+        working_point = (pt >= 20.0f) ? "RecoAbove20" : "RecoBelow20";
+    } else if (sf_type.find("SCB") == 0) {
+        // Convert SCB (Scale factor Cut-Based) format to JSON format
+        if (sf_type == "SCBVeto") working_point = "Veto";
+        else if (sf_type == "SCBLoose") working_point = "Loose";
+        else if (sf_type == "SCBMedium") working_point = "Medium";
+        else if (sf_type == "SCBTight") working_point = "Tight";
+        else {
+            std::cerr << "[WARNING] Unknown SCB working point: " << sf_type << ", using Tight" << std::endl;
+            working_point = "Tight";
+        }
+    } else if (sf_type.find("MVA") == 0) {
+        // Convert MVA format to JSON format if needed
+        if (sf_type == "MVALoose") working_point = "wp90noiso";
+        else if (sf_type == "MVAMedium") working_point = "wp80noiso";
+        else if (sf_type == "MVATight") working_point = "wp90iso";
+        else {
+            std::cerr << "[WARNING] Unknown MVA working point: " << sf_type << ", using wp90iso" << std::endl;
+            working_point = "wp90iso";
+        }
+    }
+    // For other cases (direct JSON names like "Tight", "Medium"), use as-is
 
+    // Debug output (can be commented out in production)
+    /*
+    std::cout << "[DEBUG GetElectronSF] Corrected parameters:" << std::endl;
+    std::cout << "  year: '" << year_ << "'" << std::endl;
+    std::cout << "  valtype: '" << valtype << "'" << std::endl;
+    std::cout << "  working_point: '" << working_point << "'" << std::endl;
+    std::cout << "  eta: " << eta << std::endl;
+    std::cout << "  pt: " << pt << std::endl;
+    */ 
+
+    try {
+        if (!ele_sf_) {
+            std::cerr << "[ERROR] ele_sf_ pointer is null!" << std::endl;
+            return 1.0;
+        }
+
+        // Validate parameters before evaluation
+        if (year_.empty()) {
+            std::cerr << "[ERROR] Year is empty!" << std::endl;
+            return 1.0;
+        }
+        
+        if (working_point.empty()) {
+            std::cerr << "[ERROR] Working point is empty!" << std::endl;
+            return 1.0;
+        }
+
+        // Use the correct order from JSON: {year, ValType, WorkingPoint, eta, pt}
+        float result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt});
+        
+        // Sanity check on result
+        if (result <= 0.0 || result > 10.0) {
+            std::cerr << "[WARNING] Unusual SF value: " << result 
+                      << " for parameters: " << working_point << ", eta=" << eta << ", pt=" << pt << std::endl;
+        }
+        
+        return result;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[GetElectronSF] Evaluation failed: " << e.what() << std::endl;
+        std::cerr << "  Parameters: year='" << year_ << "', valtype='" << valtype
+                  << "', working_point='" << working_point << "', eta=" << eta << ", pt=" << pt << std::endl;
+        return 1.0;
+    }
+}
 
 float SSBCorrections::GetPUWeight(float nTrueInt, const std::string& systTag) const {
     std::string variation = systTag;
@@ -497,19 +625,6 @@ float SSBCorrections::GetPUWeight(float nTrueInt, const std::string& systTag) co
     }
 }
 
-float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
-    std::string recoPtThreshold = pt >= 20 ? "RecoAbove20" : "RecoBelow20";
-    std::string type = sf_type;
-
-    if (sf_type == "Reco") type = recoPtThreshold;
-
-    try {
-        return ele_sf_->evaluate({year_, syst, type, eta, pt});
-    } catch (const std::exception& e) {
-        std::cerr << "[GetElectronSF] Failed to evaluate: " << e.what() << std::endl;
-        return 1.0;
-    }
-}
 
 float SSBCorrections::MatchGenPt(const TLorentzVector& reco_jet,
                                   const std::vector<TLorentzVector>& gen_jets,

@@ -73,9 +73,15 @@ public:
     double GetMuonIDSF(double pt, double eta, const std::string& tag = "nominal") const;
     double GetMuonIsoSF(double pt, double eta, const std::string& tag = "nominal") const;
     double DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector lep2, TString muidsys, TString muisosys, TString tracksys) const;
-    float GetElectronIDSF(float pt, float eta, const std::string& wp = "wp80") const;
-    float GetElectronRecoSF(float pt, float eta) const;
     float GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst = "sf") const;
+    double DoubleElec_Eff(
+        const TLorentzVector& lep1, const TLorentzVector& lep2,
+        double ele1sueta, double ele2sueta,
+        const std::string& id_wp = "Tight",       // Default: Tight working point
+        const std::string& id_syst = "nominal",   // Default: nominal (no systematic)
+        const std::string& reco_syst = "nominal"  // Default: nominal (no systematic)
+    ) const;
+
     double TrigDiMuon_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
     double TrigDiElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
     double TrigMuElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
