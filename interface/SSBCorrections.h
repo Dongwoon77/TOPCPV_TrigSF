@@ -82,6 +82,16 @@ public:
         const std::string& reco_syst = "nominal"  // Default: nominal (no systematic)
     ) const;
 
+    double MuonElec_Eff(const TLorentzVector& muon, const TLorentzVector& electron,
+                        double muon_eta, double electron_sueta,
+                        const std::string& mu_id_syst = "nominal",
+                        const std::string& mu_iso_syst = "nominal",
+                        const std::string& ele_id_wp = "Tight",
+                        const std::string& ele_id_syst = "nominal",
+                        const std::string& ele_reco_syst = "nominal") const;
+
+
+
     double TrigDiMuon_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
     double TrigDiElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");
     double TrigMuElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_ = "nominal");

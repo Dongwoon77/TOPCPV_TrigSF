@@ -2456,15 +2456,16 @@ void Analysis::SetUpKINObs()
    // Clean up
    delete kinematicReconstruction;
 }
+
 void Analysis::LeptonSFApply()
 {
     //std::cout << "start ! LeptonSFApply  " << std::endl;
     lep_sf = 1.0;
     if (isData){
-	evt_weight_ = 1.0;
-	return;
+        evt_weight_ = 1.0;
+        return;
     }
-    else { 
+    else {
         if (TString(Decaymode).Contains("dimuon")) {
             //std::cout << "dimuon case !" << std::endl;
             lep_sf = SSBCorr->DoubleMuon_IDIsoEff(Lep1, Lep2, LepIdSFSys, LepIsoSFSys, LepTrackSFSys);
@@ -2472,29 +2473,39 @@ void Analysis::LeptonSFApply()
         }
         else if (TString(Decaymode).Contains("dielec")) {
         //    std::cout << "dielectron case !" << std::endl;
-		//std::cout << "LepIdSFSys.Data : " <<LepIdSFSys << " LepRecoSFSys.Data " <<LepRecoSFSys << std::endl;
-            lep_sf = SSBCorr->DoubleElec_Eff(Lep1, Lep2, 
-                                            (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[0]] + elecs_eta->At(v_electron_idx[0]),  
-            				    (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[1]] + elecs_eta->At(v_electron_idx[1]),
-            		                    ElecId.Data(),LepIdSFSys.Data(), LepRecoSFSys.Data()); // LepRecoSFSys is for Electron
+                //std::cout << "LepIdSFSys.Data : " <<LepIdSFSys << " LepRecoSFSys.Data " <<LepRecoSFSys << std::endl;
+            lep_sf = SSBCorr->DoubleElec_Eff(Lep1, Lep2,
+                                            (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[0]] + elecs_eta->At(v_electron_idx[0]),
+                                            (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[1]] + elecs_eta->At(v_electron_idx[1]),
+                                            ElecId.Data(),LepIdSFSys.Data(), LepRecoSFSys.Data()); // LepRecoSFSys is for Electron
         }
         else if (TString(Decaymode).Contains("muel")) {
-        //   lep_sf = SSBEffcal->MuonElec_EffROOT(TMuon, TElectron,
-        //                   Elec_Supercluster_Eta->at(v_electron_idx[0]),
-        //                   LepIdSFSys, LepIsoSFSys, LepTrackSFSys, LepRecoSFSys); // RecoSF is for Electron
+            // Calculate supercluster eta for electron
+            double electron_sueta = (*floatVectors["Electron_deltaEtaSC"])[v_electron_idx[0]] + elecs_eta->At(v_electron_idx[0]);
+
+            // Apply MuonElec_Eff function
+            lep_sf = SSBCorr->MuonElec_Eff(Lep1, Lep2,  // Assuming Lep1=muon, Lep2=electron based on LeptonOrder()
+                                          Lep1.Eta(),   // muon eta
+                                          electron_sueta, // electron supercluster eta
+                                          LepIdSFSys.Data(),   // muon ID systematic
+                                          LepIsoSFSys.Data(),  // muon Iso systematic
+                                          ElecId.Data(),       // electron ID working point
+                                          LepIdSFSys.Data(),   // electron ID systematic (reuse muon ID sys)
+                                          LepRecoSFSys.Data());// electron reco systematic
         }
         else {
            lep_sf = 1.0;
           // std::cout << "LeptonGetSF error !!!!" << std::endl;
-	   std::cout << "[WARNING] Unknown decay mode: " << Decaymode
+           std::cout << "[WARNING] Unknown decay mode: " << Decaymode
            << ", setting lep_sf = 1.0" << std::endl;
 
         }
-	//std::cout << "lep_sf : " << lep_sf << std::endl;
-	evt_weight_beforeLepsf_ = evt_weight_;
-	evt_weight_ = lep_sf*evt_weight_;
+        std::cout << "lep_sf : " << lep_sf << std::endl;
+        evt_weight_beforeLepsf_ = evt_weight_;
+        evt_weight_ = lep_sf*evt_weight_;
     }
 }
+
 void Analysis::PUWeightApply()
 {
     //std::cout << "start ! PUSFApply  " << std::endl;

@@ -502,11 +502,74 @@ double SSBCorrections::DoubleElec_Eff(
     return doubleEleff;
 }
 
-float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
+double SSBCorrections::MuonElec_Eff(const TLorentzVector& muon, const TLorentzVector& electron,
+                                    double muon_eta, double electron_sueta,
+                                    const std::string& mu_id_syst, 
+                                    const std::string& mu_iso_syst,
+                                    const std::string& ele_id_wp,
+                                    const std::string& ele_id_syst, 
+                                    const std::string& ele_reco_syst) const {
     
+    // Step 1: Apply pt/eta limits based on JSON ranges
+    // Muon: pt range typically up to ~120 GeV in measurements
+    float muon_pt = std::clamp(static_cast<float>(muon.Pt()), 15.0f, 119.999f);
+    float muon_abseta = std::clamp(std::abs(static_cast<float>(muon_eta)), 0.0f, 2.4f);
+    
+    // Electron: pt range 10.0 to Infinity in JSON, eta range within detector acceptance
+    float electron_pt = std::clamp(static_cast<float>(electron.Pt()), 10.0f, 999.0f);
+    float electron_sueta_clamped = std::clamp(static_cast<float>(electron_sueta), -3.0f, 3.0f);
+
+    // Step 2: Calculate Muon ID SF
+    float mu_id = GetMuonIDSF(muon_pt, muon_abseta, mu_id_syst);
+    
+    // Step 3: Calculate Muon Iso SF  
+    float mu_iso = GetMuonIsoSF(muon_pt, muon_abseta, mu_iso_syst);
+    
+    // Step 4: Muon tracking SF (typically 1.0 for current analyses)
+    float mu_trk = 1.0f;
+
+    // Step 5: Calculate Electron ID SF
+    std::string actual_ele_id_wp = ele_id_wp;
+    if (actual_ele_id_wp.empty()) {
+        actual_ele_id_wp = "Tight";  // Set default working point
+        std::cout << "[WARNING] Empty electron ID working point, using default: " << actual_ele_id_wp << std::endl;
+    }
+    
+    float ele_id = GetElectronSF(actual_ele_id_wp, electron_sueta_clamped, electron_pt, ele_id_syst);
+    
+    // Step 6: Calculate Electron Reco SF
+    // "Reco" type will automatically choose RecoAbove20/RecoBelow20 based on pt
+    float ele_reco = GetElectronSF("Reco", electron_sueta_clamped, electron_pt, ele_reco_syst);
+    
+    // Step 7: Electron isolation SF is 1.0 (typically included in ID for electrons)
+    float ele_iso = 1.0f;
+
+    // Step 8: Compute total muon-electron efficiency
+    double muonelec_eff = static_cast<double>(mu_id) * static_cast<double>(mu_iso) * 
+                         static_cast<double>(mu_trk) * static_cast<double>(ele_id) * 
+                         static_cast<double>(ele_iso) * static_cast<double>(ele_reco);
+
+    // Debug output (can be removed in production)
+    /*
+    std::cout << "[MuonElec_Eff] Debug info:" << std::endl;
+    std::cout << "  Muon: pt=" << muon_pt << ", abseta=" << muon_abseta 
+              << ", ID_SF=" << mu_id << ", Iso_SF=" << mu_iso << ", Trk_SF=" << mu_trk << std::endl;
+    std::cout << "  Electron: pt=" << electron_pt << ", sueta=" << electron_sueta_clamped 
+              << ", ID_SF=" << ele_id << ", Reco_SF=" << ele_reco << ", Iso_SF=" << ele_iso << std::endl;
+    std::cout << "  Total efficiency: " << muonelec_eff << std::endl;
+    */
+
+    return muonelec_eff;
+}
+
+
+
+
+float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
+
     // Map systematic names: "nominal" -> "sf", "up" -> "sfup", "down" -> "sfdown"
     std::string valtype = "sf";  // default
-    
+
     if (syst == "up") {
         valtype = "sfup";
     } else if (syst == "down") {
@@ -545,16 +608,6 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
     }
     // For other cases (direct JSON names like "Tight", "Medium"), use as-is
 
-    // Debug output (can be commented out in production)
-    /*
-    std::cout << "[DEBUG GetElectronSF] Corrected parameters:" << std::endl;
-    std::cout << "  year: '" << year_ << "'" << std::endl;
-    std::cout << "  valtype: '" << valtype << "'" << std::endl;
-    std::cout << "  working_point: '" << working_point << "'" << std::endl;
-    std::cout << "  eta: " << eta << std::endl;
-    std::cout << "  pt: " << pt << std::endl;
-    */ 
-
     try {
         if (!ele_sf_) {
             std::cerr << "[ERROR] ele_sf_ pointer is null!" << std::endl;
@@ -566,7 +619,7 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
             std::cerr << "[ERROR] Year is empty!" << std::endl;
             return 1.0;
         }
-        
+
         if (working_point.empty()) {
             std::cerr << "[ERROR] Working point is empty!" << std::endl;
             return 1.0;
@@ -574,13 +627,13 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
 
         // Use the correct order from JSON: {year, ValType, WorkingPoint, eta, pt}
         float result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt});
-        
+
         // Sanity check on result
         if (result <= 0.0 || result > 10.0) {
-            std::cerr << "[WARNING] Unusual SF value: " << result 
+            std::cerr << "[WARNING] Unusual SF value: " << result
                       << " for parameters: " << working_point << ", eta=" << eta << ", pt=" << pt << std::endl;
         }
-        
+
         return result;
 
     } catch (const std::exception& e) {
@@ -1050,14 +1103,11 @@ double SSBCorrections::TrigDiElec_Eff(TLorentzVector lep1, TLorentzVector lep2, 
     return GetTrgEff(leading_pt, subleading_pt, Sys_);
 }
 
-double SSBCorrections::TrigMuElec_Eff(TLorentzVector lep1, TLorentzVector lep2, TString Sys_) {
-    double pt_mu = lep1.Pt();   // Assuming lep1 is muon
-    double pt_ele = lep2.Pt();  // Assuming lep2 is electron
+double SSBCorrections::TrigMuElec_Eff(TLorentzVector muon, TLorentzVector elec, TString Sys_) {
+    double pt_mu = muon.Pt();   // Assuming lep1 is muon
+    double pt_ele = elec.Pt();  // Assuming lep2 is electron
 
-    double leading_pt = std::max(pt_mu, pt_ele);
-    double subleading_pt = std::min(pt_mu, pt_ele);
-
-    return GetTrgEff(leading_pt, subleading_pt, Sys_);
+    return GetTrgEff(pt_ele, pt_mu, Sys_);
 }
 
 double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
