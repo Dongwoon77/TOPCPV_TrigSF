@@ -970,6 +970,7 @@ bool Analysis::SelTrigger(std::vector<std::string> v_sel)
         // trgName cout in triggerList 
         auto it = triggerList.find(trgName);
         if (it != triggerList.end() && it->second) {
+		//std::cout << "it " << it->first << " " << **(it->second)<< std::endl;
             if (**(it->second)) {ptrigindex++;}
         } else {
             std::cerr << "Error: Trigger " << trgName << " not found in triggerList." << std::endl;
@@ -982,87 +983,98 @@ bool Analysis::SelTrigger(std::vector<std::string> v_sel)
     return passtrig_;
 }
 
+
 bool Analysis::Trigger()
 {
-   bool trigpass = false;
+  bool trigpass = false;
 
-   if (!TString(FileName_).Contains("Data")) {
-       // MC: always apply trigName
-       trigpass = SelTrigger(trigName);
-       return trigpass;
-   }
+  if (!TString(FileName_).Contains("Data")) {
+      // MC: always apply trigName
+      trigpass = SelTrigger(trigName);
+      return trigpass;
+  }
 
-   /// Data Samples
-   std::vector<std::string> seltrigName;
-   std::vector<std::string> vetotrigName;
+  /// Data Samples
+  std::vector<std::string> seltrigName;
+  std::vector<std::string> vetotrigName;
 
-   if (RunPeriod.Contains("2018")) {
-      if (TString(Decaymode).Contains("dimuon")) {
-         if (TString(FileName_).Contains("Single")) {
-            bool pass_single = SelTrigger(SLtrigName);
-            bool pass_double = SelTrigger(DLtrigName);
-            trigpass = pass_single && !pass_double;
-            return trigpass;
-         } else if (TString(FileName_).Contains("Double")) {
-            bool pass_double = SelTrigger(DLtrigName);
-            trigpass = pass_double;
-            return trigpass;
-         } else {
-            std::cout << "[Trigger] Check FileName_ for dimuon in 2018" << std::endl;
-            return false;
-         }
-      }
+  if (RunPeriod.Contains("2018")) {
+     if (TString(Decaymode).Contains("dimuon")) {
+        if (TString(FileName_).Contains("Single")) {
+           bool pass_single = SelTrigger(SLtrigName);
+           bool pass_double = SelTrigger(DLtrigName);
+           trigpass = pass_single && !pass_double;
+           return trigpass;
+        } else if (TString(FileName_).Contains("Double")) {
+           bool pass_double = SelTrigger(DLtrigName);
+           trigpass = pass_double;
+           return trigpass;
+        } else {
+           std::cout << "[Trigger] Check FileName_ for dimuon in 2018" << std::endl;
+           return false;
+        }
+     }
 
-      else if (TString(Decaymode).Contains("muel")) {
-         if (TString(FileName_).Contains("MuonEG")) {
-            bool pass_double = SelTrigger(DLtrigName);
-            trigpass = pass_double;
-            return trigpass;
-         } else if (TString(FileName_).Contains("EGamma")) {
-            bool pass_single = SelTrigger(SLtrigName);
-            trigpass = pass_single;
-            return trigpass;
-         } else {
-            std::cout << "[Trigger] Check FileName_ for muel in 2018" << std::endl;
-            return false;
-         }
-      }
+     else if (TString(Decaymode).Contains("muel")) {
+	//std::cout << "muel channel!" << std::endl;
+        if (TString(FileName_).Contains("MuonEG")) {
+	   //std::cout << "MuonEG !! " << FileName_ << std::endl;
+           // MuonEG: Primary dataset for muel, use Double lepton triggers only
+           bool pass_double = SelTrigger(DLtrigName);
+	   //std::cout << "pass_double " << pass_double << std::endl;
+           trigpass = pass_double;
+           return trigpass;
+        }
+        else if (TString(FileName_).Contains("SingleMuon") || TString(FileName_).Contains("EGamma")) {
+	   //std::cout << "SingleMuon or EGamma !! " << FileName_ << std::endl;
+           // SingleMuon/EGamma: Use Single triggers only, veto Double to avoid overlap with MuonEG
+           bool pass_single = SelTrigger(SLtrigName);
+           bool pass_double = SelTrigger(DLtrigName);
+           trigpass = pass_single && !pass_double;
+	   //std::cout << "pass_single : " << pass_single  << " pass_double : " << pass_double << " trigpass : " << trigpass<< std::endl;
+           return trigpass;
+        }
+        else {
+           std::cout << "[Trigger] Check FileName_ for muel in 2018" << std::endl;
+           return false;
+        }
+     }
 
-      else if (TString(Decaymode).Contains("dielec")) {
-         if (TString(FileName_).Contains("EGamma")) {
-            bool pass_single = SelTrigger(SLtrigName);
-            bool pass_double = SelTrigger(DLtrigName);
-            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
-	    trigpass = pass_single || pass_double;
-            return trigpass;
-         } else {
-            std::cout << "[Trigger] Check FileName_ for dielec in 2018 : FileName_ : " << FileName_ << std::endl;
-            return false;
-         }
-      }
+     else if (TString(Decaymode).Contains("dielec")) {
+        if (TString(FileName_).Contains("EGamma")) {
+           bool pass_single = SelTrigger(SLtrigName);
+           bool pass_double = SelTrigger(DLtrigName);
+           //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+           trigpass = pass_single || pass_double;
+           return trigpass;
+        } else {
+           std::cout << "[Trigger] Check FileName_ for dielec in 2018 : FileName_ : " << FileName_ << std::endl;
+           return false;
+        }
+     }
 
-      else {
-         std::cout << "[Trigger] Check Decaymode for 2018" << std::endl;
-         return false;
-      }
-   }
+     else {
+        std::cout << "[Trigger] Check Decaymode for 2018" << std::endl;
+        return false;
+     }
+  }
 
-   /// 2016 / 2017
-   else {
-      if (TString(FileName_).Contains("Single")) {
-         bool pass_single = SelTrigger(SLtrigName);
-         bool pass_double = SelTrigger(DLtrigName);
-         trigpass = pass_single && !pass_double;
-         return trigpass;
-      } else if (TString(FileName_).Contains("Double") || TString(FileName_).Contains("MuonEG")) {
-         bool pass_double = SelTrigger(DLtrigName);
-         trigpass = pass_double;
-         return trigpass;
-      } else {
-         std::cout << "[Trigger] Check FileName_ for 2016/2017" << std::endl;
-         return false;
-      }
-   }
+  /// 2016 / 2017
+  else {
+     if (TString(FileName_).Contains("Single")) {
+        bool pass_single = SelTrigger(SLtrigName);
+        bool pass_double = SelTrigger(DLtrigName);
+        trigpass = pass_single && !pass_double;
+        return trigpass;
+     } else if (TString(FileName_).Contains("Double") || TString(FileName_).Contains("MuonEG")) {
+        bool pass_double = SelTrigger(DLtrigName);
+        trigpass = pass_double;
+        return trigpass;
+     } else {
+        std::cout << "[Trigger] Check FileName_ for 2016/2017" << std::endl;
+        return false;
+     }
+  }
 }
 
 TString Analysis::SetInputFileName(std::string inname)
@@ -1389,6 +1401,73 @@ void Analysis::LeptonSelector() {
     SelectVetoElectrons();
 }
 
+
+void Analysis::LeptonOrder() {
+    Lep1.SetPxPyPzE(-999, -999, -999, -999);
+    Lep2.SetPxPyPzE(-999, -999, -999, -999);
+    Lep.SetPxPyPzE(-999, -999, -999, -999);
+    AnLep.SetPxPyPzE(-999, -999, -999, -999);
+
+    // Handle dimuon decay mode
+    if (TString(Decaymode).Contains("dimuon")) {
+        if (muons.size() >= 2) {
+            Lep1 = muons[0];
+            Lep2 = muons[1];
+
+            // Set Lep & AnLep based on charge
+            if ((*intVectors["Muon_charge"])[v_muon_idx[0]] < 0) {
+                Lep = muons[0];
+                AnLep = muons[1];
+            } else {
+                Lep = muons[1];
+                AnLep = muons[0];
+            }
+        }
+    }
+    // Handle dielectron decay mode
+    else if (TString(Decaymode).Contains("dielec")) {
+        if (elecs.size() >= 2) {
+            Lep1 = elecs[0];
+            Lep2 = elecs[1];
+
+            // Set Lep & AnLep based on charge
+            if ((*intVectors["Electron_charge"])[v_electron_idx[0]] < 0) {
+                Lep = elecs[0];
+                AnLep = elecs[1];
+            } else {
+                Lep = elecs[1];
+                AnLep = elecs[0];
+            }
+        }
+    }
+    // Handle muon-electron decay mode
+    else if (TString(Decaymode).Contains("muel")) {
+        if (muons.size() >= 1 && elecs.size() >= 1) {
+            // Assign Lep1, Lep2 based on pT
+            if (muons[0].Pt() > elecs[0].Pt()) {
+                Lep1 = muons[0];
+                Lep2 = elecs[0];
+            } else {
+                Lep1 = elecs[0];
+                Lep2 = muons[0];
+            }
+
+            // Set Lep & AnLep based on muon charge
+            if ((*intVectors["Muon_charge"])[v_muon_idx[0]] < 0) {
+                Lep = muons[0];
+                AnLep = elecs[0];
+            } else {
+                Lep = elecs[0];
+                AnLep = muons[0];
+            }
+        }
+    }
+    // Handle invalid Decaymode
+    else {
+        std::cerr << "Lepton TLorentzVector Error: Decaymode = " << Decaymode << std::endl;
+    }
+}
+/*
 void Analysis::LeptonOrder() {
     Lep1.SetPxPyPzE(-999, -999, -999, -999);
     Lep2.SetPxPyPzE(-999, -999, -999, -999);
@@ -1425,22 +1504,22 @@ void Analysis::LeptonOrder() {
 
         if (v_muon_idx.size() > 1) {
             assignLeptons(pre_muons, "Muon_charge", v_muon_idx, 0, 1);
-        } /*else {
+        } else {
             std::cerr << "Lepton TLorentzVector Error: v_muon_idx is empty or too small for Decaymode = dimuon" 
                       << " (size: " << v_muon_idx.size() << ")" << std::endl;
             return;
-        }*/
+        }
     //std::cout << "sk4 " << std::endl;
     }
     else if (TString(Decaymode).Contains("dielec")) {
     // Handle dielectron decay mode
         if (v_electron_idx.size() > 1) {
             assignLeptons(pre_elecs, "Electron_charge", v_electron_idx, 0, 1);
-        } /*else {
+        } else {
             std::cerr << "Lepton TLorentzVector Error: v_electron_idx is empty or too small for Decaymode = dielec" 
                       << " (size: " << v_electron_idx.size() << ")" << std::endl;
             return;
-        }*/
+        }
     }
     else if (TString(Decaymode).Contains("muel")) {
     // Handle muon-electron decay mode
@@ -1472,7 +1551,7 @@ void Analysis::LeptonOrder() {
         std::cerr << "Lepton TLorentzVector Error: Decaymode = " << Decaymode << std::endl;
     }
 
-}
+}*/
 
 void Analysis::MakeMuonCollection() {
     pre_muons.clear();
@@ -2500,7 +2579,7 @@ void Analysis::LeptonSFApply()
            << ", setting lep_sf = 1.0" << std::endl;
 
         }
-        std::cout << "lep_sf : " << lep_sf << std::endl;
+        //std::cout << "lep_sf : " << lep_sf << std::endl;
         evt_weight_beforeLepsf_ = evt_weight_;
         evt_weight_ = lep_sf*evt_weight_;
     }
@@ -2539,7 +2618,8 @@ void Analysis::TriggerSFApply()
             triggersf_ = SSBCorr->TrigDiElec_Eff(Lep1, Lep2, TrigSFSys);
         }
         else if (TString(Decaymode).Contains("muel")) {
-            triggersf_ = SSBCorr->TrigMuElec_Eff(Lep1, Lep2, TrigSFSys);
+            //triggersf_ = SSBCorr->TrigMuElec_Eff(Lep1, Lep2, TrigSFSys);
+            triggersf_ = SSBCorr->TrigMuElec_Eff(elecs[0], muons[0], TrigSFSys);
         }
         else if (TString(Decaymode).Contains("dimu")) {
             triggersf_ = SSBCorr->TrigDiMuon_Eff(Lep1, Lep2, TrigSFSys);

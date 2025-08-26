@@ -9,6 +9,10 @@ HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ, trigger, Bool_t, single
 HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL, trigger, Bool_t, single
 HLT_Ele32_WPTight_Gsf, trigger, Bool_t, single
 HLT_DoubleEle25_CaloIdL_MW, trigger, Bool_t, single
+HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ, trigger, Bool_t, single
+HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL, trigger, Bool_t, single
+HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ, trigger, Bool_t, single
+HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL, trigger, Bool_t, single
 nMuon, muon, UInt_t, single
 Muon_pfRelIso03_all, muon, Float_t, vector
 Muon_pfRelIso03_chg, muon, Float_t, vector

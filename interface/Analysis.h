@@ -217,6 +217,8 @@ private:
     TLorentzVector Lep2; //
     TLorentzVector Lep; // 
     TLorentzVector AnLep; //
+    TLorentzVector Muon; // only for muon-electron channel
+    TLorentzVector Elec; // only for muon-electron channel
     TLorentzVector Met; // 
     TLorentzVector Jet1; // 
     TLorentzVector Jet2; // 
