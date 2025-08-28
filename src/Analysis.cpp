@@ -1742,9 +1742,9 @@ void Analysis::MakeJetCollection() {
 
     if (RunPeriod.Contains("2016Pre")) yearForm = "2016APV";
     else if (RunPeriod.Contains("2016Post")) yearForm = "2016nonAPV";
-    if (RunPeriod.Contains("2017")) yearForm = "2017";
-    if (RunPeriod.Contains("2018")) yearForm = "2018";
-    else cout << "[Warning check the RunPeriod]"   << endl;
+    else if (RunPeriod.Contains("2017")) yearForm = "2017";
+    else if (RunPeriod.Contains("2018")) yearForm = "2018";
+    else cout << "[Warning check the RunPeriod] : " << RunPeriod  << endl;
     bool isMC = !isData; bool isUL = true; bool isPuppi = METtype == "Puppi";
 
 
@@ -2781,65 +2781,6 @@ bool Analysis::IsHardScatterJet(int jet_idx) const {
     return gen_jet_idx >= 0;  // Gen matched = HardScatter, otherwise PileUp
 }
 
-/*void Analysis::CollectPUIDCandidates() {
-    puid_hardscatter_jets_.clear();
-    
-    // Skip collection for Data or when PUID is disabled
-    if (isData || !apply_puid_) {
-        return;
-    }
-    
-    // Check if jet collections are ready
-    if (pre_jets.empty() || jets_pt == nullptr) {
-        std::cerr << "[WARNING] CollectPUIDCandidates: Jet collections not ready" << std::endl;
-        return;
-    }
-    
-    Int_t nJets = jets_pt->GetSize();
-    
-    // Lambda for basic jet cuts (same as JetSelector)
-    auto passBasicJetCuts = [this](int i, float jetPt, float jetEta) -> bool {
-        // Kinematic cuts
-        if (jetPt <= jet_pt || fabs(jetEta) >= jet_eta) return false;
-        
-        // Jet ID
-        if (jets_Id != nullptr && jets_Id->At(i) < jet_id) return false;
-        
-        // Jet cleaning (need TLorentzVector)
-        TLorentzVector jetVec = pre_jets[i];
-        if (!JetCleaning(&jetVec)) return false;
-        
-        return true;
-    };
-    
-    for (int i = 0; i < nJets; i++) {
-        float jetPt = pre_jets[i].Pt();
-        float jetEta = pre_jets[i].Eta();
-        
-        // Only consider jets that need PUID (CMS criteria)
-        if (jetPt > puid_pt_threshold_) continue;
-        
-        // Skip Run3 PUPPI jets (no PUID needed)
-        if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) continue;
-        
-        // Must pass basic jet cuts to be PUID candidate
-        if (!passBasicJetCuts(i, jetPt, jetEta)) continue;
-        
-        // Check if this is HardScatter jet (CMS criteria)
-        bool is_hardscatter = IsHardScatterJet(i);
-        if (!is_hardscatter) continue;  // Only collect HardScatter jets for weight calculation
-        
-        // Get PUID result
-        int puId = (jets_puId != nullptr && i < jets_puId->GetSize()) ? jets_puId->At(i) : 0;
-        bool passes_puid = PassPileupID(jetPt, puId, puid_wp_);
-        
-        // Store information
-        puid_hardscatter_jets_.emplace_back(i, jetPt, jetEta, passes_puid, is_hardscatter);
-    }
-    
-    //std::cout << "[PUID] Collected " << puid_hardscatter_jets_.size() 
-    //          << " HardScatter candidate jets for weight calculation" << std::endl;
-}*/
 
 void Analysis::CollectPUIDCandidates() {
     puid_hardscatter_jets_.clear();
