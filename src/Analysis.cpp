@@ -1007,7 +1007,9 @@ bool Analysis::Trigger()
            return trigpass;
         } else if (TString(FileName_).Contains("Double")) {
            bool pass_double = SelTrigger(DLtrigName);
+           //bool pass_single = SelTrigger(SLtrigName);
            trigpass = pass_double;
+           //trigpass = pass_single || pass_double;
            return trigpass;
         } else {
            std::cout << "[Trigger] Check FileName_ for dimuon in 2018" << std::endl;
@@ -1021,8 +1023,10 @@ bool Analysis::Trigger()
 	   //std::cout << "MuonEG !! " << FileName_ << std::endl;
            // MuonEG: Primary dataset for muel, use Double lepton triggers only
            bool pass_double = SelTrigger(DLtrigName);
+           //bool pass_single = SelTrigger(SLtrigName);
 	   //std::cout << "pass_double " << pass_double << std::endl;
            trigpass = pass_double;
+           //trigpass = pass_single || pass_double;
            return trigpass;
         }
         else if (TString(FileName_).Contains("SingleMuon") || TString(FileName_).Contains("EGamma")) {
