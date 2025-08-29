@@ -67,7 +67,6 @@ Muon_mvaLowPtId, muon, UChar_t, vector
 Muon_pfIsoId, muon, UChar_t, vector
 Muon_puppiIsoId, muon, UChar_t, vector
 Muon_genPartIdx, muon, Int_t, vector
-Muon_nTrackerLayers, muon, Int_t, vector
 nJet, jet, UInt_t, single
 Jet_pt, jet, Float_t, vector
 Jet_phi, jet, Float_t, vector
