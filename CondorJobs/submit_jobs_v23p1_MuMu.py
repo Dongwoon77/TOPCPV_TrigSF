@@ -549,63 +549,53 @@ def main():
     studyName = "AN_v6p2-2"
     studyName = "AN_v6p2-3"
     studyName = "AN_v6p2-4"
-    studyName = "AN_v6p2-5"
-    studyName = "AN_v6p2-6"
-    studyName = "AN_v6p2-7"
     studyName = "AN_v6p2-8"
-    studyName = "AN_v6p2-9"
     runPeriod = "UL2018"
-    channel = "MuMu"
     channel = "ElEl"
-    channel = "MuEl"
+    channel = "MuMu"
     maxEvents = "-1"
 
     # Sample list
     samples = [
-       "DYJetsToLL_M_10To50",
-       "DYJetsToLL_M_50",
-       "ST_s-channel_4f_leptonDecays",
-       "ST_t-channel_antitop_4f_InclusiveDecays",
-       "ST_t-channel_top_4f_InclusiveDecays",
-       "ST_tW_antitop_5f_NoFullyHadronicDecays",
-       "ST_tW_top_5f_NoFullyHadronicDecays",
-       "TTJets_TuneCP5_amcatnloFXFX",
-       "TTJets_TuneCP5_madgraphMLM",
-       "TTWJetsToLNu",
-       "TTWJetsToQQ",
-       "TTZToLLNuNu",
-       "TTZToQQ",
-       "TTbar_Signal",
-       "TTbar_AllHadronic",
-       "TTbar_SemiLeptonic",
-       "WJetsToLNu",
-       "WJetsToLNu_madgraphMLM",
-       "WW",
-       "WZ",
-       "ZZ",
-        #"Data_DoubleMuon_Run2018A",
-        #"Data_DoubleMuon_Run2018B",
-        #"Data_DoubleMuon_Run2018C",
-        #"Data_DoubleMuon_Run2018D",
-       "Data_SingleMuon_Run2018A",
-       "Data_SingleMuon_Run2018B",
-       "Data_SingleMuon_Run2018C",
-       "Data_SingleMuon_Run2018D",
-       "Data_EGamma_Run2018A",
-       "Data_EGamma_Run2018B",
-       "Data_EGamma_Run2018C",
-       "Data_EGamma_Run2018D",
-       "Data_MuonEG_Run2018A",
-       "Data_MuonEG_Run2018B",
-       "Data_MuonEG_Run2018C",
-       "Data_MuonEG_Run2018D"
+        "DYJetsToLL_M_10To50",
+        "DYJetsToLL_M_50",
+        "ST_s-channel_4f_leptonDecays",
+        "ST_t-channel_antitop_4f_InclusiveDecays",
+        "ST_t-channel_top_4f_InclusiveDecays",
+        "ST_tW_antitop_5f_NoFullyHadronicDecays",
+        "ST_tW_top_5f_NoFullyHadronicDecays",
+        "TTJets_TuneCP5_amcatnloFXFX",
+        "TTJets_TuneCP5_madgraphMLM",
+        "TTWJetsToLNu",
+        "TTWJetsToQQ",
+        "TTZToLLNuNu",
+        "TTZToQQ",
+        "TTbar_Signal",
+        "TTbar_AllHadronic",
+        "TTbar_SemiLeptonic",
+        "WJetsToLNu",
+        "WJetsToLNu_madgraphMLM",
+        "WW",
+        "WZ",
+        "ZZ",
+        "Data_DoubleMuon_Run2018A",
+        "Data_DoubleMuon_Run2018B",
+        "Data_DoubleMuon_Run2018C",
+        "Data_DoubleMuon_Run2018D",
+        "Data_SingleMuon_Run2018A",
+        "Data_SingleMuon_Run2018B",
+        "Data_SingleMuon_Run2018C",
+        "Data_SingleMuon_Run2018D",
+        #"Data_EGamma_Run2018A",
+        #"Data_EGamma_Run2018B",
+        #"Data_EGamma_Run2018C",
+        #"Data_EGamma_Run2018D"
 
     ]
 
     branchList = "UL2018/branch_list.txt"
     configFile = "dimuon.config"
-    configFile = "dielec.config"
-    configFile = "muelec.config"
+    #configFile = "dielec.config"
     debug = False
 
     # Execution settings

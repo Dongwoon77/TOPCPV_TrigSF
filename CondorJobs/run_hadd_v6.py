@@ -16,7 +16,6 @@ def get_sample_list(base_dir):
 
 def get_listfiles(sample, run_period, listfile_root):
     listdir = os.path.join(listfile_root, run_period, sample)
-    #print("listdir in get_listfiles : %s"%listdir)
     if not os.path.exists(listdir):
         return []
 
@@ -41,30 +40,30 @@ def main():
     parser.add_argument("--ListfileDir", required=True, help="Base input dir (e.g., ../input/)")
     parser.add_argument("--OutputLocation", default=".", help="Merged root output dir")
     parser.add_argument("--RecreateMerge", action='store_true')
-    
+
     # Add new option: BaseDir for flexible base directory specification
-    parser.add_argument("--BaseDir", default=None, 
-                       help="Base directory path where ROOT files are stored. If not provided, uses ../RunPeriod/Channel/")
-    
+    parser.add_argument("--BaseDir", default=None,
+                       help="Base directory path where ROOT files are stored. If not provided, uses ../StudyName/RunPeriod/Channel/")
+
     args = parser.parse_args()
 
     os.makedirs(args.OutputLocation, exist_ok=True)
 
-    # BaseDir configuration logic
+    # BaseDir configuration logic - MODIFIED
     if args.BaseDir:
-        # User specified BaseDir directly
-        base_dir = os.path.join(args.BaseDir,args.RunPeriod, args.Channel)
+        # User specified BaseDir - construct full path with StudyName/RunPeriod/Channel
+        base_dir = os.path.join(args.BaseDir, args.StudyName, args.RunPeriod, args.Channel)
     else:
-        # Default: go up from current directory and use RunPeriod/Channel structure
-        base_dir = os.path.join("..", args.RunPeriod, args.Channel)
-    
+        # Default: go up from current directory and use StudyName/RunPeriod/Channel structure
+        base_dir = os.path.join("..", args.StudyName, args.RunPeriod, args.Channel)
+
     # Convert to absolute path
     base_dir = os.path.abspath(base_dir)
-    
+
     print(f"[INFO] Using base directory: {base_dir}")
-    
+
     sampleList = get_sample_list(base_dir)
-    
+
     if not sampleList:
         print(f"[ERROR] No samples found in base directory: {base_dir}")
         return
@@ -73,7 +72,7 @@ def main():
         print(f"[INFO] Processing sample: {sample}")
         sample_dir = os.path.join(base_dir, sample)
         listfiles = get_listfiles(sample, args.RunPeriod, args.ListfileDir)
-        #print(listfiles)
+
         if not listfiles:
             print(f"[WARN] No listfiles found for sample {sample}. Skipping.")
             continue
@@ -97,15 +96,15 @@ def main():
             sample_log_dir = os.path.join(args.OutputLocation, args.RunPeriod, args.Channel, sample)
             os.makedirs(sample_log_dir, exist_ok=True)
             log_path = os.path.join(sample_log_dir, f"{sample}_missing_check.log")
-            
+
             with open(log_path, "w") as log:
                 log.write(f"[WARNING] Mismatch or missing entries for {sample}:\n")
                 for listf, expectf in missing_entries:
                     log.write(f"List: {listf}\nExpected: {expectf}\n\n")
-            
+
             print(f"[WARN] Some entries missing or mismatched. See log: {log_path}")
             continue
-            
+
         if not valid_rootfiles:
             print(f"[SKIP] No valid ROOT inputs for {sample}.")
             continue

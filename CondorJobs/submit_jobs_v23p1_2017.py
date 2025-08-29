@@ -34,6 +34,7 @@ def submit_condor_job(submit_file_path):
         sys.exit(1)
 
 def isDirectoryInDataList(directory, channel, runPeriod, debug=False):
+    print("isDirectoryInDataList !!!")
     """Check if directory matches the required data list for the channel"""
     dimuonList = ["SingleMuon", "DoubleMuon"]
     dielecList = ["SingleElectron", "DoubleEG"]
@@ -243,7 +244,7 @@ def check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, 
         if not os.path.isdir(sampleInputPath):
             continue
             
-        print(f"\n📁 Sample: {sampleDir}")
+        print(f"\n🔍 Sample: {sampleDir}")
         print("-" * 60)
         
         sample_stats = defaultdict(int)
@@ -415,6 +416,50 @@ def submit_jobs(inputListPath, runScriptPath, logDir, studyName, runPeriod, chan
     Main function to submit, check, or resubmit HTCondor jobs
     """
     
+    # Config file selection function
+    def get_config_file(channel, sample_name, run_period):
+        """
+        Determine the appropriate config file based on channel, sample type, and run period
+        """
+        base_config = {
+            "MuMu": "dimuon",
+            "ElEl": "dielec", 
+            "MuEl": "muelec"
+        }
+        
+        if not sample_name.startswith("Data_"):
+            # MC samples use base config
+            return f"{base_config[channel]}.config"
+        else:
+            # Data samples need run-specific config
+            # Extract run info from sample name (e.g., "Data_SingleMuon_Run2017B" -> "Run2017B")
+            run_info = sample_name.split("_")[-1]  # Gets "Run2017B", "Run2017C", etc.
+            
+            if "Run2017B" in run_info:  # More specific check for Run2017B
+                return f"{base_config[channel]}_Data_RunB.config"
+            else:
+                # For RunC, RunD, RunE, RunF use the CtoF config
+                return f"{base_config[channel]}_Data_RunCtoF.config"
+    
+    # Branch list selection function
+    def get_branch_list(sample_name, run_period):
+        """
+        Determine the appropriate branch list file based on sample type and run period
+        """
+        if not sample_name.startswith("Data_"):
+            # MC samples use base branch list
+            return f"{run_period}/branch_list.txt"
+        else:
+            # Data samples need run-specific branch list
+            # Extract run info from sample name (e.g., "Data_SingleMuon_Run2017B" -> "Run2017B")
+            run_info = sample_name.split("_")[-1]  # Gets "Run2017B", "Run2017C", etc.
+            
+            if "Run2017B" in run_info:  # More specific check for Run2017B
+                return f"{run_period}/branch_list_Run2017B.txt"
+            else:
+                # For RunC, RunD, RunE, RunF use the CtoF branch list
+                return f"{run_period}/branch_list_Run2017CtoF.txt"
+    
     # If only checking status, run the status check and return
     if check_status:
         return check_all_jobs_status(inputListPath, logDir, studyName, runPeriod, channel, samples, debug)
@@ -450,6 +495,13 @@ def submit_jobs(inputListPath, runScriptPath, logDir, studyName, runPeriod, chan
         if not os.path.isdir(sampleInputPath):
             continue
             
+        # Get the appropriate config file and branch list for this sample
+        sample_configFile = get_config_file(channel, sampleDir, runPeriod)
+        sample_branchList = get_branch_list(sampleDir, runPeriod)
+        if debug:
+            print(f"Using config file: {sample_configFile} for sample: {sampleDir}")
+            print(f"Using branch list: {sample_branchList} for sample: {sampleDir}")
+            
         sampleOutputPath = os.path.join(outputPath, sampleDir)
         jobLogDir = os.path.join(logDir, studyName, runPeriod, channel, sampleDir)
         os.makedirs(jobLogDir, exist_ok=True)
@@ -467,7 +519,7 @@ should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 transfer_input_files = {runScriptPath}
 accounting_group = group_cms
-Arguments  = {MainPath} {runPeriod} {studyName} {channel} {configFile} {branchList} {maxEvents} {outputPath} {sampleDir}/{sampleDir}_$(InputListName)
+Arguments  = {MainPath} {runPeriod} {studyName} {channel} {sample_configFile} {sample_branchList} {maxEvents} {outputPath} {sampleDir}/{sampleDir}_$(InputListName)
 Queue InputListName from (
 """
 
@@ -490,7 +542,7 @@ Queue InputListName from (
                 with open(submit_file_path, "w") as submit_file:
                     submit_file.write(submit_file_content)
                 
-                print(f"[INFO] Resubmitting {len(resubmit_list)} jobs for {sampleDir}")
+                print(f"[INFO] Resubmitting {len(resubmit_list)} jobs for {sampleDir} with {sample_configFile} and {sample_branchList}")
                 if debug:
                     print(f"[DEBUG] Submit file created: {submit_file_path}")
                 submit_condor_job(submit_file_path)
@@ -522,7 +574,7 @@ Queue InputListName from (
                 with open(submit_file_path, "w") as submit_file:
                     submit_file.write(submit_file_content)
                 
-                print(f"[INFO] Submitting {job_count} jobs for {sampleDir}")
+                print(f"[INFO] Submitting {job_count} jobs for {sampleDir} with {sample_configFile} and {sample_branchList}")
                 if debug:
                     print(f"Submitting Condor job for {sampleDir}")
                 submit_condor_job(submit_file_path)
@@ -553,61 +605,86 @@ def main():
     studyName = "AN_v6p2-6"
     studyName = "AN_v6p2-7"
     studyName = "AN_v6p2-8"
-    studyName = "AN_v6p2-9"
-    runPeriod = "UL2018"
+    studyName = "AN_v6p2-10"
+    runPeriod = "UL2017"
     channel = "MuMu"
     channel = "ElEl"
     channel = "MuEl"
     maxEvents = "-1"
 
-    # Sample list
+    # Sample list including Data samples
     samples = [
-       "DYJetsToLL_M_10To50",
-       "DYJetsToLL_M_50",
-       "ST_s-channel_4f_leptonDecays",
-       "ST_t-channel_antitop_4f_InclusiveDecays",
-       "ST_t-channel_top_4f_InclusiveDecays",
-       "ST_tW_antitop_5f_NoFullyHadronicDecays",
-       "ST_tW_top_5f_NoFullyHadronicDecays",
-       "TTJets_TuneCP5_amcatnloFXFX",
-       "TTJets_TuneCP5_madgraphMLM",
-       "TTWJetsToLNu",
-       "TTWJetsToQQ",
-       "TTZToLLNuNu",
-       "TTZToQQ",
-       "TTbar_Signal",
-       "TTbar_AllHadronic",
-       "TTbar_SemiLeptonic",
-       "WJetsToLNu",
-       "WJetsToLNu_madgraphMLM",
-       "WW",
-       "WZ",
-       "ZZ",
-        #"Data_DoubleMuon_Run2018A",
-        #"Data_DoubleMuon_Run2018B",
-        #"Data_DoubleMuon_Run2018C",
-        #"Data_DoubleMuon_Run2018D",
-       "Data_SingleMuon_Run2018A",
-       "Data_SingleMuon_Run2018B",
-       "Data_SingleMuon_Run2018C",
-       "Data_SingleMuon_Run2018D",
-       "Data_EGamma_Run2018A",
-       "Data_EGamma_Run2018B",
-       "Data_EGamma_Run2018C",
-       "Data_EGamma_Run2018D",
-       "Data_MuonEG_Run2018A",
-       "Data_MuonEG_Run2018B",
-       "Data_MuonEG_Run2018C",
-       "Data_MuonEG_Run2018D"
-
+        # MC samples
+        "DYJetsToLL_M_10To50",
+        "DYJetsToLL_M_10To50_madgraphMLM",
+        "DYJetsToLL_M_50",
+        "DYJetsToLL_M_50_madgraphMLM",
+        "ST_s-channel_4f_leptonDecays",
+        "ST_t-channel_antitop_4f_InclusiveDecays",
+        "ST_t-channel_top_4f_InclusiveDecays",
+        "ST_tW_antitop_5f_NoFullyHadronicDecays",
+        "ST_tW_top_5f_NoFullyHadronicDecays",
+        "TTJets_TuneCP5_amcatnloFXFX",
+        "TTJets_TuneCP5_madgraphMLM",
+        "TTWJetsToLNu",
+        "TTWJetsToQQ",
+        "TTZToLLNuNu",
+        "TTZToQQ",
+        "TTbar_Signal",
+        "TTbar_AllHadronic",
+        "TTbar_SemiLeptonic",
+        "WJetsToLNu",
+        "WJetsToLNu_madgraphMLM",
+        "WW",
+        "WZ",
+        "ZZ",
+        
+        # Data samples - DoubleEG (for ElEl channel)
+        "Data_DoubleEG_Run2017B",
+        "Data_DoubleEG_Run2017C",
+        "Data_DoubleEG_Run2017D",
+        "Data_DoubleEG_Run2017E",
+        "Data_DoubleEG_Run2017F",
+        
+        # Data samples - DoubleMuon (for MuMu channel)
+        "Data_DoubleMuon_Run2017B",
+        "Data_DoubleMuon_Run2017C",
+        "Data_DoubleMuon_Run2017D",
+        "Data_DoubleMuon_Run2017E",
+        "Data_DoubleMuon_Run2017F",
+        
+        # Data samples - SingleElectron (for ElEl and MuEl channels)
+        "Data_SingleElectron_Run2017B",
+        "Data_SingleElectron_Run2017C",
+        "Data_SingleElectron_Run2017D",
+        "Data_SingleElectron_Run2017E",
+        "Data_SingleElectron_Run2017F",
+        
+        # Data samples - SingleMuon (for MuMu and MuEl channels)
+        "Data_SingleMuon_Run2017B",
+        "Data_SingleMuon_Run2017C",
+        "Data_SingleMuon_Run2017D",
+        "Data_SingleMuon_Run2017E",
+        "Data_SingleMuon_Run2017F",
+        
+        # Data samples - MuonEG (for MuEl channel)
+        "Data_MuonEG_Run2017B",
+        "Data_MuonEG_Run2017C",
+        "Data_MuonEG_Run2017D",
+        "Data_MuonEG_Run2017E",
+        "Data_MuonEG_Run2017F",
     ]
 
     branchList = "UL2018/branch_list.txt"
+    branchList = "%s/branch_list.txt"%(runPeriod)
     configFile = "dimuon.config"
-    configFile = "dielec.config"
+    configFile = "dielec.config"  # This will be dynamically determined per sample
     configFile = "muelec.config"
     debug = False
-
+    resubmit = False
+    check_status = True
+    check_status = False
+    
     # Execution settings
     submit_jobs(
         f"{inputList}/{runPeriod}",
@@ -624,10 +701,8 @@ def main():
         branchList,
         maxEvents=maxEvents,
         debug=debug,
-        resubmit=True,      # Change to True for resubmission
-        #resubmit=False,      # Change to True for resubmission
-        check_status=False  # Change to True to check job status only
-        #check_status=True  # Change to True to check job status only
+        resubmit=resubmit,      # Change to True for resubmission
+        check_status=check_status  # Change to True to check job status only
     )
 
 if __name__ == "__main__":
