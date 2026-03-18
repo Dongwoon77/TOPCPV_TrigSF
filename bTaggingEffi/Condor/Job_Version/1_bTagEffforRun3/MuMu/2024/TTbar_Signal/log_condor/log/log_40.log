@@ -1,0 +1,136 @@
+000 (842546.040.000) 2026-03-14 10:57:17 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (842546.040.000) 2026-03-14 10:58:44 Started transferring input files
+	Transferring to host: <155.230.21.43:9618?addrs=155.230.21.43-9618+[2407-c000-c025--21-43]-9618&alias=cluster243.knu.ac.kr&noUDP&sock=slot1_7_2314_2c17_1974>
+...
+040 (842546.040.000) 2026-03-14 10:58:44 Finished transferring input files
+...
+001 (842546.040.000) 2026-03-14 10:58:45 Job executing on host: <155.230.21.43:9618?addrs=155.230.21.43-9618+[2407-c000-c025--21-43]-9618&alias=cluster243.knu.ac.kr&noUDP&sock=startd_1693_d5ed>
+	SlotName: slot1_7@cluster243.knu.ac.kr
+	CondorScratchDir = "/home/condor/dir_1677214"
+	Cpus = 1
+	Disk = 2761
+	GPUs = 0
+	Memory = 1100
+...
+006 (842546.040.000) 2026-03-14 10:58:54 Image size of job updated: 102996
+	101  -  MemoryUsage of job (MB)
+	102996  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:03:55 Image size of job updated: 153672
+	151  -  MemoryUsage of job (MB)
+	153672  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:08:56 Image size of job updated: 169948
+	166  -  MemoryUsage of job (MB)
+	169948  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:13:56 Image size of job updated: 171120
+	168  -  MemoryUsage of job (MB)
+	171120  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:28:58 Image size of job updated: 171268
+	168  -  MemoryUsage of job (MB)
+	171268  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:33:58 Image size of job updated: 171596
+	168  -  MemoryUsage of job (MB)
+	171596  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:38:59 Image size of job updated: 171664
+	168  -  MemoryUsage of job (MB)
+	171664  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 11:59:00 Image size of job updated: 171796
+	168  -  MemoryUsage of job (MB)
+	171796  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 12:04:00 Image size of job updated: 171844
+	168  -  MemoryUsage of job (MB)
+	171844  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 12:34:04 Image size of job updated: 179148
+	175  -  MemoryUsage of job (MB)
+	179148  -  ResidentSetSize of job (KB)
+...
+006 (842546.040.000) 2026-03-14 14:59:19 Image size of job updated: 179292
+	176  -  MemoryUsage of job (MB)
+	179292  -  ResidentSetSize of job (KB)
+...
+004 (842546.040.000) 2026-03-16 11:09:10 Job was evicted.
+	(0) CPU times
+		Usr 0 00:22:05, Sys 0 00:05:25  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+	0  -  Run Bytes Sent By Job
+	788  -  Run Bytes Received By Job
+	Partitionable Resources :     Usage  Request Allocated 
+	   Cpus                 :      0.00        1         1 
+	   Disk (KB)            :     77           1      2761 
+	   GPUs                 :                            0 
+	   Memory (MB)          :    176        1024      1100 
+	   TimeExecute (s)      : 173425                       
+	   TimeSlotBusy (s)     : 173426                       
+...
+009 (842546.040.000) 2026-03-16 11:09:10 Job was aborted.
+	via condor_rm (by user dwkim)
+...
+000 (845921.040.000) 2026-03-16 11:09:38 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (845921.040.000) 2026-03-16 11:12:25 Started transferring input files
+	Transferring to host: <155.230.21.146:9618?addrs=155.230.21.146-9618+[2407-c000-c025--21-146]-9618&alias=cluster346.knu.ac.kr&noUDP&sock=slot1_2_98017_97eb_4668>
+...
+040 (845921.040.000) 2026-03-16 11:12:25 Finished transferring input files
+...
+001 (845921.040.000) 2026-03-16 11:12:26 Job executing on host: <155.230.21.146:9618?addrs=155.230.21.146-9618+[2407-c000-c025--21-146]-9618&alias=cluster346.knu.ac.kr&noUDP&sock=startd_6945_4554>
+	SlotName: slot1_2@cluster346.knu.ac.kr
+	AvailableGPUs = {  }
+	CondorScratchDir = "/home/condor/dir_372839"
+	Cpus = 1
+	Disk = 2048
+	GPUs = 0
+	Memory = 1100
+...
+006 (845921.040.000) 2026-03-16 11:12:34 Image size of job updated: 150868
+	148  -  MemoryUsage of job (MB)
+	150868  -  ResidentSetSize of job (KB)
+...
+006 (845921.040.000) 2026-03-16 11:17:34 Image size of job updated: 154180
+	151  -  MemoryUsage of job (MB)
+	154180  -  ResidentSetSize of job (KB)
+...
+006 (845921.040.000) 2026-03-16 11:22:35 Image size of job updated: 165104
+	162  -  MemoryUsage of job (MB)
+	165104  -  ResidentSetSize of job (KB)
+...
+006 (845921.040.000) 2026-03-16 11:27:35 Image size of job updated: 175936
+	172  -  MemoryUsage of job (MB)
+	175936  -  ResidentSetSize of job (KB)
+...
+006 (845921.040.000) 2026-03-16 11:37:36 Image size of job updated: 179312
+	176  -  MemoryUsage of job (MB)
+	179312  -  ResidentSetSize of job (KB)
+...
+040 (845921.040.000) 2026-03-16 12:21:02 Started transferring output files
+...
+040 (845921.040.000) 2026-03-16 12:21:02 Finished transferring output files
+...
+005 (845921.040.000) 2026-03-16 12:21:02 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 01:00:53, Sys 0 00:02:38  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 01:00:53, Sys 0 00:02:38  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	33351  -  Run Bytes Sent By Job
+	788  -  Run Bytes Received By Job
+	33351  -  Total Bytes Sent By Job
+	788  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :     0.75        1         1 
+	   Disk (KB)            :    55           1      2048 
+	   GPUs                 :                           0 
+	   Memory (MB)          :   176        1024      1100 
+	   TimeExecute (s)      :  4116                       
+	   TimeSlotBusy (s)     :  4117                       
+
+	Job terminated of its own accord at 2026-03-16T03:21:02Z with exit-code 0.
+...

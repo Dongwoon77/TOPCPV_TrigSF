@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Executable name
+EXEC="./makeBtagEff_All"
+INPUT_DIR="./input"
+
+# Check if executable exists
+if [ ! -x "$EXEC" ]; then
+    echo "[ERROR] Executable not found or not executable: $EXEC"
+    echo "Try 'make' to compile it first."
+    exit 1
+fi
+
+# Check for input arguments
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <relative_path_to_list1> [relative_path_to_list2] ..."
+    echo "Example: $0 UL2016PreVFP/TTbar_Signal/TTbar_Signal.list"
+    exit 2
+fi
+
+# Loop over each argument (relative path under input/)
+for REL_PATH in "$@"; do
+    LIST_FILE="${INPUT_DIR}/${REL_PATH}"
+    if [ -f "$LIST_FILE" ]; then
+        echo "=========================================="
+        echo "[INFO] Processing list: $LIST_FILE"
+        echo "------------------------------------------"
+        $EXEC "$LIST_FILE"
+        echo "[INFO] Finished: $REL_PATH"
+        echo ""
+    else
+        echo "[WARNING] File not found: $LIST_FILE"
+    fi
+done
+
+echo "[INFO] Selected sample processing complete."

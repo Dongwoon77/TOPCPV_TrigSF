@@ -1,0 +1,56 @@
+000 (816261.001.000) 2026-02-28 04:21:50 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (816261.001.000) 2026-02-28 04:21:52 Started transferring input files
+	Transferring to host: <155.230.21.43:9618?addrs=155.230.21.43-9618+[2407-c000-c025--21-43]-9618&alias=cluster243.knu.ac.kr&noUDP&sock=slot1_4_3602413_9914_1422>
+...
+040 (816261.001.000) 2026-02-28 04:21:52 Finished transferring input files
+...
+001 (816261.001.000) 2026-02-28 04:21:53 Job executing on host: <155.230.21.43:9618?addrs=155.230.21.43-9618+[2407-c000-c025--21-43]-9618&alias=cluster243.knu.ac.kr&noUDP&sock=startd_1187_c301>
+	SlotName: slot1_4@cluster243.knu.ac.kr
+	CondorScratchDir = "/home/condor/dir_832808"
+	Cpus = 1
+	Disk = 2768
+	GPUs = 0
+	Memory = 1100
+...
+006 (816261.001.000) 2026-02-28 04:22:02 Image size of job updated: 110024
+	108  -  MemoryUsage of job (MB)
+	110024  -  ResidentSetSize of job (KB)
+...
+006 (816261.001.000) 2026-02-28 04:27:03 Image size of job updated: 178540
+	175  -  MemoryUsage of job (MB)
+	178540  -  ResidentSetSize of job (KB)
+...
+006 (816261.001.000) 2026-02-28 04:32:03 Image size of job updated: 178748
+	175  -  MemoryUsage of job (MB)
+	178748  -  ResidentSetSize of job (KB)
+...
+006 (816261.001.000) 2026-02-28 05:02:07 Image size of job updated: 185044
+	181  -  MemoryUsage of job (MB)
+	185044  -  ResidentSetSize of job (KB)
+...
+006 (816261.001.000) 2026-02-28 06:47:18 Image size of job updated: 185608
+	182  -  MemoryUsage of job (MB)
+	185608  -  ResidentSetSize of job (KB)
+...
+006 (816261.001.000) 2026-02-28 07:07:21 Image size of job updated: 185728
+	182  -  MemoryUsage of job (MB)
+	185728  -  ResidentSetSize of job (KB)
+...
+004 (816261.001.000) 2026-02-28 10:09:59 Job was evicted.
+	(0) CPU times
+		Usr 0 03:10:26, Sys 0 00:32:34  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+	0  -  Run Bytes Sent By Job
+	1008  -  Run Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :     0.86        1         1 
+	   Disk (KB)            :   270           1      2768 
+	   GPUs                 :                           0 
+	   Memory (MB)          :   182        1024      1100 
+	   TimeExecute (s)      : 20885                       
+	   TimeSlotBusy (s)     : 20886                       
+...
+009 (816261.001.000) 2026-02-28 10:09:59 Job was aborted.
+	via condor_rm (by user dwkim)
+...

@@ -1,0 +1,17 @@
+universe = vanilla 
+executable = condor_run.sh 
+
+arguments = $(Process) 
+request_memory = 1024 MB 
+
+getenv = True 
+should_transfer_files = YES 
+when_to_transfer_output = ON_EXIT 
+
+Requirements = (machine =!= "dm01.knu.ac.kr") && (machine =!= "dm02.knu.ac.kr") && (TARGET.Arch == "X86_64") && (TARGET.OpSys == "LINUX") && (TARGET.HasFileTransfer)
+output = /u/user/dwkim/TOP/YU_class_TOP/NANOAOD/NANOAOD_RUN3_test_FV/CMSSW_13_3_0/src/SSBNanoAODANCode/bTaggingEffi/Condor/Job_Version/1_bTagEffforRun3/MuMu/2024/TbarWplusto2L2Nu/log_condor/out/out_$(Process).out 
+error  = /u/user/dwkim/TOP/YU_class_TOP/NANOAOD/NANOAOD_RUN3_test_FV/CMSSW_13_3_0/src/SSBNanoAODANCode/bTaggingEffi/Condor/Job_Version/1_bTagEffforRun3/MuMu/2024/TbarWplusto2L2Nu/log_condor/err/err_$(Process).err 
+log    = /u/user/dwkim/TOP/YU_class_TOP/NANOAOD/NANOAOD_RUN3_test_FV/CMSSW_13_3_0/src/SSBNanoAODANCode/bTaggingEffi/Condor/Job_Version/1_bTagEffforRun3/MuMu/2024/TbarWplusto2L2Nu/log_condor/log/log_$(Process).log 
+
+JobBatchName = bTagEff_2024_TbarWplusto2L2Nu 
+queue 1

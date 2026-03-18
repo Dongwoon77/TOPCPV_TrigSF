@@ -78,7 +78,7 @@ private:
     TString applyRochester;
 
 
-    TString cutflowName[10];
+    TString cutflowName[11];
 
     int num_pv;
 
@@ -134,6 +134,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderArray<Int_t>>> intVectors;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderArray<UInt_t>>> uintVectors;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderArray<UChar_t>>> ucharVectors;
+    std::unordered_map<std::string, std::unique_ptr<TTreeReaderArray<Short_t>>> shortVectors;
 
     // Initialize TTreeReader with branches from the list
     void InitBranches(const std::string &branchListFile);
@@ -232,6 +233,8 @@ private:
     TTreeReaderArray<Float_t>* muons_M;
     TTreeReaderArray<float>* muons_iso;
     TTreeReaderArray<float>* muonsveto_iso;
+    TTreeReaderArray<UChar_t>* muons_pfIsoId;
+    TTreeReaderArray<UChar_t>* muonsveto_pfIsoId;
     TTreeReaderArray<bool>   *muons_Id;
     TTreeReaderArray<bool>   *muonsveto_Id;
     std::vector<TLorentzVector> pre_muons;
@@ -247,9 +250,9 @@ private:
     TTreeReaderArray<Float_t>* elecs_M;
     TTreeReaderArray<float>*   elecs_iso;
     TTreeReaderArray<float>*   elecsveto_iso;
-    TTreeReaderArray<Int_t>*   elecs_scbId;
+    TTreeReaderArray<UChar_t>*   elecs_scbId;
     TTreeReaderArray<Bool_t>*  elecs_mvaId;
-    TTreeReaderArray<Int_t>*   elecsveto_scbId;
+    TTreeReaderArray<UChar_t>*   elecsveto_scbId;
     TTreeReaderArray<Bool_t>*  elecsveto_mvaId;
     std::vector<TLorentzVector> pre_elecs;
     std::vector<TLorentzVector> elecs;
@@ -394,6 +397,10 @@ private:
     double muon_eta;
     double muon_isocut;                                                                                                                
     double veto_muoniso_cut;                                                                                                                
+    int muon_pfiso_wp_cut;
+    int veto_muon_pfiso_wp_cut;
+    bool use_muon_pfisoid;
+    bool use_veto_muon_pfisoid;
     double elec_pt;
     double elec_eta;
     double elec_isocut;
@@ -418,6 +425,9 @@ private:
     double el_id_jetcl_1;
     double el_id_jetcl_2;
 
+    double Gen_EventWeight;
+    double genWeight;
+
     /// BTag -- Variables ///
     std::string btag_algo_;     // "DeepCSV", "DeepJet", "CSVv2"
     std::string btag_wp_; // "L", "M", "T"
@@ -425,25 +435,33 @@ private:
 
     TH1D *h_JetPUIDEvtWeight;
     TH1D *h_bTagEvtWeight;
-    TH1D *h_Lep1pt[10];
-    TH1D *h_Lep2pt[10];
-    TH1D *h_Lep1eta[10];
-    TH1D *h_Lep2eta[10];
-    TH1D *h_Lep1phi[10];
-    TH1D *h_Lep2phi[10];
-    TH1D *h_Jet1pt[10];
-    TH1D *h_Jet2pt[10];
-    TH1D *h_Jet1eta[10];
-    TH1D *h_Jet2eta[10];
-    TH1D *h_Jet1phi[10];
-    TH1D *h_Jet2phi[10];
-    TH1D *h_HT[10]; 
-    TH1D *h_METpt[10]; 
-    TH1D *h_METphi[10]; 
-    TH1D *h_DiLepMass[10]; 
-    TH1D *h_Num_PV[10];
-    TH1D *h_Num_Jets[10];
-    TH1D *h_Num_bJets[10];
+    TH1D *h_Lep1pt[11];
+    TH1D *h_Lep2pt[11];
+    TH1D *h_Lep1eta[11];
+    TH1D *h_Lep2eta[11];
+    TH1D *h_Lep1phi[11];
+    TH1D *h_Lep2phi[11];
+    TH1D *h_Lep1Mass[11];
+    TH1D *h_Lep2Mass[11];
+    TH1D *h_Jet1pt[11];
+    TH1D *h_Jet2pt[11];
+    TH1D *h_Jet1eta[11];
+    TH1D *h_Jet2eta[11];
+    TH1D *h_Jet1phi[11];
+    TH1D *h_Jet2phi[11];
+    TH1D *h_bJet1pt[11];
+    TH1D *h_bJet2pt[11];
+    TH1D *h_bJet1eta[11];
+    TH1D *h_bJet2eta[11];
+    TH1D *h_bJet1phi[11];
+    TH1D *h_bJet2phi[11];
+    TH1D *h_HT[11]; 
+    TH1D *h_METpt[11]; 
+    TH1D *h_METphi[11]; 
+    TH1D *h_DiLepMass[11]; 
+    TH1D *h_Num_PV[11];
+    TH1D *h_Num_Jets[11];
+    TH1D *h_Num_bJets[11];
 
     TH1D *h_Reco_CPO_[13];
     TH1D *h_Reco_CPO_ReRange_[13];
@@ -494,6 +512,11 @@ private:
 
     TH1D* h_NuEnergy;
     TH1D* h_AnNuEnergy;
+
+    TH1D* h_test_plus;
+    TH1D* h_test_minus;
+    TH1D* h_genWeight_plus;
+    TH1D* h_genWeight_minus;
 
 };
 

@@ -1,0 +1,60 @@
+000 (816261.000.000) 2026-02-28 04:21:50 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (816261.000.000) 2026-02-28 04:21:52 Started transferring input files
+	Transferring to host: <155.230.21.41:9618?addrs=155.230.21.41-9618+[2407-c000-c025--21-41]-9618&alias=cluster241.knu.ac.kr&noUDP&sock=slot1_4_1541_8618_5125>
+...
+040 (816261.000.000) 2026-02-28 04:21:52 Finished transferring input files
+...
+001 (816261.000.000) 2026-02-28 04:21:53 Job executing on host: <155.230.21.41:9618?addrs=155.230.21.41-9618+[2407-c000-c025--21-41]-9618&alias=cluster241.knu.ac.kr&noUDP&sock=startd_1097_077b>
+	SlotName: slot1_4@cluster241.knu.ac.kr
+	CondorScratchDir = "/home/condor/dir_1976061"
+	Cpus = 1
+	Disk = 2819
+	GPUs = 0
+	Memory = 1100
+...
+006 (816261.000.000) 2026-02-28 04:22:02 Image size of job updated: 110984
+	109  -  MemoryUsage of job (MB)
+	110984  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 04:27:03 Image size of job updated: 176912
+	173  -  MemoryUsage of job (MB)
+	176912  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 04:42:05 Image size of job updated: 183872
+	180  -  MemoryUsage of job (MB)
+	183872  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 05:42:11 Image size of job updated: 184824
+	181  -  MemoryUsage of job (MB)
+	184824  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 06:12:14 Image size of job updated: 184832
+	181  -  MemoryUsage of job (MB)
+	184832  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 06:32:17 Image size of job updated: 186496
+	183  -  MemoryUsage of job (MB)
+	186496  -  ResidentSetSize of job (KB)
+...
+006 (816261.000.000) 2026-02-28 10:02:38 Image size of job updated: 189576
+	186  -  MemoryUsage of job (MB)
+	189576  -  ResidentSetSize of job (KB)
+...
+004 (816261.000.000) 2026-02-28 10:09:59 Job was evicted.
+	(0) CPU times
+		Usr 0 03:09:55, Sys 0 00:32:30  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+	0  -  Run Bytes Sent By Job
+	1008  -  Run Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :     0.86        1         1 
+	   Disk (KB)            :   275           1      2819 
+	   GPUs                 :                           0 
+	   Memory (MB)          :   186        1024      1100 
+	   TimeExecute (s)      : 20885                       
+	   TimeSlotBusy (s)     : 20886                       
+...
+009 (816261.000.000) 2026-02-28 10:09:59 Job was aborted.
+	via condor_rm (by user dwkim)
+...

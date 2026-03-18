@@ -35,6 +35,9 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string jec_path     = reader->GetText("JECPath");
     std::string jer_path     = reader->GetText("JERPath");
     std::string jmar_path     = reader->GetText("JMARPath");
+    std::string jetid_path    = reader->Check("JetIDPath") ? reader->GetText("JetIDPath", false) : "";
+    std::string jetid_tight_name = reader->Check("JetIDTightName") ? reader->GetText("JetIDTightName", false) : "AK4PUPPI_Tight";
+    std::string jetid_tightlepveto_name = reader->Check("JetIDTightLepVetoName") ? reader->GetText("JetIDTightLepVetoName", false) : "AK4PUPPI_TightLeptonVeto";
     std::string jveto_path    = reader->GetText("JetVetoPath");
     //std::string jveto_key    = reader->GetText("JetVetoName");
     //std::string jveto_map_key = reader->GetText("JetVetoKey");
@@ -57,8 +60,7 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     std::string muon_iso_corName = reader->GetText( "MuonIsoSFName" );
     
     // Electron ID ISO // 
-    std::string ele_sf_name_      = reader->GetText( "ElecIDSFName"  );  
-    //std::string ele_reco_sf_name_    = reader->GetText( "ElecRecoSFName" );
+    std::string ele_sf_name_      = reader->GetText( "ElecIDSFName"  );
 
     // Trigger SF // 
     std::string Trig_sf_name_      = reader->GetText( "TrigSFFile"  );  
@@ -81,8 +83,22 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     } else if (RunPeriod.find("2018") != std::string::npos) {
         year_ = "2018";
         puJson = "Collisions18_UltraLegacy_goldenJSON";
-    } 
-    else {
+    } else if (RunPeriod.find("2022PostEE") != std::string::npos) {
+        year_ = "2022PostEE";
+        puJson = "Collisions2022_359022_362760_eraEFG_GoldenJson";
+    } else if (RunPeriod.find("2022") != std::string::npos) {
+        year_ = "2022";
+        puJson = "Collisions2022_355100_357900_eraBCD_GoldenJson";
+    } else if (RunPeriod.find("2023BPix") != std::string::npos) {
+        year_ = "2023BPix";
+        puJson = "Collisions2023_369803_370790_eraD_GoldenJson";
+    } else if (RunPeriod.find("2023") != std::string::npos) {
+        year_ = "2023";
+        puJson = "Collisions2023_366403_369802_eraBC_GoldenJson";
+    } else if (RunPeriod.find("2024") != std::string::npos) {
+        year_ = "2024";
+        puJson = "Collisions24_BCDEFGHI_goldenJSON";
+    } else {
         std::cerr << "[SSBCorrections] Unknown RunPeriod: " << RunPeriod << std::endl;
         year_ = "2018"; // fallback or throw error
     }
@@ -118,23 +134,133 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     
 
 
-    std::cout << "jsonDir + puw_path : " << jsonDir + puw_path << std::endl;
-    auto puset = correction::CorrectionSet::from_file(jsonDir + puw_path);
+    // For 2024, use puw_path directly; for other years, use jsonDir + puw_path
+    pu_weight_ = nullptr;
+    if (!puw_path.empty()) {
+        std::string pu_full_path;
+        if (RunPeriod.find("2024") != std::string::npos) {
+            pu_full_path = puw_path;
+            std::cout << "puw_path (2024): " << pu_full_path << std::endl;
+        } else {
+            pu_full_path = jsonDir + puw_path;
+            std::cout << "jsonDir + puw_path: " << pu_full_path << std::endl;
+        }
+        
+        if (std::filesystem::exists(pu_full_path)) {
+            try {
+                auto puset = correction::CorrectionSet::from_file(pu_full_path);
+                pu_weight_ = puset->at(puJson);
+            } catch (const std::exception& e) {
+                std::cerr << "[WARNING] Failed to load PU weights ('" << puJson
+                          << "') from " << pu_full_path << ": " << e.what() << std::endl;
+                pu_weight_ = nullptr;
+            }
+        } else {
+            std::cout << "[INFO] PU weights file not found at " << pu_full_path << " — skipping PU weights." << std::endl;
+        }
+    } else {
+        std::cout << "[INFO] PUWeightPath empty — skipping PU weights." << std::endl;
+    }
     
-    pu_weight_ = puset->at(puJson);
+    /*pu_weight_ = nullptr;
+    if (!puw_path.empty()) {
+        std::string pu_full = jsonDir + puw_path;
+        std::cout << "jsonDir + puw_path : " << pu_full << std::endl;
+        if (std::filesystem::exists(pu_full)) {
+            try {
+                auto puset = correction::CorrectionSet::from_file(pu_full);
+                pu_weight_ = puset->at(puJson);
+            } catch (const std::exception& e) {
+                std::cerr << "[WARNING] Failed to load PU weights ('" << puJson
+                          << "') from " << pu_full << ": " << e.what() << std::endl;
+                pu_weight_ = nullptr;
+            }
+        } else {
+            std::cout << "[INFO] PU weights file not found at " << pu_full << " — skipping PU weights." << std::endl;
+        }
+    } else {
+        std::cout << "[INFO] PUWeightPath empty — skipping PU weights." << std::endl;
+    }*/
 
 
-    auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
-    jec_ = jec_set->compound().at(jec_name);
+    try {
+        auto jec_set = correction::CorrectionSet::from_file(jsonDir + jec_path);
+        jec_ = jec_set->compound().at(jec_name);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to load JEC ('" << jec_name
+                  << "') from " << jsonDir + jec_path << ": " << e.what() << std::endl;
+        throw;
+    }
 
-    auto jer_set = correction::CorrectionSet::from_file(jsonDir + jer_path);
-    jer_ = jer_set->at(jer_res_name);
+    try {
+        auto jer_set = correction::CorrectionSet::from_file(jsonDir + jer_path);
+        jer_ = jer_set->at(jer_res_name);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to load JER resolution ('" << jer_res_name
+                  << "') from " << jsonDir + jer_path << ": " << e.what() << std::endl;
+        throw;
+    }
 
-    auto jer_sf_set = correction::CorrectionSet::from_file(jsonDir + jer_sf_path);
-    jer_sf_ = jer_sf_set->at(jer_name);
+    try {
+        auto jer_sf_set = correction::CorrectionSet::from_file(jsonDir + jer_sf_path);
+        jer_sf_ = jer_sf_set->at(jer_name);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to load JER scale factor ('" << jer_name
+                  << "') from " << jsonDir + jer_sf_path << ": " << e.what() << std::endl;
+        throw;
+    }
 
-    auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
-    pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
+    // Load JetID JSON corrections (NanoAODv13+ recommendation).
+    // Keep this as "load-only" for now; selection logic can consume these objects later.
+    jetid_tight_ = nullptr;
+    jetid_tightlepveto_ = nullptr;
+    try {
+        std::string jetid_full_path = jetid_path;
+        if (jetid_full_path.empty()) {
+            if (year_ == "2022") jetid_full_path = "JME/2022_Summer22/jetid.json.gz";
+            else if (year_ == "2022PostEE") jetid_full_path = "JME/2022_Summer22EE/jetid.json.gz";
+            else if (year_ == "2023") jetid_full_path = "JME/2023_Summer23/jetid.json.gz";
+            else if (year_ == "2023BPix") jetid_full_path = "JME/2023_Summer23BPix/jetid.json.gz";
+            else if (year_ == "2024") jetid_full_path = "JME/2024_Summer24/jetid.json.gz";
+        } else {
+            // Config allows either absolute path or POG-relative path.
+            if (!jetid_full_path.empty() && jetid_full_path.front() != '/') {
+                jetid_full_path = jsonDir + jetid_full_path;
+            }
+        }
+
+        if (std::filesystem::exists(jetid_full_path)) {
+            auto jetid_set = correction::CorrectionSet::from_file(jetid_full_path);
+            jetid_tight_ = jetid_set->at(jetid_tight_name);
+            jetid_tightlepveto_ = jetid_set->at(jetid_tightlepveto_name);
+            std::cout << "[INFO] Loaded JetID corrections from: " << jetid_full_path
+                      << " (" << jetid_tight_name << ", " << jetid_tightlepveto_name << ")" << std::endl;
+        } else {
+            std::cout << "[INFO] JetID JSON not found at " << jetid_full_path
+                      << " — skipping JetID correction loading." << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[WARNING] Failed to load JetID JSON corrections: " << e.what() << std::endl;
+        jetid_tight_ = nullptr;
+        jetid_tightlepveto_ = nullptr;
+    }
+
+    //auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
+    //pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
+
+    if (!jmar_path.empty()) {
+        try {
+            auto jmar_sf_set = correction::CorrectionSet::from_file(jsonDir + jmar_path);
+            pujetid_sf_ = jmar_sf_set->at("PUJetID_eff");
+        } catch (const std::exception& e) {
+            std::cerr << "[WARNING] Failed to load JMAR (PUJetID) from '" << (jsonDir + jmar_path)
+                      << "': " << e.what() << std::endl;
+            pujetid_sf_ = nullptr;
+        }
+    } else {
+        std::cout << "[INFO] JMARPath empty — skipping PUJetID SF." << std::endl;
+        pujetid_sf_ = nullptr;
+    }
 
     jveto_name_ = jveto_name;
     jveto_key_ = jveto_map_key;
@@ -156,20 +282,6 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
        jetvetomap_ = nullptr;
     }
 
-    if (btag_sf_type_ != "comb" && btag_sf_type_ != "mujets") {
-        std::cerr << "[WARNING] Invalid BTagSFType: " << btag_sf_type_ 
-                  << ". Using default 'comb'." << std::endl;
-        btag_sf_type_ = "comb";
-    }
-
-    // Analysis type specific recommendation
-    if (btag_sf_type_ == "comb") {
-        std::cout << "[INFO] Using 'comb' SF (QCD + ttbar enriched regions)" << std::endl;
-    } else {
-        std::cout << "[INFO] Using 'mujets' SF (QCD enriched regions, bias avoidance)" << std::endl;
-    }
-
-
     std::string btag_algo = "";
     std::string btag_wp = "";
 
@@ -179,6 +291,8 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
         btag_algo = "DeepJet";
     } else if (jet_btag_conf.find("pfCSVV2") != std::string::npos) {
         btag_algo = "CSVv2";
+    } else if (jet_btag_conf.find("UParTAK4") != std::string::npos) {
+        btag_algo = "UParTAK4";
     } else {
         std::cerr << "[WARNING] Unknown b-tag algorithm in Jet_btag: " << jet_btag_conf << std::endl;
     }
@@ -191,14 +305,88 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
         std::cerr << "[WARNING] Unknown WP in Jet_btag: " << jet_btag_conf << std::endl;
     }
 
-    std::string btag_sf_json = "BTV/" + year_ + "_UL/btagging.json.gz";
-    std::string btag_tagger = (btag_algo == "DeepJet") ? "deepJet_comb" : "deepCSV_comb";
-    std::string btag_eff_path = "CorrectionFiles/BTag/UL" + year_ + "/btagEff_" + btag_algo + ".root";
+    // Validate SF type after b-tag algorithm is known.
+    // Run2/DeepCSV/DeepJet: comb or mujets
+    // Run3/UParTAK4: kinfit, ptrel, negtagDY
+    if (btag_algo == "UParTAK4") {
+        if (btag_sf_type_ != "kinfit" &&
+            btag_sf_type_ != "ptrel" &&
+            btag_sf_type_ != "negtagDY") {
+            std::cerr << "[WARNING] Invalid BTagSFType for UParTAK4: " << btag_sf_type_
+                      << ". Using default 'kinfit'." << std::endl;
+            btag_sf_type_ = "kinfit";
+        }
+        std::cout << "[INFO] Using '" << btag_sf_type_
+                  << "' SF for UParTAK4." << std::endl;
+    } else {
+        if (btag_sf_type_ != "comb" && btag_sf_type_ != "mujets") {
+            std::cerr << "[WARNING] Invalid BTagSFType: " << btag_sf_type_
+                      << ". Using default 'comb'." << std::endl;
+            btag_sf_type_ = "comb";
+        }
+        if (btag_sf_type_ == "comb") {
+            std::cout << "[INFO] Using 'comb' SF (QCD + ttbar enriched regions)" << std::endl;
+        } else {
+            std::cout << "[INFO] Using 'mujets' SF (QCD enriched regions, bias avoidance)" << std::endl;
+        }
+    }
+
+    // Determine the correct Summer version and filename based on year_
+    // 2024 uses btagging_preliminary.json.gz, other years use btagging.json.gz
+    std::string btag_year_prefix;
+    std::string summer_version;
+    std::string btag_filename;
+    if (year_ == "2022" || year_ == "2022PostEE") {
+        btag_year_prefix = "2022";
+        summer_version = (year_ == "2022PostEE") ? "Summer22EE" : "Summer22";
+        btag_filename = "btagging.json.gz";
+    } else if (year_ == "2023" || year_ == "2023BPix") {
+        btag_year_prefix = "2023";
+        summer_version = (year_ == "2023BPix") ? "Summer23BPix" : "Summer23";
+        btag_filename = "btagging.json.gz";
+    } else if (year_ == "2024") {
+        btag_year_prefix = "2024";
+        summer_version = "Summer24";
+        btag_filename = "btagging_preliminary.json.gz";  // 2024 uses preliminary version
+    } else {
+        // Fallback for older years
+        btag_year_prefix = year_;
+        summer_version = "Summer24";
+        btag_filename = "btagging.json.gz";
+    }
+    std::string btag_sf_json = "BTV/" + btag_year_prefix + "_" + summer_version + "/" + btag_filename;
+    std::string btag_tagger = (btag_algo == "UParTAK4")
+                                  ? "UParTAK4_" + btag_sf_type_
+                                  : (btag_algo == "DeepJet") ? "deepJet_comb" : "deepCSV_comb";
+    // Run2: UL prefix | Run3: no UL prefix (2022, 2022PostEE, 2023, 2023BPix, 2024)
+    // Run3 efficiencies are stored by sample under:
+    //   CorrectionFiles/BTag/<year>/<sample>/btagEff_<algo>.root
+    // with optional recreated file preferred when available.
+    std::string btag_eff_path;
+    if (RunPeriod.find("2022") != std::string::npos || RunPeriod.find("2023") != std::string::npos || RunPeriod.find("2024") != std::string::npos) {
+        const std::string sample_name = inputfileName;
+        const std::string base_dir = "CorrectionFiles/BTag/" + RunPeriod + "/" + sample_name;
+        const std::string recreated = base_dir + "/btagEff_" + btag_algo + "_recreated.root";
+        const std::string nominal   = base_dir + "/btagEff_" + btag_algo + ".root";
+        const std::string legacy    = "CorrectionFiles/BTag/" + RunPeriod + "/btagEff_" + btag_algo + ".root";
+
+        if (std::filesystem::exists(recreated)) {
+            btag_eff_path = recreated;
+        } else if (std::filesystem::exists(nominal)) {
+            btag_eff_path = nominal;
+        } else {
+            // Backward-compatible fallback for old layout.
+            btag_eff_path = legacy;
+        }
+    } else {
+        btag_eff_path = "CorrectionFiles/BTag/UL" + RunPeriod + "/btagEff_" + btag_algo + ".root";
+    }
     std::cout << "btag_eff_path : " << btag_eff_path << std::endl;
 
     InitBtagSFCorrection(jsonDir + btag_sf_json, btag_tagger);
-    //LoadMCBtagEfficiencies(btag_eff_root, btag_algo);
-    LoadMCBtagEfficiencies(btag_eff_path, btag_algo);
+    if (!is_data) {
+        LoadMCBtagEfficiencies(btag_eff_path, btag_algo);
+    }
 
     // Load muon SF
     //auto muon_set = CorrectionSet::from_file(jsonDir+muon_path);
@@ -212,12 +400,40 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     muon_iso_  = muon_set->at(muon_iso_corName);
 
     auto cset = correction::CorrectionSet::from_file(jsonDir + elec_path);
-    //std::cout << "sk ele 1 ele_sf_name_ : " << ele_sf_name_ << std::endl;
     ele_sf_ = cset->at(ele_sf_name_);
-    //std::cout << "sk ele 2 ele_reco_sf_name_: " << ele_reco_sf_name_ << std::endl;
+
+    // Optional: Reco SF in separate file (e.g. 2024 electron_v1.json with Reco20to75/RecoAbove75)
+    ele_reco_sf_ = nullptr;
+    ele_reco_sf_year_.clear();
+    if (reader->Check("ElecRecoSFPath")) {
+        std::string ele_reco_path = reader->GetText("ElecRecoSFPath");
+        std::string ele_reco_name = reader->Check("ElecRecoSFName") ? reader->GetText("ElecRecoSFName", false) : "Electron-ID-SF";
+        ele_reco_sf_year_ = reader->Check("ElecRecoSFYear") ? reader->GetText("ElecRecoSFYear", false) : "";
+        std::string ele_reco_full = (ele_reco_path.front() == '/') ? ele_reco_path : (jsonDir + ele_reco_path);
+        if (std::filesystem::exists(ele_reco_full)) {
+            try {
+                auto reco_cset = correction::CorrectionSet::from_file(ele_reco_full);
+                ele_reco_sf_ = reco_cset->at(ele_reco_name);
+                std::cout << "[INFO] Loaded electron Reco SF from " << ele_reco_path
+                          << " (year=" << ele_reco_sf_year_ << ")" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "[WARNING] Failed to load electron Reco SF: " << e.what() << std::endl;
+            }
+        } else {
+            std::cerr << "[WARNING] ElecRecoSFPath not found: " << ele_reco_full << std::endl;
+        }
+    }
     std::string TrigSFPath = std::filesystem::current_path().string() + "/CorrectionFiles/Trig/";
     TFile *f_trg     = new TFile((TrigSFPath+Trig_sf_name_).c_str());
-    H_trig = (TH2D*) f_trg->Get(Trig_sf_histname_.c_str());
+    if (!f_trg || f_trg->IsZombie()) {
+        std::cerr << "[SSBCorrections] ERROR: Cannot open Trigger SF file: " << (TrigSFPath+Trig_sf_name_) << std::endl;
+        H_trig = nullptr;
+    } else {
+        H_trig = (TH2D*) f_trg->Get(Trig_sf_histname_.c_str());
+        if (!H_trig) {
+            std::cerr << "[SSBCorrections] ERROR: Histogram '" << Trig_sf_histname_ << "' not found in " << Trig_sf_name_ << std::endl;
+        }
+    }
 
     /// Muon Rochester correction ///
     std::string rochesterCorrFile;
@@ -226,6 +442,11 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
     else if (RunPeriod.find("2016Post") != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2016bUL.txt";}
     else if (RunPeriod.find("2017")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2017UL.txt";}
     else if (RunPeriod.find("2018")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else if (RunPeriod.find("2022PostEE")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else if (RunPeriod.find("2022")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else if (RunPeriod.find("2023BPix")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else if (RunPeriod.find("2023")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
+    else if (RunPeriod.find("2024")     != std::string::npos) { rochesterCorrFile =  "./CorrectionFiles/Rochester/RoccoR2018UL.txt";}
     else {
         std::cerr << "[SSBCorrections] Unknown RunPeriod in rochesterCorrFile : " << RunPeriod << std::endl;
     }
@@ -303,29 +524,124 @@ SSBCorrections::~SSBCorrections() {
 }
 */
 
-double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const {
+double SSBCorrections::GetCorrectedJetPt(double raw_pt, double eta, double area, double rho, double phi, unsigned int runnb, bool isData) const {
     //std::cout << "in GetCorrectedJetPt raw_pt : " << raw_pt
     //          << " eta " << eta << " area : " << area << " rho : " << rho << std::endl;
 
-    double sf = jec_->evaluate({area, eta, raw_pt, rho});  
+    double sf;
+    try {
+        // JEC compound correction schema varies by year:
+        // 2022, 2022PostEE: MC {area, eta, pt, rho}, DATA {area, eta, pt, rho}
+        // 2023: MC {area, eta, pt, rho}, DATA {area, eta, pt, rho, run}
+        // 2023BPix, 2024: MC {area, eta, pt, rho, phi}, DATA {area, eta, pt, rho, phi, run}
+        
+        bool needsPhi = (year_.find("2023BPix") != std::string::npos || 
+                         year_.find("2024") != std::string::npos);
+        bool needsRunForData = (year_.find("2023") != std::string::npos || 
+                                year_.find("2024") != std::string::npos);
+        
+        if (isData) {
+            if (needsPhi) {
+                // 2023BPix, 2024 DATA: {area, eta, pt, rho, phi, run}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, phi, static_cast<double>(runnb)});
+            } else if (needsRunForData && year_.find("2022") == std::string::npos) {
+                // 2023 DATA: {area, eta, pt, rho, run}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, static_cast<double>(runnb)});
+            } else {
+                // 2022, 2022PostEE DATA: {area, eta, pt, rho}
+                sf = jec_->evaluate({area, eta, raw_pt, rho});
+            }
+        } else {
+            if (needsPhi) {
+                // 2023BPix, 2024 MC: {area, eta, pt, rho, phi}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, phi});
+            } else {
+                // 2022, 2022PostEE, 2023 MC: {area, eta, pt, rho}
+                sf = jec_->evaluate({area, eta, raw_pt, rho});
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetCorrectedJetPt JEC failed: " << e.what()
+                  << " (year=" << year_ << ", area=" << area << ", eta=" << eta 
+                  << ", pt=" << raw_pt << ", rho=" << rho << ", phi=" << phi 
+                  << ", run=" << runnb << ", isData=" << isData << ")" << std::endl;
+        throw;
+    }
     //std::cout << "sf in GetCorrectedJetPt : " << sf << std::endl;
 
     return raw_pt * sf;
 }
 
-double SSBCorrections::GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area, double rho) const {
-    //double sf = jec_->evaluate({eta, raw_pt, area});
-    double sf = jec_->evaluate({area, eta, raw_pt, rho});
+double SSBCorrections::GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area, double rho, double phi, unsigned int runnb, bool isData) const {
+    double sf;
+    try {
+        // JEC compound correction schema varies by year:
+        // 2022, 2022PostEE: MC {area, eta, pt, rho}, DATA {area, eta, pt, rho}
+        // 2023: MC {area, eta, pt, rho}, DATA {area, eta, pt, rho, run}
+        // 2023BPix, 2024: MC {area, eta, pt, rho, phi}, DATA {area, eta, pt, rho, phi, run}
+        
+        bool needsPhi = (year_.find("2023BPix") != std::string::npos || 
+                         year_.find("2024") != std::string::npos);
+        bool needsRunForData = (year_.find("2023") != std::string::npos || 
+                                year_.find("2024") != std::string::npos);
+        
+        if (isData) {
+            if (needsPhi) {
+                // 2023BPix, 2024 DATA: {area, eta, pt, rho, phi, run}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, phi, static_cast<double>(runnb)});
+            } else if (needsRunForData && year_.find("2022") == std::string::npos) {
+                // 2023 DATA: {area, eta, pt, rho, run}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, static_cast<double>(runnb)});
+            } else {
+                // 2022, 2022PostEE DATA: {area, eta, pt, rho}
+                sf = jec_->evaluate({area, eta, raw_pt, rho});
+            }
+        } else {
+            if (needsPhi) {
+                // 2023BPix, 2024 MC: {area, eta, pt, rho, phi}
+                sf = jec_->evaluate({area, eta, raw_pt, rho, phi});
+            } else {
+                // 2022, 2022PostEE, 2023 MC: {area, eta, pt, rho}
+                sf = jec_->evaluate({area, eta, raw_pt, rho});
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetCorrectedJetMass JEC failed: " << e.what()
+                  << " (year=" << year_ << ", area=" << area << ", eta=" << eta 
+                  << ", pt=" << raw_pt << ", rho=" << rho << ", phi=" << phi 
+                  << ", run=" << runnb << ", isData=" << isData << ")" << std::endl;
+        throw;
+    }
     return raw_mass * sf;
 }
 
-double SSBCorrections::GetJER(double eta, double pt) const {
-    return jer_->evaluate({eta, pt});
+double SSBCorrections::GetJER(double eta, double pt, double rho) const {
+    try {
+        // JER Resolution schema: {JetEta, JetPt, Rho}
+        return jer_->evaluate({eta, pt, rho});
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetJER failed: " << e.what()
+                  << " (eta=" << eta << ", pt=" << pt << ", rho=" << rho << ")" << std::endl;
+        throw;
+    }
 }
 
 double SSBCorrections::SmearJER(double reco_pt, double gen_pt, double eta, double rho, const std::string& jer_tag) const {
-    double sf = jer_sf_->evaluate({eta, jer_tag});
-    double resolution = jer_->evaluate({eta, reco_pt, rho});
+    double sf, resolution;
+    try {
+        sf = jer_sf_->evaluate({eta, reco_pt, jer_tag});
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] SmearJER JER SF failed: " << e.what()
+                  << " (eta=" << eta << ", pt=" << reco_pt << ", tag=" << jer_tag << ")" << std::endl;
+        throw;
+    }
+    try {
+        resolution = jer_->evaluate({eta, reco_pt, rho});
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] SmearJER JER resolution failed: " << e.what()
+                  << " (eta=" << eta << ", pt=" << reco_pt << ", rho=" << rho << ")" << std::endl;
+        throw;
+    }
 
     if (gen_pt > 0.0) {
         double delta_pt = reco_pt - gen_pt;
@@ -382,22 +698,39 @@ float SSBCorrections::GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool 
 
 
 double SSBCorrections::GetMuonRecoSF(double pt, double eta) const {
-    //auto val = muon_reco_->evaluate({pt, eta});
-    std::variant<double, std::vector<double>> val = muon_reco_->evaluate({pt, eta});
-    //return std::get<double>(val);
-    return std::get<double>(val);
+    if (!muon_reco_) return 1.0;
+    try {
+        std::variant<double, std::vector<double>> val = muon_reco_->evaluate({pt, eta});
+        return std::get<double>(val);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetMuonRecoSF failed: " << e.what()
+                  << " (pt=" << pt << ", eta=" << eta << ")" << std::endl;
+        throw;  // re-throw to see where it crashes
+    }
 }
 
 double SSBCorrections::GetMuonIDSF(double pt, double eta, const std::string& syst_tag) const {
-    //auto val = muon_id_->evaluate({eta, pt, syst_tag});
-    std::variant<double, std::vector<double>> val = muon_id_->evaluate({eta, pt, syst_tag});
-    return std::get<double>(val);
+    if (!muon_id_) return 1.0;
+    try {
+        std::variant<double, std::vector<double>> val = muon_id_->evaluate({eta, pt, syst_tag});
+        return std::get<double>(val);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetMuonIDSF failed: " << e.what()
+                  << " (eta=" << eta << ", pt=" << pt << ", syst=" << syst_tag << ")" << std::endl;
+        throw;  // re-throw to see where it crashes
+    }
 }
 
 double SSBCorrections::GetMuonIsoSF(double pt, double eta, const std::string& syst_tag) const {
-    //auto val = muon_iso_->evaluate({eta, pt, syst_tag});
-    std::variant<double, std::vector<double>> val = muon_iso_->evaluate({eta, pt, syst_tag});
-    return std::get<double>(val);
+    if (!muon_iso_) return 1.0;
+    try {
+        std::variant<double, std::vector<double>> val = muon_iso_->evaluate({eta, pt, syst_tag});
+        return std::get<double>(val);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] GetMuonIsoSF failed: " << e.what()
+                  << " (eta=" << eta << ", pt=" << pt << ", syst=" << syst_tag << ")" << std::endl;
+        throw;  // re-throw to see where it crashes
+    }
 }
 
 
@@ -463,6 +796,10 @@ double SSBCorrections::DoubleElec_Eff(
     float lep1sueta_clamped = std::clamp(static_cast<float>(ele1sueta), -3.0f, 3.0f);
     float lep2sueta_clamped = std::clamp(static_cast<float>(ele2sueta), -3.0f, 3.0f);
     
+    // Get phi from TLorentzVector (needed for 2023, 2023BPix)
+    float lep1phi = static_cast<float>(lep1.Phi());
+    float lep2phi = static_cast<float>(lep2.Phi());
+    
     // Step 2: Calculate ID SF for each electron using GetElectronSF
     // Check if id_wp is empty and set default
     std::string actual_id_wp = id_wp;
@@ -472,13 +809,13 @@ double SSBCorrections::DoubleElec_Eff(
     }
     
     // Use working point directly (not with "ID" prefix)
-    float ele1id = GetElectronSF(actual_id_wp, lep1sueta_clamped, lep1pt, id_syst);
-    float ele2id = GetElectronSF(actual_id_wp, lep2sueta_clamped, lep2pt, id_syst);
+    float ele1id = GetElectronSF(actual_id_wp, lep1sueta_clamped, lep1pt, id_syst, lep1phi);
+    float ele2id = GetElectronSF(actual_id_wp, lep2sueta_clamped, lep2pt, id_syst, lep2phi);
     
     // Step 3: Calculate Reco SF for each electron using GetElectronSF
     // "Reco" type will automatically choose RecoAbove20/RecoBelow20 based on pt
-    float ele1reco = GetElectronSF("Reco", lep1sueta_clamped, lep1pt, reco_syst);
-    float ele2reco = GetElectronSF("Reco", lep2sueta_clamped, lep2pt, reco_syst);
+    float ele1reco = GetElectronSF("Reco", lep1sueta_clamped, lep1pt, reco_syst, lep1phi);
+    float ele2reco = GetElectronSF("Reco", lep2sueta_clamped, lep2pt, reco_syst, lep2phi);
     
     // Step 4: Isolation SF is 1.0 (typically included in ID for electrons)
     float ele1iso = 1.0f;
@@ -518,6 +855,9 @@ double SSBCorrections::MuonElec_Eff(const TLorentzVector& muon, const TLorentzVe
     // Electron: pt range 10.0 to Infinity in JSON, eta range within detector acceptance
     float electron_pt = std::clamp(static_cast<float>(electron.Pt()), 10.0f, 999.0f);
     float electron_sueta_clamped = std::clamp(static_cast<float>(electron_sueta), -3.0f, 3.0f);
+    
+    // Get phi from TLorentzVector (needed for 2023, 2023BPix)
+    float electron_phi = static_cast<float>(electron.Phi());
 
     // Step 2: Calculate Muon ID SF
     float mu_id = GetMuonIDSF(muon_pt, muon_abseta, mu_id_syst);
@@ -535,11 +875,11 @@ double SSBCorrections::MuonElec_Eff(const TLorentzVector& muon, const TLorentzVe
         std::cout << "[WARNING] Empty electron ID working point, using default: " << actual_ele_id_wp << std::endl;
     }
     
-    float ele_id = GetElectronSF(actual_ele_id_wp, electron_sueta_clamped, electron_pt, ele_id_syst);
+    float ele_id = GetElectronSF(actual_ele_id_wp, electron_sueta_clamped, electron_pt, ele_id_syst, electron_phi);
     
     // Step 6: Calculate Electron Reco SF
     // "Reco" type will automatically choose RecoAbove20/RecoBelow20 based on pt
-    float ele_reco = GetElectronSF("Reco", electron_sueta_clamped, electron_pt, ele_reco_syst);
+    float ele_reco = GetElectronSF("Reco", electron_sueta_clamped, electron_pt, ele_reco_syst, electron_phi);
     
     // Step 7: Electron isolation SF is 1.0 (typically included in ID for electrons)
     float ele_iso = 1.0f;
@@ -565,7 +905,7 @@ double SSBCorrections::MuonElec_Eff(const TLorentzVector& muon, const TLorentzVe
 
 
 
-float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst) const {
+float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst, float phi) const {
 
     // Map systematic names: "nominal" -> "sf", "up" -> "sfup", "down" -> "sfdown"
     std::string valtype = "sf";  // default
@@ -585,7 +925,14 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
     // Map working point names from config to JSON format
     std::string working_point = sf_type;
     if (sf_type == "Reco") {
-        working_point = (pt >= 20.0f) ? "RecoAbove20" : "RecoBelow20";
+        // When ElecRecoSFPath is set: uses Reco20to75, RecoAbove75 (e.g. 2024 electron_v1.json)
+        if (ele_reco_sf_) {
+            if (pt < 20.0f) return 1.0f;  // pt < 20: RecoBelow20 may not exist in separate Reco file
+            working_point = (pt >= 75.0f) ? "RecoAbove75" : "Reco20to75";
+        } else {
+            // 2022, 2023, Run2: RecoAbove20, RecoBelow20
+            working_point = (pt >= 20.0f) ? "RecoAbove20" : "RecoBelow20";
+        }
     } else if (sf_type.find("SCB") == 0) {
         // Convert SCB (Scale factor Cut-Based) format to JSON format
         if (sf_type == "SCBVeto") working_point = "Veto";
@@ -625,8 +972,22 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
             return 1.0;
         }
 
-        // Use the correct order from JSON: {year, ValType, WorkingPoint, eta, pt}
-        float result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt});
+        // Electron SF schema varies by year:
+        // 2024 Reco: use ele_reco_sf_ from electron_v1.json, year="2024Prompt"
+        // 2022, 2022PostEE, 2024 ID: {year, ValType, WorkingPoint, eta, pt} - 5 inputs
+        // 2023, 2023BPix: {year, ValType, WorkingPoint, eta, pt, phi} - 6 inputs
+        float result;
+        if (sf_type == "Reco" && ele_reco_sf_ && !ele_reco_sf_year_.empty()) {
+            result = ele_reco_sf_->evaluate({ele_reco_sf_year_, valtype, working_point, eta, pt});
+        } else {
+            bool needsPhi = (year_.find("2023") != std::string::npos && 
+                             year_.find("2024") == std::string::npos);
+            if (needsPhi) {
+                result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt, phi});
+            } else {
+                result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt});
+            }
+        }
 
         // Sanity check on result
         if (result <= 0.0 || result > 10.0) {
@@ -639,7 +1000,8 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
     } catch (const std::exception& e) {
         std::cerr << "[GetElectronSF] Evaluation failed: " << e.what() << std::endl;
         std::cerr << "  Parameters: year='" << year_ << "', valtype='" << valtype
-                  << "', working_point='" << working_point << "', eta=" << eta << ", pt=" << pt << std::endl;
+                  << "', working_point='" << working_point << "', eta=" << eta << ", pt=" << pt 
+                  << ", phi=" << phi << std::endl;
         return 1.0;
     }
 }
@@ -706,7 +1068,8 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
     double raw_met_pt,
     double raw_met_phi,
     const std::vector<TLorentzVector>& genJets,
-    const std::vector<int>& genJetIndices
+    const std::vector<int>& genJetIndices,
+    unsigned int runnb
 ) const {
     std::vector<TLorentzVector> correctedJets;
     std::vector<TLorentzVector> rawJetsRebuilt;
@@ -729,8 +1092,8 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
         double corrected_mass = raw_mass;
 
         if (applyJES) {
-            corrected_pt   = GetCorrectedJetPt(raw_pt, eta, areas[i], rho);
-            corrected_mass = GetCorrectedJetMass(raw_mass, raw_pt, eta, areas[i], rho);
+            corrected_pt   = GetCorrectedJetPt(raw_pt, eta, areas[i], rho, phi, runnb, isData);
+            corrected_mass = GetCorrectedJetMass(raw_mass, raw_pt, eta, areas[i], rho, phi, runnb, isData);
         }
 
         if (!isData && applyJER && genJetIndices.size() > i && genJetIndices[i] >= 0 && genJetIndices[i] < genJets.size()) {
@@ -759,7 +1122,7 @@ JetCorrectionOutput SSBCorrections::ApplyJetCorrectionsWithMET(
 
 bool SSBCorrections::ShouldVetoJet(const TLorentzVector& jet) const {
     // Only apply for 2018 data/MC
-    if (year_ != "2018") {
+    if (year_ != "2018" && year_ != "2024" && year_ != "2023" && year_ != "2022" && year_ != "2022PostEE" && year_ != "2023BPix") {
         return false;
     }
     
@@ -801,38 +1164,112 @@ bool SSBCorrections::ShouldVetoJet(const TLorentzVector& jet) const {
     }
 }
 
+bool SSBCorrections::HasJetIDCorrection(bool use_tightlepveto) const {
+    return use_tightlepveto ? (jetid_tightlepveto_ != nullptr) : (jetid_tight_ != nullptr);
+}
+
+bool SSBCorrections::PassJetIDFromJSON(float eta,
+                                       float chHEF, float neHEF, float chEmEF, float neEmEF, float muEF,
+                                       int chMultiplicity, int neMultiplicity, int multiplicity,
+                                       bool use_tightlepveto) const {
+    const auto& corr = use_tightlepveto ? jetid_tightlepveto_ : jetid_tight_;
+    if (!corr) {
+        return true; // fallback-open if not loaded
+    }
+
+    auto evalJetID = [&](double eta_value) -> double {
+        std::vector<correction::Variable::Type> args;
+        const auto& inputs = corr->inputs();
+        args.reserve(inputs.size());
+
+        for (const auto& in : inputs) {
+            const auto& name = in.name();
+            const auto type = in.type();
+
+            if (type == correction::Variable::VarType::real) {
+                if (name == "eta" || name == "abseta") args.emplace_back(static_cast<double>(eta_value));
+                else if (name == "chHEF") args.emplace_back(static_cast<double>(chHEF));
+                else if (name == "neHEF") args.emplace_back(static_cast<double>(neHEF));
+                else if (name == "chEmEF") args.emplace_back(static_cast<double>(chEmEF));
+                else if (name == "neEmEF") args.emplace_back(static_cast<double>(neEmEF));
+                else if (name == "muEF") args.emplace_back(static_cast<double>(muEF));
+                else args.emplace_back(0.0);
+            } else if (type == correction::Variable::VarType::integer) {
+                if (name == "chMultiplicity") args.emplace_back(static_cast<int>(chMultiplicity));
+                else if (name == "neMultiplicity") args.emplace_back(static_cast<int>(neMultiplicity));
+                else if (name == "multiplicity" || name == "nConstituents") args.emplace_back(static_cast<int>(multiplicity));
+                else args.emplace_back(0);
+            } else { // string
+                args.emplace_back(std::string(""));
+            }
+        }
+        return static_cast<double>(corr->evaluate(args));
+    };
+
+    try {
+        return evalJetID(static_cast<double>(eta)) > 0.5;
+    } catch (const std::exception&) {
+        // Retry once with |eta| for schemas that are defined in absolute eta.
+        try {
+            return evalJetID(static_cast<double>(std::fabs(eta))) > 0.5;
+        } catch (const std::exception& e2) {
+            std::cerr << "[WARNING] JetID JSON evaluation failed: " << e2.what() << std::endl;
+            return true; // fallback-open to avoid hard event loss on transient issues
+        }
+    }
+}
+
 
 void SSBCorrections::InitBtagSFCorrection(const std::string& json_path, 
                                           const std::string& tagger_name) {
     std::cout << "[SSBCorrections] Loading b-tagging SF from JSON: " << json_path << std::endl;
     
     auto cset = correction::CorrectionSet::from_file(json_path);
-    
-    // Heavy flavor correction name (config-based selection)
+
+    // Run3 UParTAK4 corrections are provided as a single correction object
+    // with flavor as an input variable (no comb/incl split names).
+    if (tagger_name.find("UParTAK4_") == 0) {
+        try {
+            btag_corrections_["heavy"] = cset->at(tagger_name);
+            btag_corrections_["light"] = cset->at(tagger_name);
+            std::cout << "[SSBCorrections] Loaded UParTAK4 correction: "
+                      << tagger_name << std::endl;
+            btag_sf_available_ = true;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "[WARNING] UParTAK4 correction '" << tagger_name 
+                      << "' not found in JSON. B-tagging SF will be disabled." << std::endl;
+            btag_sf_available_ = false;
+        }
+        return;
+    }
+
+    // Run2/DeepCSV/DeepJet corrections use comb/incl naming convention.
     std::string heavy_flavor_name = tagger_name;  // e.g., "deepJet_comb"
-    
-    // Replace "comb" with config-specified type
     size_t pos = heavy_flavor_name.find("comb");
     if (pos != std::string::npos) {
         heavy_flavor_name.replace(pos, 4, btag_sf_type_);
     } else {
         std::cerr << "[ERROR] Expected 'comb' in tagger_name: " << tagger_name << std::endl;
+        btag_sf_available_ = false;
         return;
     }
-    
-    // Light flavor correction name (always "incl")
+
     std::string light_flavor_name = tagger_name;
     pos = light_flavor_name.find("comb");
     if (pos != std::string::npos) {
         light_flavor_name.replace(pos, 4, "incl");
     }
-    
-    // Load corrections with generic keys
-    btag_corrections_["heavy"] = cset->at(heavy_flavor_name);
-    btag_corrections_["light"] = cset->at(light_flavor_name);
-    
-    std::cout << "[SSBCorrections] Loaded corrections: " 
-              << heavy_flavor_name << " and " << light_flavor_name << std::endl;
+
+    try {
+        btag_corrections_["heavy"] = cset->at(heavy_flavor_name);
+        btag_corrections_["light"] = cset->at(light_flavor_name);
+        std::cout << "[SSBCorrections] Loaded corrections: "
+                  << heavy_flavor_name << " and " << light_flavor_name << std::endl;
+        btag_sf_available_ = true;
+    } catch (const std::out_of_range& e) {
+        std::cerr << "[WARNING] B-tagging correction not found in JSON. B-tagging SF will be disabled." << std::endl;
+        btag_sf_available_ = false;
+    }
 }
 
 std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
@@ -842,6 +1279,11 @@ std::string SSBCorrections::getBtagCorrectionName(int flavor) const {
 
 float SSBCorrections::GetBtagSF(float pt, float eta, int flav, 
                                 const std::string& wp, const std::string& syst) const {
+    // If b-tagging SF is not available for this year, return 1.0
+    if (!btag_sf_available_) {
+        return 1.0f;
+    }
+    
     float pt_clamped = std::clamp(pt, 20.0f, 1000.0f);
     float eta_abs = std::fabs(eta);
 
@@ -891,8 +1333,12 @@ float SSBCorrections::ComputeBTagEventWeight(const std::vector<float>& pts,
         // Get MC efficiency
         float eff = GetMCBtagEfficiency(pt, eta, flav, algo, wp);
         
-        // Get scale factor
-        float sf = GetBtagSF(pt, eta, flav, wp, syst);
+        // UParTAK4_kinfit in current Run3 JSON provides SF only for b-jets (flavor=5).
+        // For c/light jets, keep SF=1.0 to avoid invalid category lookups.
+        float sf = 1.0f;
+        if (!(algo == "UParTAK4" && flav != 5)) {
+            sf = GetBtagSF(pt, eta, flav, wp, syst);
+        }
         
         // Avoid division by zero
         if (eff < 1e-5) eff = 1e-5;
@@ -1002,7 +1448,7 @@ float SSBCorrections::GetMCBtagEfficiency(float pt, float eta, int flav, const s
 
     TH2D* hist = it->second;
     int bin_x = hist->GetXaxis()->FindBin(pt);
-    int bin_y = hist->GetYaxis()->FindBin(eta);
+    int bin_y = hist->GetYaxis()->FindBin(std::fabs(eta));
     float eff = hist->GetBinContent(bin_x, bin_y);
 
     return std::clamp(eff, 0.0f, 1.0f);
@@ -1111,6 +1557,8 @@ double SSBCorrections::TrigMuElec_Eff(TLorentzVector muon, TLorentzVector elec, 
 }
 
 double SSBCorrections::GetTrgEff(double pt1, double pt2, TString Sys_) {
+    if (!H_trig) return 1.0;  // No correction if histogram failed to load
+
     // Clamp values below the histogram max range (assumed 500)
     double max_pt = 499.999;
 
@@ -1142,7 +1590,7 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
 
     std::string prefix = base_jec_name.substr(0, pos);             // "Summer19UL16"
     std::string version = base_jec_name.substr(pos + 2);           // "7"
-    std::string suffix = "_L1L2L3Res_AK4PFchs";
+    std::string suffix = "_L1L2L3Res_AK4PFPuppi";
 
     std::string expanded = prefix;  // prefix
 
@@ -1205,6 +1653,44 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
                 expanded += "_RunD";
             } else {
                 expanded += "_RunB"; 
+            }
+        }
+    } else if (runPeriod.find("2024") != std::string::npos) {
+        if (is_data) {
+            if (era == "C" || era == "D" || era == "E" || era == "F" || era == "G" || era == "H" || era == "I" || era == "I_v2" ) {
+                expanded += "";
+            }
+        }
+    } else if (runPeriod.find("2023BPix") != std::string::npos) {
+        if (is_data) {
+            if (era == "D") {
+                expanded += "";
+            }
+        }
+    } else if (runPeriod.find("2023") != std::string::npos) {
+        if (is_data) {
+            if (era == "C") {
+                expanded += "";
+            }
+        }
+    } else if (runPeriod.find("2022PostEE") != std::string::npos) {
+        if (is_data) {
+            if (era == "E") {
+                expanded += "_RunE";
+            } else if (era == "F") {
+                expanded += "_RunF";
+            } else if (era == "G") {
+                expanded += "_RunG";
+            } else {
+                expanded += "_RunE";  // fallback
+            }
+        }
+    } else if (runPeriod.find("2022") != std::string::npos) {
+        if (is_data) {
+            if (era == "C" || era == "D") {
+                expanded += "_RunCD";
+            } else {
+                expanded += "_RunCD";  // fallback
             }
         }
     }

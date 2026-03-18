@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
 
 // Constructor: initialize TTreeReader with TChain and branch list file
 Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirName, std::string outputName, const std::string &branchListFile, const std::string &configFile, int NumEvt= -1)
@@ -36,6 +37,7 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     cutflowName[7] = "bTagged Jet == 2";
     cutflowName[8] = "Top-Recon.";
     cutflowName[9] = "Top-Pt-Rewight";
+    cutflowName[10] = "Step_10";
  
     pi = TMath::Pi();
     Start();
@@ -110,10 +112,10 @@ void Analysis::InitBranches(const std::string &branchListFile) {
             trim(dataType);
             trim(varType);
       	    if (isData && branchName.find("Gen") != std::string::npos) {continue;}
-	    if (isData && branchName.find("gen") != std::string::npos) {continue;}
-	    if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
-	    if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
-	    if (isData && branchName.find("L1PreFiringWeight") != std::string::npos) {continue;}
+	        if (isData && branchName.find("gen") != std::string::npos) {continue;}
+	        if (isData && branchName.find("Pileup_nTrueInt") != std::string::npos) {continue;}
+	        if (isData && branchName.find("Jet_hadronFlavour") != std::string::npos) {continue;}
+	        if (isData && branchName.find("L1PreFiringWeight") != std::string::npos) {continue;}
             // Initialize based on data type and variable type
             if (dataType == "Bool_t" && varType == "single") {
                 boolSingles[branchName] = std::make_unique<TTreeReaderValue<Bool_t>>(fReader, branchName.c_str());
@@ -135,6 +137,8 @@ void Analysis::InitBranches(const std::string &branchListFile) {
                 floatVectors[branchName] = std::make_unique<TTreeReaderArray<Float_t>>(fReader, branchName.c_str());
             } else if (dataType == "UChar_t" && varType == "vector") { // New case for UChar_t vector
                 ucharVectors[branchName] = std::make_unique<TTreeReaderArray<UChar_t>>(fReader, branchName.c_str());
+            } else if (dataType == "Short_t" && varType == "vector") { // New case for Short_t vector
+                shortVectors[branchName] = std::make_unique<TTreeReaderArray<Short_t>>(fReader, branchName.c_str());
             } else {
                 std::cerr << "Warning: Unsupported data type or format in branch list: "
                           << dataType << ", " << varType << " for branch " << branchName << std::endl;
@@ -236,6 +240,8 @@ void Analysis::SetVariables() {
     LepIsoSFSys  = SSBConfReader->GetText("LepIsoSFSys");
     LepRecoSFSys  = SSBConfReader->GetText("LepRecoSFSys");
     LepTrackSFSys  = SSBConfReader->GetText("LepTrackSFSys");
+    BTagSFSys  = SSBConfReader->GetText("BTagSFSys");
+    BTagEffSys = SSBConfReader->GetText("BTagEffSys");
 
 
     // ============================================================================
@@ -279,22 +285,15 @@ void Analysis::SetVariables() {
     //std::cout << "triggerList : " << triggerList.size()<< std::endl;
     //SetObjectVariable();
     applyMETXY = SSBConfReader->GetText("applyMETXY");
-    std::cout << "  apply MET XY correction: " << applyMETXY << std::endl;
     if (applyMETXY == "DUMMY") {
-	    applyMETXY == "False";
-            std::cout << "[WARNING] applyMETXY COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyMETXY << std::endl;
-    }
-
-    applyMETXY = SSBConfReader->GetText("applyMETXY");
-    if (applyMETXY == "DUMMY") {
-            applyMETXY == "False";
+	    applyMETXY = "False";
             std::cout << "[WARNING] applyMETXY COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyMETXY << std::endl;
     }
     std::cout << "  apply MET XY correction: " << applyMETXY << std::endl;
 
     applyRochester = SSBConfReader->GetText("applyRochester");
     if (applyRochester == "DUMMY") {
-            applyRochester == "False";
+            applyRochester = "False";
             std::cout << "[WARNING] applyRochester COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyRochester << std::endl;
     }
     std::cout << "  apply Rochester correction: " << applyRochester << std::endl;
@@ -302,6 +301,18 @@ void Analysis::SetVariables() {
 
 void Analysis::SetObjectVariable() {
     //std::cout << "!!! SetObjectVariable start!!!" << std::endl;
+    auto resolveMuonPfIsoCut = [](const TString& isoType) -> int {
+        // NanoAOD Muon_pfIsoId mapping:
+        // 1=VeryLoose, 2=Loose, 3=Medium, 4=Tight, 5=VeryTight, 6=VeryVeryTight
+        if (isoType.Contains("PFIsoVeryVeryTight")) return 6;
+        if (isoType.Contains("PFIsoVeryTight")) return 5;
+        if (isoType.Contains("PFIsoTight")) return 4;
+        if (isoType.Contains("PFIsoMedium")) return 3;
+        if (isoType.Contains("PFIsoLoose")) return 2;
+        if (isoType.Contains("PFIsoVeryLoose")) return 1;
+        return -1;
+    };
+
     // Leptons //
     // muon //
     muons_pt  = floatVectors["Muon_pt"].get(); 
@@ -311,6 +322,9 @@ void Analysis::SetObjectVariable() {
     
     muons_Id  = boolVectors["Muon_looseId"].get();
     muons_iso = floatVectors["Muon_pfRelIso03_all"].get();
+    muons_pfIsoId = nullptr;
+    use_muon_pfisoid = false;
+    muon_pfiso_wp_cut = -1;
 
     /// Muon ID
     if      (TString(MuonId).Contains( "Loose"  ) )  { muons_Id = boolVectors["Muon_looseId"].get(); }
@@ -318,7 +332,15 @@ void Analysis::SetObjectVariable() {
     else if (TString(MuonId).Contains( "Tight"  ) )  { muons_Id = boolVectors["Muon_tightId"].get(); }
     else { std::cout << "Muon ID Error" << std::endl; }
 
-    if (TString(MuonIsoType).Contains("PFIsodbeta03")) {
+    muon_pfiso_wp_cut = resolveMuonPfIsoCut(TString(MuonIsoType));
+    if (muon_pfiso_wp_cut > 0) {
+        if (ucharVectors["Muon_pfIsoId"] == nullptr) {
+            std::cerr << "Error: Muon_pfIsoId branch not initialized!" << std::endl;
+            return;
+        }
+        muons_pfIsoId = ucharVectors["Muon_pfIsoId"].get();
+        use_muon_pfisoid = true;
+    } else if (TString(MuonIsoType).Contains("PFIsodbeta03")) {
         if (floatVectors["Muon_pfRelIso03_all"] == nullptr) {
             std::cerr << "Error: Muon_pfRelIso03_all branch not initialized!" << std::endl;
             return;
@@ -355,7 +377,7 @@ void Analysis::SetObjectVariable() {
     /// Electron iso type
 
     /// Electron ID
-    elecs_scbId = intVectors["Electron_cutBased"].get();
+    elecs_scbId = ucharVectors["Electron_cutBased"].get();
     if (TString(ElecId).Contains("SCBLoose")) {
         //elecIdVariant = intVectors["Electron_cutBased"].get();
         eleid_scbcut = 2;
@@ -388,7 +410,18 @@ void Analysis::SetObjectVariable() {
     ////////////////////////
     /// Muon information ///
     ////////////////////////
-    if (TString(veto_muoniso_type).Contains("PFIsodbeta03")) {
+    muonsveto_iso = nullptr;
+    muonsveto_pfIsoId = nullptr;
+    use_veto_muon_pfisoid = false;
+    veto_muon_pfiso_wp_cut = resolveMuonPfIsoCut(TString(veto_muoniso_type));
+    if (veto_muon_pfiso_wp_cut > 0) {
+        if (ucharVectors["Muon_pfIsoId"] == nullptr) {
+            std::cerr << "Error: Muon_pfIsoId branch not initialized for veto muons!" << std::endl;
+            return;
+        }
+        muonsveto_pfIsoId = ucharVectors["Muon_pfIsoId"].get();
+        use_veto_muon_pfisoid = true;
+    } else if (TString(veto_muoniso_type).Contains("PFIsodbeta03")) {
         if (floatVectors["Muon_pfRelIso03_all"] == nullptr) {
             std::cerr << "Error: Muon_pfRelIso03_all branch not initialized!" << std::endl;
             return;
@@ -406,7 +439,11 @@ void Analysis::SetObjectVariable() {
     }
 
     
-    if (muonsveto_iso != nullptr) {
+    if (use_veto_muon_pfisoid) {
+        if (muonsveto_pfIsoId == nullptr) {
+            std::cerr << "Error: muonsveto_pfIsoId is null after assignment!" << std::endl;
+        }
+    } else if (muonsveto_iso != nullptr) {
         //std::cout << "muonsveto_iso size: " << muonsveto_iso->GetSize() << std::endl;
     } else {
         std::cerr << "Error: muonsveto_iso is null after assignment!" << std::endl;
@@ -427,8 +464,8 @@ void Analysis::SetObjectVariable() {
     ////////////////////////////
     /// Electron information ///
     ////////////////////////////
-    elecsveto_scbId = intVectors["Electron_cutBased"].get();
-    if (!intVectors["Electron_cutBased"].get()) {std::cerr <<"Error:  Electron_cutBased !! is nullptr! ub Electron information" <<std::endl;}
+    elecsveto_scbId = ucharVectors["Electron_cutBased"].get();
+    if (!ucharVectors["Electron_cutBased"].get()) {std::cerr <<"Error:  Electron_cutBased !! is nullptr! ub Electron information" <<std::endl;}
     if (!elecsveto_scbId) std::cerr << "Error: elecsveto_scbId is nullptr! ub Electron information " << std::endl;
 
     if (TString(veto_elecid).Contains("SCBLoose")) {
@@ -490,6 +527,31 @@ void Analysis::SetObjectVariable() {
     jets_Id = intVectors["Jet_jetId"].get();
     jets_puId = intVectors["Jet_puId"].get();// for Run 2 50 GeV Jets have to pass PUID //
 
+    //Gen_EventWeight = *(*floatSingles["Generator_weight"].get());
+
+    // Set genWeight with null check (MC only)
+    if (!isData) {
+        auto it_genw = floatSingles.find("genWeight");
+        if (it_genw != floatSingles.end() && it_genw->second) {
+            genWeight = **it_genw->second;
+        } else {
+            genWeight = 1.0; // fallback if branch missing unexpectedly
+        }
+    } else {
+        genWeight = 1.0; // data has no generator weight
+    }
+    
+    if (!isData) {
+        auto it_genw = floatSingles.find("Generator_weight");
+        if (it_genw != floatSingles.end() && it_genw->second) {
+            Gen_EventWeight = *(*it_genw->second);
+        } else {
+            Gen_EventWeight = 1.0; // fallback if branch missing unexpectedly
+        }
+    } else {
+        Gen_EventWeight = 1.0; // data has no generator weight
+    }
+
     if (!isData){ 
         gen_jets_pt  = floatVectors["Gen_Jet_pt"].get();
         gen_jets_eta = floatVectors["Gen_Jet_eta"].get();
@@ -509,10 +571,20 @@ void Analysis::SetObjectVariable() {
         else if (JetId == "PFTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
         else { std::cout << "Jet condition error for 2017/2018!" << std::endl; }
     } 
-    else if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) {
-        if      (JetId == "PFTight") { jet_id = 2; } // Tight ID
-        else if (JetId == "PFTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
-        else { std::cout << "Jet condition error for 2022/2023!" << std::endl; }
+    else if (RunPeriod.Contains("2022") || RunPeriod.Contains("2022PostEE")) {
+        if      (JetId == "PuppiTight") { jet_id = 2; } // Tight ID
+        else if (JetId == "PuppiTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
+        else { std::cout << "Jet condition error for 2022" << std::endl; }
+    }
+    else if (RunPeriod.Contains("2023") || RunPeriod.Contains("2023BPix")) {
+        if      (JetId == "PuppiTight") { jet_id = 2; } // Tight ID
+        else if (JetId == "PuppiTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
+        else { std::cout << "Jet condition error for 2023" << std::endl; }
+    }
+    else if (RunPeriod.Contains("2024")) {
+        if      (JetId == "PuppiTight") { jet_id = 2; } // Tight ID
+        else if (JetId == "PuppiTightLepVeto") { jet_id = 6; } // Tight + TightLeptonVeto
+        else { std::cout << "Jet condition error for 2024!" << std::endl; }
     } 
     else {
         std::cout << "RunPeriod not recognized!" << std::endl;
@@ -537,6 +609,9 @@ void Analysis::SetObjectVariable() {
     else if (TString(JetbTag).Contains("CISV")) {
         jets_btag = floatVectors["Jet_btagCISV"].get(); // Modify with appropriate variable name if needed
     }
+    else if (TString(JetbTag).Contains("UParTAK4")) {
+        jets_btag = floatVectors["Jet_btagUParTAK4B"].get(); // start to 2024 or NANOAOD_v15
+    }
     else {
         std::cout << "Error: Unknown b-tagging algorithm in " << JetbTag << std::endl;
         jets_btag = nullptr;
@@ -553,6 +628,8 @@ void Analysis::SetObjectVariable() {
         btag_algo_ = "DeepJet";
     } else if (TString(JetbTag).Contains("pfCSVV2")) {
         btag_algo_ = "CSVv2";
+    } else if (TString(JetbTag).Contains("UParTAK4")) {
+        btag_algo_ = "UParTAK4";
     } else {
         std::cerr << "Unknown b-tagging algorithm in JetbTag: " << JetbTag << std::endl;
     }
@@ -636,6 +713,66 @@ void Analysis::SetObjectVariable() {
             else std::cout << "Unknown deepJet working point!" << std::endl;
         }
     }
+    else if (TString(RunPeriod).Contains("2022") || TString(RunPeriod).Contains("2022PostEE")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1208;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.4168;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7665;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0490;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2783;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7100;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("UParTAK4")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0246;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.1272;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.4648;
+            else std::cout << "Unknown UParTAK4L working point!" << std::endl;
+        }
+    }
+    else if (TString(RunPeriod).Contains("2023") || TString(RunPeriod).Contains("2023BPix")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1208;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.4168;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7665;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0490;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2783;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7100;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("UParTAK4")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0246;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.1272;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.4648;
+            else std::cout << "Unknown UParTAK4L working point!" << std::endl;
+        }
+    }
+    else if (TString(RunPeriod).Contains("2024")) {
+        if (TString(JetbTag).Contains("deepCSV")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.1208;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.4168;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7665;
+            else std::cout << "Unknown deepCSV working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("deepJet")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0490;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.2783;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.7100;
+            else std::cout << "Unknown deepJet working point!" << std::endl;
+        }
+        else if (TString(JetbTag).Contains("UParTAK4")) {
+            if (TString(JetbTag).Contains("L")) bdisccut = 0.0246;
+            else if (TString(JetbTag).Contains("M")) bdisccut = 0.1272;
+            else if (TString(JetbTag).Contains("T")) bdisccut = 0.4648;
+            else std::cout << "Unknown UParTAK4L working point!" << std::endl;
+        }
+    }
     else {
         std::cout << "Error: Unsupported run period: " << RunPeriod << std::endl;
         jets_btag = nullptr;
@@ -649,7 +786,7 @@ void Analysis::SetObjectVariable() {
         met_pt  = floatSingles["MET_pt"].get(); 
         met_phi  = floatSingles["MET_phi"].get();}
     else if (METtype == "Puppi"){
-	met_pt  = floatSingles["PuppiMET_pt"].get();
+	    met_pt  = floatSingles["PuppiMET_pt"].get();
         met_phi  = floatSingles["PuppiMET_phi"].get();}
     
     object_variables_set_ = true; 
@@ -659,7 +796,11 @@ void Analysis::SetObjectVariable() {
     //std::cout << "End of SetObjectVariable !" << std::endl;
 }
 
+int number_pos_EventWeight = 0;
+int number_neg_EventWeight = 0;
 
+int number_pos_genWeight = 0;
+int number_neg_genWeight = 0;
 
 // Event loop function
 void Analysis::Loop() {
@@ -682,32 +823,64 @@ void Analysis::Loop() {
             std::cerr << "Error: Failed to read entry " << ientry << std::endl;
             break;
         }
+
+        
+
         evt_weight_ = 1.;
         MCSFApply();
+        
+        //std::cout << "event weight_MCSF : " << evt_weight_ << std::endl;
 
         GenWeightApply();
+
+        //std::cout << "event weight_GenWeight : " << evt_weight_ << std::endl;
+
         PUWeightApply();
-        L1PreFireApply();
+
+        //std::cout << "event weight_PUWeight : " << evt_weight_ << std::endl;
+
+        //L1PreFireApply();
 
         SetObjectVariable(); //
+        // Generator weight +/- count: must be before any channel-specific selection (LeptonSelector)
+        if ( Gen_EventWeight < 0 ) {
+            FillHisto(h_test_minus, Gen_EventWeight);
+            number_neg_EventWeight++;
+        }
+        else if ( Gen_EventWeight > 0 ) {
+            FillHisto(h_test_plus, Gen_EventWeight);
+            number_pos_EventWeight++;
+        }
+
+        // genWeight +/- count histogram (separate from Generator_weight-based counters)
+        if ( genWeight < 0 ) {
+            FillHisto(h_genWeight_minus, genWeight);
+            number_neg_genWeight++;
+        }
+        else if ( genWeight > 0 ) {
+            FillHisto(h_genWeight_plus, genWeight);
+            number_pos_genWeight++;
+        }
+
         LeptonSelector(); 
 
         LeptonOrder();
         JetSelector();
-	if (isjetveto_event_) {
+        
+	    if (isjetveto_event_) {
             continue; // Skip entire event having jetveto map jet 
         }
-        PUIDSFApply();  // Apply PUID event weight using collected information
+
+        //PUIDSFApply();  // Apply PUID event weight using collected information
  
         JetOrder(); 
         bJetSelector(); 
-        //METDefiner();
+        METDefiner();
 
         //if (i > 100) break; //%lld supports Long64_t
         if (ientry % 10000 == 0) {
             printf("Event %lld\n", ientry); //%lld supports Long64_t
         }
-
 
         // Noise (MET) Filter //
         if ( METFilterAPP() == false ) {continue;}
@@ -715,26 +888,50 @@ void Analysis::Loop() {
         if ( Trigger() == false ) {continue;}
   
         // Good Primary Vertex Selection //
-        if (intSingles["PV_npvsGood"] && **intSingles["PV_npvsGood"] < 1) {
+        if (ucharSingles["PV_npvsGood"] && **ucharSingles["PV_npvsGood"] < 1) {
             continue;
         }
 
-        //std::cout << "**intSingles[PV_npvsGood] : " << **intSingles["PV_npvsGood"] <<std::endl;
+        num_pv =  **ucharSingles["PV_npvsGood"]; 
+
+        FillHisto( h_DiLepMass[0], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[0],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[0] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[0],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[0],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[0] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[0],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[0],    (Lep2).Phi() , evt_weight_ );
+        FillHisto( h_METpt[0]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[0]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[0]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[0], v_bjet_idx.size(), evt_weight_ ); 
+
+        //std::cout << "**ucharSingles[PV_npvsGood] : " << **ucharSingles["PV_npvsGood"] <<std::endl;
         //std::cout << "evt_weight_ : " << evt_weight_ << std::endl;
-        FillHisto( h_Num_PV[0]    , **intSingles["PV_npvsGood"] , evt_weight_ );
+        //FillHisto( h_Num_PV[0]    , **ucharSingles["PV_npvsGood"] );
+
         if ( NumIsoLeptons(2) == false ) {continue;}
 
         if (ThirdLeptonVeto() == false ) {continue;}
+
         //std::cout << "after ThirdLeptons : " << std::endl;
         if (LeptonsPtAddtional() == false ) {continue;}
+
         if (DiLeptonMassCut() == false) {continue;}
 
-        LeptonSFApply();
-        TriggerSFApply();
+        //LeptonSFApply();
+
+        //std::cout << "event weight_LeptonSF : " << evt_weight_ << std::endl;
+
+        //TriggerSFApply();
+
+        //std::cout << "event weight_TriggerSF : " << evt_weight_ << std::endl;
 
         /// Step 1 ///
-        //std::cout << "? evet weight " << evt_weight_ << std::endl;
-        num_pv =  **intSingles["PV_npvsGood"]; 
+        //std::cout << "evt_weight :" << evt_weight_ << std::endl;
+        //num_pv =  **ucharSingles["PV_npvsGood"]; 
+
         FillHisto( h_DiLepMass[1], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[1],     num_pv, evt_weight_ );
         FillHisto( h_Lep1pt[1] ,    (Lep1).Pt()  , evt_weight_ );
@@ -746,7 +943,27 @@ void Analysis::Loop() {
         FillHisto( h_METpt[1]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[1]  ,   Met.Phi()  , evt_weight_ );
         FillHisto( h_Num_Jets[1]  , v_jet_idx.size(), evt_weight_ );
-        //FillHisto( h_Num_bJets[1], nbtagged, evt_weight_ );
+        FillHisto( h_Num_bJets[1], v_bjet_idx.size(), evt_weight_ );
+        FillHisto( h_Jet1pt[1] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[1],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[1],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[1] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[1],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[1],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[1]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[1], v_bjet_idx.size(), evt_weight_ ); 
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[1] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[1], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[1], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[1] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[1], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[1], bjet2.Phi() , evt_weight_ );
+        }
 
         if (ZVetoCut() == false) {continue;}
 
@@ -760,13 +977,33 @@ void Analysis::Loop() {
         FillHisto( h_Lep2phi[2],    (Lep2).Phi() , evt_weight_ );
         FillHisto( h_METpt[2]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[2]  ,   Met.Phi()  , evt_weight_ );
-        FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );      
-
+        FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ );   
+        FillHisto( h_Jet1pt[2] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[2],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[2],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[2] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[2],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[2],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ );     
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[2] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[2], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[2], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[2] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[2], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[2], bjet2.Phi() , evt_weight_ );
+        }
+        
         if (NumJetCut(v_jet_idx) == false) {continue;}
 
         FillHisto( h_DiLepMass[3], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[3],     num_pv, evt_weight_ );
-
         FillHisto( h_Lep1pt[3] ,    (Lep1).Pt()  , evt_weight_ );
         FillHisto( h_Lep1eta[3],    (Lep1).Eta() , evt_weight_ );
         FillHisto( h_Lep1phi[3],    (Lep1).Phi() , evt_weight_ );
@@ -781,7 +1018,20 @@ void Analysis::Loop() {
         FillHisto( h_Jet2pt[3] ,    (Jet2).Pt()  , evt_weight_ );
         FillHisto( h_Jet2eta[3],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[3],    (Jet2).Phi() , evt_weight_ );
-        FillHisto( h_Num_Jets[3]  , v_jet_idx.size(), evt_weight_ );      
+        FillHisto( h_Num_Jets[3]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[3], v_bjet_idx.size(), evt_weight_ );       
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[3] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[3], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[3], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[3] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[3], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[3], bjet2.Phi() , evt_weight_ );
+        }
 
         FillHisto( h_METpt[3]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[3]  ,   Met.Phi()  , evt_weight_ );
@@ -803,12 +1053,27 @@ void Analysis::Loop() {
         FillHisto( h_Jet2pt[4] ,    (Jet2).Pt()  , evt_weight_ );
         FillHisto( h_Jet2eta[4],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[4],    (Jet2).Phi() , evt_weight_ );
-        FillHisto( h_Num_Jets[4]  , v_jet_idx.size(), evt_weight_ );      
+        FillHisto( h_Num_Jets[4]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[4], v_bjet_idx.size(), evt_weight_ );      
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[4] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[4], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[4], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[4] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[4], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[4], bjet2.Phi() , evt_weight_ );
+        }
 
         FillHisto( h_METpt[4]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[4]  ,   Met.Phi()  , evt_weight_ );
+        
+        //BTaggingSFApply();
 
-        BTaggingSFApply();
+        //std::cout << "event weight_BTaggingSF : " << evt_weight_ << std::endl;
 
         if (NumbJetCut(v_bjet_idx) == false) {continue;}
 
@@ -827,7 +1092,20 @@ void Analysis::Loop() {
         FillHisto( h_Jet2pt[5] ,    (Jet2).Pt()  , evt_weight_ );
         FillHisto( h_Jet2eta[5],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[5],    (Jet2).Phi() , evt_weight_ );
-        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ );      
+        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ ); 
+        FillHisto( h_Num_bJets[5], v_bjet_idx.size(), evt_weight_ );      
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[5] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[5], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[5], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[5] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[5], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[5], bjet2.Phi() , evt_weight_ );
+        }
 
         FillHisto( h_METpt[5]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[5]  ,   Met.Phi()  , evt_weight_ );
@@ -983,7 +1261,6 @@ bool Analysis::SelTrigger(std::vector<std::string> v_sel)
     return passtrig_;
 }
 
-
 bool Analysis::Trigger()
 {
   bool trigpass = false;
@@ -998,7 +1275,304 @@ bool Analysis::Trigger()
   std::vector<std::string> seltrigName;
   std::vector<std::string> vetotrigName;
 
-  if (RunPeriod.Contains("2018")) {
+  if (RunPeriod.Contains("2024")) {
+    if (TString(Decaymode).Contains("dimuon")) {
+        // Muon0/Muon1 datasets for dimuon
+        if (TString(FileName_).Contains("Muon0") || TString(FileName_).Contains("Muon1")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            //trigpass = pass_single || pass_double;
+            trigpass = pass_single || pass_double;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dimuon in 2024 : FileName_ : " << FileName_ << std::endl;
+            return false;
+         }
+    }
+
+    else if (TString(Decaymode).Contains("muel")) {
+   //std::cout << "muel channel!" << std::endl;
+       if (TString(FileName_).Contains("MuonEG")) {
+      //std::cout << "MuonEG !! " << FileName_ << std::endl;
+          // MuonEG: Primary dataset for muel, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          //bool pass_single = SelTrigger(SLtrigName);
+      //std::cout << "pass_double " << pass_double << std::endl;
+          trigpass = pass_double;
+          //trigpass = pass_single || pass_double;
+          return trigpass;
+       }
+       else if (TString(FileName_).Contains("Muon0") || TString(FileName_).Contains("Muon1") || TString(FileName_).Contains("EGamma0") || TString(FileName_).Contains("EGamma1")) {
+      //std::cout << "Muon0/1 or EGamma0/1 !! " << FileName_ << std::endl;
+          // Muon0/1, EGamma0/1: Use Single triggers only, veto Double to avoid overlap with MuonEG
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+      //std::cout << "pass_single : " << pass_single  << " pass_double : " << pass_double << " trigpass : " << trigpass<< std::endl;
+          return trigpass;
+       }
+       else {
+          std::cout << "[Trigger] Check FileName_ for muel in 2024 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("dielec")) {
+       if (TString(FileName_).Contains("EGamma0") || TString(FileName_).Contains("EGamma1")) {
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dielec in 2024 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else {
+       std::cout << "[Trigger] Check Decaymode for 2024" << std::endl;
+       return false;
+    }
+ }
+ 
+ else if (RunPeriod.Contains("2023BPix")) {
+    if (TString(Decaymode).Contains("dimuon")) {
+        if (TString(FileName_).Contains("Muon") && !TString(FileName_).Contains("MuonEG")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            trigpass = pass_single || pass_double;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dimuon in 2023 PostBPix : FileName_ : " << FileName_ << std::endl;
+            return false;
+         }
+    }
+
+    else if (TString(Decaymode).Contains("muel")) {
+   //std::cout << "muel channel!" << std::endl;
+       if (TString(FileName_).Contains("MuonEG")) {
+      //std::cout << "MuonEG !! " << FileName_ << std::endl;
+          // MuonEG: Primary dataset for muel, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          //bool pass_single = SelTrigger(SLtrigName);
+      //std::cout << "pass_double " << pass_double << std::endl;
+          trigpass = pass_double;
+          //trigpass = pass_single || pass_double;
+          return trigpass;
+       }
+       else if (TString(FileName_).Contains("SingleMuon") || TString(FileName_).Contains("EGamma")) {
+      //std::cout << "SingleMuon or EGamma !! " << FileName_ << std::endl;
+          // SingleMuon/EGamma: Use Single triggers only, veto Double to avoid overlap with MuonEG
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+      //std::cout << "pass_single : " << pass_single  << " pass_double : " << pass_double << " trigpass : " << trigpass<< std::endl;
+          return trigpass;
+       }
+       else {
+          std::cout << "[Trigger] Check FileName_ for muel in 2023 PostBPix : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("dielec")) {
+       if (TString(FileName_).Contains("EGamma")) {
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dielec in 2023 PostBPix : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else {
+       std::cout << "[Trigger] Check Decaymode for 2023 PostBPix" << std::endl;
+       return false;
+    }
+ }
+
+ else if (RunPeriod.Contains("2022PostEE")) {
+    if (TString(Decaymode).Contains("dimuon")) {
+        if (TString(FileName_).Contains("Muon")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            trigpass = pass_single || pass_double;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dimuon in 2022 PostEE : FileName_ : " << FileName_ << std::endl;
+            return false;
+         }
+    }
+
+    else if (TString(Decaymode).Contains("muel")) {
+       if (TString(FileName_).Contains("MuonEG")) {
+          // MuonEG: Primary dataset for muel, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_double;
+          return trigpass;
+       }
+       else if (TString(FileName_).Contains("EGamma")) {
+          // EGamma: Use Single triggers only, veto Double to avoid overlap with MuonEG
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+          return trigpass;
+       }
+       else {
+          std::cout << "[Trigger] Check FileName_ for muel in 2022 PostEE : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("dielec")) {
+       if (TString(FileName_).Contains("EGamma")) {
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dielec in 2022 PostEE : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else {
+       std::cout << "[Trigger] Check Decaymode for 2022 PostEE" << std::endl;
+       return false;
+    }
+ }
+
+ else if (RunPeriod.Contains("2023")) {
+    if (TString(Decaymode).Contains("dimuon")) {
+        if (TString(FileName_).Contains("Muon") && !TString(FileName_).Contains("MuonEG")) {
+            bool pass_single = SelTrigger(SLtrigName);
+            bool pass_double = SelTrigger(DLtrigName);
+            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+            trigpass = pass_single || pass_double;
+            return trigpass;
+         } else {
+            std::cout << "[Trigger] Check FileName_ for dimuon in 2023 : FileName_ : " << FileName_ << std::endl;
+            return false;
+         }
+    }
+
+    else if (TString(Decaymode).Contains("muel")) {
+   //std::cout << "muel channel!" << std::endl;
+       if (TString(FileName_).Contains("MuonEG")) {
+      //std::cout << "MuonEG !! " << FileName_ << std::endl;
+          // MuonEG: Primary dataset for muel, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          //bool pass_single = SelTrigger(SLtrigName);
+      //std::cout << "pass_double " << pass_double << std::endl;
+          trigpass = pass_double;
+          //trigpass = pass_single || pass_double;
+          return trigpass;
+       }
+       else if (TString(FileName_).Contains("SingleMuon") || TString(FileName_).Contains("EGamma")) {
+      //std::cout << "SingleMuon or EGamma !! " << FileName_ << std::endl;
+          // SingleMuon/EGamma: Use Single triggers only, veto Double to avoid overlap with MuonEG
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+      //std::cout << "pass_single : " << pass_single  << " pass_double : " << pass_double << " trigpass : " << trigpass<< std::endl;
+          return trigpass;
+       }
+       else {
+          std::cout << "[Trigger] Check FileName_ for muel in 2023 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("dielec")) {
+       if (TString(FileName_).Contains("EGamma")) {
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dielec in 2023 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else {
+       std::cout << "[Trigger] Check Decaymode for 2023" << std::endl;
+       return false;
+    }
+ }
+
+ else if (RunPeriod.Contains("2022")) {
+    if (TString(Decaymode).Contains("dimuon")) {
+       if (TString(FileName_).Contains("Double")) {
+          // DoubleMuon: Primary dataset for dimuon, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_double;
+          return trigpass;
+       } else if (TString(FileName_).Contains("Single")) {
+          // SingleMuon: Use Single triggers only, veto Double to avoid overlap with DoubleMuon
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+          return trigpass;
+       } else if (TString(FileName_).Contains("Muon")) {
+          // Muon: Use Single triggers or Double to avoid double counting
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dimuon in 2022 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("muel")) {
+       if (TString(FileName_).Contains("MuonEG")) {
+          // MuonEG: Primary dataset for muel, use Double lepton triggers only
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_double;
+          return trigpass;
+       }
+       else if (TString(FileName_).Contains("EGamma")) {
+          // EGamma: Use Single triggers only, veto Double to avoid overlap with MuonEG
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single && !pass_double;
+          return trigpass;
+       }
+       else {
+          std::cout << "[Trigger] Check FileName_ for muel in 2022 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else if (TString(Decaymode).Contains("dielec")) {
+       if (TString(FileName_).Contains("EGamma")) {
+          bool pass_single = SelTrigger(SLtrigName);
+          bool pass_double = SelTrigger(DLtrigName);
+          trigpass = pass_single || pass_double;
+          return trigpass;
+       } else {
+          std::cout << "[Trigger] Check FileName_ for dielec in 2022 : FileName_ : " << FileName_ << std::endl;
+          return false;
+       }
+    }
+
+    else {
+       std::cout << "[Trigger] Check Decaymode for 2022" << std::endl;
+       return false;
+    }
+ }
+
+  else if (RunPeriod.Contains("2018")) {
      if (TString(Decaymode).Contains("dimuon")) {
         if (TString(FileName_).Contains("Single")) {
            bool pass_single = SelTrigger(SLtrigName);
@@ -1278,6 +1852,14 @@ void Analysis::LeptonSelector() {
     auto passIsolation = [](float iso, float isoCut) {
       return iso <= isoCut;
     };
+    auto passMuonIsolation = [&](int idx) {
+      if (use_muon_pfisoid) {
+        return (muons_pfIsoId != nullptr &&
+                idx < muons_pfIsoId->GetSize() &&
+                muons_pfIsoId->At(idx) >= muon_pfiso_wp_cut);
+      }
+      return passIsolation(muons_iso->At(idx), muon_isocut);
+    };
 
     auto passId = [](bool id) {
       return id;
@@ -1290,13 +1872,20 @@ void Analysis::LeptonSelector() {
     auto elecCharge = [](int id) {
       return id > 0; // Electron_tightCharge check
     };
+    auto getElectronTightCharge = [&](int idx) {
+      if (ucharVectors.count("Electron_tightCharge") && ucharVectors["Electron_tightCharge"] &&
+          idx < ucharVectors["Electron_tightCharge"]->GetSize()) {
+        return static_cast<int>((*ucharVectors["Electron_tightCharge"])[idx]);
+      }
+      return 0;
+    };
 
     // Dimuon channel
     if (TString(Decaymode).Contains("dimuon")) {
-        Int_t nmu = muons_iso->GetSize();
+        Int_t nmu = muons_pt->GetSize();
         for (int i = 0; i < nmu; ++i) {
             // Skip muons that don't pass selection criteria
-            if (!passIsolation(muons_iso->At(i), muon_isocut) ||
+            if (!passMuonIsolation(i) ||
                 !passKinematicCuts(muons_pt->At(i), muons_eta->At(i), muon_pt, muon_eta) ||
                 !passId(muons_Id->At(i))) {
                 continue;
@@ -1328,7 +1917,7 @@ void Analysis::LeptonSelector() {
                 !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
-                !(elecCharge((*intVectors["Electron_tightCharge"])[i]))) {
+                !(elecCharge(getElectronTightCharge(i)))) {
                 continue;
             }
             // Use same logic pattern as dimuon channel
@@ -1354,10 +1943,10 @@ void Analysis::LeptonSelector() {
     // Muon-electron channel
     else if (TString(Decaymode).Contains("muel")) {
         // Process muons
-        Int_t nmu = muons_iso->GetSize();
+        Int_t nmu = muons_pt->GetSize();
         for (int i = 0; i < nmu; ++i) {
             // Skip muons that don't pass selection criteria
-            if (!passIsolation(muons_iso->At(i), muon_isocut) || 
+            if (!passMuonIsolation(i) || 
                 !passKinematicCuts(muons_pt->At(i), muons_eta->At(i), muon_pt, muon_eta) || 
                 !passId(muons_Id->At(i))) {
                 continue;
@@ -1381,7 +1970,7 @@ void Analysis::LeptonSelector() {
                     !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
                    (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                    fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
-                  !(elecCharge((*intVectors["Electron_tightCharge"])[i])) ||
+                  !(elecCharge(getElectronTightCharge(i))) ||
                   !(*boolVectors["Electron_convVeto"])[i]) {
                     continue;
                 }
@@ -1584,9 +2173,9 @@ void Analysis::MakeMuonCollection() {
             }
             else {
                 // MC correction - check all required branches exist
-                auto Muon_genId = intVectors["Muon_genPartIdx"].get();
+                auto Muon_genId = shortVectors["Muon_genPartIdx"].get();
                 auto GenPts = floatVectors["GenPart_pt"].get();
-                auto numberOfLayers = intVectors["Muon_nTrackerLayers"].get();
+                auto numberOfLayers = ucharVectors["Muon_nTrackerLayers"].get();
 
                 if (!Muon_genId || !GenPts || !numberOfLayers) {
                     std::cerr << "ERROR: Required MC branches for Rochester correction not available!" << std::endl;
@@ -1727,12 +2316,13 @@ void Analysis::MakeJetCollection() {
         jetAreas,
         rho,
         isData,
-        true,
-        true,
+        true, //true or false
+        true, //true or false
         raw_met_pt,
         raw_met_phi,
         genJets,
-        genJetIndices
+        genJetIndices,
+        **uintSingles["run"]
     );
 
     pre_jets = corr_output.corrected_jets;
@@ -1744,11 +2334,16 @@ void Analysis::MakeJetCollection() {
     else if (RunPeriod.Contains("2016Post")) yearForm = "2016nonAPV";
     else if (RunPeriod.Contains("2017")) yearForm = "2017";
     else if (RunPeriod.Contains("2018")) yearForm = "2018";
+    else if (RunPeriod.Contains("2022PostEE")) yearForm = "2022PostEE";
+    else if (RunPeriod.Contains("2022")) yearForm = "2022";
+    else if (RunPeriod.Contains("2023BPix")) yearForm = "2023BPix";
+    else if (RunPeriod.Contains("2023")) yearForm = "2023";
+    else if (RunPeriod.Contains("2024")) yearForm = "2024";
     else cout << "[Warning check the RunPeriod] : " << RunPeriod  << endl;
     bool isMC = !isData; bool isUL = true; bool isPuppi = METtype == "Puppi";
 
 
-    if (applyMETXY == "True") Met = SSBCorr->METXYCorrection(Met, **uintSingles["run"], yearForm, isMC, **intSingles["PV_npvsGood"], isUL, isPuppi);
+    if (applyMETXY == "True") Met = SSBCorr->METXYCorrection(Met, **uintSingles["run"], yearForm, isMC, **ucharSingles["PV_npvsGood"], isUL, isPuppi);
 
     // ============================================================================
     // VERIFICATION: Check final size consistency
@@ -1844,7 +2439,60 @@ void Analysis::JetSelector() {
         }
 
         // Check jet ID
-        if (jets_Id != nullptr && jets_Id->At(i) < jet_id) {
+        bool passJetID = true;
+        const bool isRun3 = (RunPeriod.Contains("2022") || RunPeriod.Contains("2022PostEE") ||
+                             RunPeriod.Contains("2023") || RunPeriod.Contains("2023BPix") ||
+                             RunPeriod.Contains("2024"));
+        const bool useJetIDJSON = isRun3 && (JetId == "PuppiTight" || JetId == "PuppiTightLepVeto");
+        const bool useTightLepVeto = (JetId == "PuppiTightLepVeto");
+
+        if (useJetIDJSON) {
+            auto getFloatJetVar = [this, i](const char* key, float& out) -> bool {
+                auto it = floatVectors.find(key);
+                if (it == floatVectors.end() || !it->second || i >= it->second->GetSize()) return false;
+                out = it->second->At(i);
+                return true;
+            };
+            auto getIntJetVar = [this, i](const char* key, int& out) -> bool {
+                auto iti = intVectors.find(key);
+                if (iti != intVectors.end() && iti->second && i < iti->second->GetSize()) {
+                    out = iti->second->At(i);
+                    return true;
+                }
+                auto itu = ucharVectors.find(key);
+                if (itu != ucharVectors.end() && itu->second && i < itu->second->GetSize()) {
+                    out = static_cast<int>(itu->second->At(i));
+                    return true;
+                }
+                return false;
+            };
+
+            float chHEF = 0.f, neHEF = 0.f, chEmEF = 0.f, neEmEF = 0.f, muEF = 0.f;
+            int chMult = 0, neMult = 0, nConst = 0;
+            const bool hasInputs =
+                getFloatJetVar("Jet_chHEF", chHEF) &&
+                getFloatJetVar("Jet_neHEF", neHEF) &&
+                getFloatJetVar("Jet_chEmEF", chEmEF) &&
+                getFloatJetVar("Jet_neEmEF", neEmEF) &&
+                getFloatJetVar("Jet_muEF", muEF) &&
+                getIntJetVar("Jet_chMultiplicity", chMult) &&
+                getIntJetVar("Jet_neMultiplicity", neMult) &&
+                getIntJetVar("Jet_nConstituents", nConst);
+
+            if (hasInputs && SSBCorr->HasJetIDCorrection(useTightLepVeto)) {
+                passJetID = SSBCorr->PassJetIDFromJSON(
+                    jetEta, chHEF, neHEF, chEmEF, neEmEF, muEF,
+                    chMult, neMult, nConst, useTightLepVeto
+                );
+            } else if (jets_Id != nullptr) {
+                // Fallback to NanoAOD jetId bit when JSON inputs are unavailable.
+                passJetID = (jets_Id->At(i) >= jet_id);
+            }
+        } else if (jets_Id != nullptr) {
+            passJetID = (jets_Id->At(i) >= jet_id);
+        }
+
+        if (!passJetID) {
             continue;
         }
 
@@ -1868,7 +2516,8 @@ void Analysis::JetSelector() {
 	// Initialize jet veto event flag
         isjetveto_event_ = false;
 
-        // Apply HEM15/16 veto based on configuration type
+        // Apply jet veto map based on run period.
+        // 2018 keeps legacy HEM prescription; Run3 uses configured jetvetomap directly.
         bool should_apply_hem = false;
         if (RunPeriod.Contains("2018")) {
             if (isData) {
@@ -1879,6 +2528,12 @@ void Analysis::JetSelector() {
             } else {
                 should_apply_hem = ((current_entry_ % 10000) < 6478);  // 64.78%
             }
+        } else if (RunPeriod.Contains("2022") ||
+                   RunPeriod.Contains("2022PostEE") ||
+                   RunPeriod.Contains("2023") ||
+                   RunPeriod.Contains("2023BPix") ||
+                   RunPeriod.Contains("2024")) {
+            should_apply_hem = true;
         }
 
         if (should_apply_hem && SSBCorr->ShouldVetoJet(jetVec)) {
@@ -2000,7 +2655,7 @@ void Analysis::Start()
 void Analysis::DeclareHistos()
 {
  
-   for (int i =0 ; i < 10 ; i++)
+   for (int i =0 ; i < 11 ; i++)
    {
       h_Lep1pt[i]  = new TH1D(Form("h_Lep1pt_%d" ,i), Form("Leading Lepton pT %s"        ,cutflowName[i].Data()), 250, 0.0, 250); h_Lep1pt[i]->Sumw2(); 
       h_Lep2pt[i]  = new TH1D(Form("h_Lep2pt_%d" ,i), Form("Second Leading Lepton pT %s" ,cutflowName[i].Data()), 250, 0.0, 250); h_Lep2pt[i]->Sumw2();
@@ -2015,6 +2670,12 @@ void Analysis::DeclareHistos()
       h_Jet2eta[i] = new TH1D(Form("h_Jet2eta_%d",i), Form("Second Leading Jet Eta %s",cutflowName[i].Data()), 50, -2.5, 2.5); h_Jet2eta[i]->Sumw2();
       h_Jet1phi[i] = new TH1D(Form("h_Jet1phi_%d",i), Form("Leading Jet Phi %s"       ,cutflowName[i].Data()), 24, -1*pi, pi); h_Jet1phi[i]->Sumw2();
       h_Jet2phi[i] = new TH1D(Form("h_Jet2phi_%d",i), Form("Second Leading Jet Phi %s",cutflowName[i].Data()), 24, -1*pi, pi); h_Jet2phi[i]->Sumw2();
+      h_bJet1pt[i]  = new TH1D(Form("h_bJet1pt_%d", i),  Form("Leading bJet pT %s",        cutflowName[i].Data()), 250, 0.0, 250); h_bJet1pt[i]->Sumw2();
+      h_bJet2pt[i]  = new TH1D(Form("h_bJet2pt_%d", i),  Form("Second Leading bJet pT %s", cutflowName[i].Data()), 250, 0.0, 250); h_bJet2pt[i]->Sumw2();
+      h_bJet1eta[i] = new TH1D(Form("h_bJet1eta_%d", i), Form("Leading bJet Eta %s",       cutflowName[i].Data()), 50, -2.5, 2.5); h_bJet1eta[i]->Sumw2();
+      h_bJet2eta[i] = new TH1D(Form("h_bJet2eta_%d", i), Form("Second Leading bJet Eta %s",cutflowName[i].Data()), 50, -2.5, 2.5); h_bJet2eta[i]->Sumw2();
+      h_bJet1phi[i] = new TH1D(Form("h_bJet1phi_%d", i), Form("Leading bJet Phi %s",       cutflowName[i].Data()), 24, -1*pi, pi); h_bJet1phi[i]->Sumw2();
+      h_bJet2phi[i] = new TH1D(Form("h_bJet2phi_%d", i), Form("Second Leading bJet Phi %s",cutflowName[i].Data()), 24, -1*pi, pi); h_bJet2phi[i]->Sumw2();
     
      
       h_METpt[i]  = new TH1D(Form("h_METpt_%d",i), Form("MET pT %s" ,cutflowName[i].Data()), 200, 0.0, 200); h_METpt[i]->Sumw2();
@@ -2080,7 +2741,13 @@ void Analysis::DeclareHistos()
     {                 
         h_Reco_CPO_[i] = new TH1D(Form("h_Reco_CPO%d",i+1 ), Form("CPO%d",i+1   ), 200, -10, 10); h_Reco_CPO_[i]->Sumw2();
         h_Reco_CPO_ReRange_[i] = new TH1D(Form("h_Reco_CPO%d_ReRange",i+1 ), Form("CPO%d",i+1   ), 40, -2, 2); h_Reco_CPO_ReRange_[i]->Sumw2();
-    }   
+    }
+    
+    h_test_plus = new TH1D(Form("h_test_plus"), Form("Event Weight +"), 200, 0.0, 2.0); h_test_plus->Sumw2();
+    h_test_minus = new TH1D(Form("h_test_minus"), Form("Event Weight -"), 200, 0.0, 2.0); h_test_minus->Sumw2();
+    h_genWeight_plus = new TH1D(Form("h_genWeight_plus"), Form("genWeight +"), 200, 0.0, 2.0); h_genWeight_plus->Sumw2();
+    h_genWeight_minus = new TH1D(Form("h_genWeight_minus"), Form("genWeight -"), 200, 0.0, 2.0); h_genWeight_minus->Sumw2();
+
 }
 
 
@@ -2131,6 +2798,14 @@ void Analysis::SelectVetoMuons() {
     auto passIsolation = [](float iso, float isoCut) {
         return iso < isoCut;
     };
+    auto passVetoMuonIsolation = [&](int idx) {
+        if (use_veto_muon_pfisoid) {
+            return (muonsveto_pfIsoId != nullptr &&
+                    idx < muonsveto_pfIsoId->GetSize() &&
+                    muonsveto_pfIsoId->At(idx) >= veto_muon_pfiso_wp_cut);
+        }
+        return passIsolation(muonsveto_iso->At(idx), veto_muoniso_cut);
+    };
 
     auto passId = [](bool id) {
         return id;
@@ -2148,8 +2823,7 @@ void Analysis::SelectVetoMuons() {
             }
             
             // Check criteria
-            //if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
-            if (passIsolation(muons_iso->At(imu), muon_isocut) && 
+            if (passVetoMuonIsolation(imu) && 
                 passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
                 passId(muonsveto_Id->At(imu))) {
                 /*std::cout << "In SelectVetoMuons : muonsveto_iso : " << muonsveto_iso->At(imu) 
@@ -2169,7 +2843,7 @@ void Analysis::SelectVetoMuons() {
         muonsveto.clear(); 
         for (int imu = 0; imu < nmu; ++imu) {
             // Check criteria
-            if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
+            if (passVetoMuonIsolation(imu) && 
                 passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
                 passId(muonsveto_Id->At(imu))) {
                 
@@ -2191,7 +2865,7 @@ void Analysis::SelectVetoMuons() {
             }
             
             // Check criteria
-            if (passIsolation(muonsveto_iso->At(imu), veto_muoniso_cut) && 
+            if (passVetoMuonIsolation(imu) && 
                 passKinematicCuts(muons_pt->At(imu), muons_eta->At(imu)) && 
                 passId(muonsveto_Id->At(imu))) {
                 
@@ -2230,6 +2904,13 @@ void Analysis::SelectVetoElectrons() {
     auto elecCharge = [](int id) {
         return id > 0;
     };
+    auto getElectronTightCharge = [&](int idx) {
+        if (ucharVectors.count("Electron_tightCharge") && ucharVectors["Electron_tightCharge"] &&
+            idx < ucharVectors["Electron_tightCharge"]->GetSize()) {
+            return static_cast<int>((*ucharVectors["Electron_tightCharge"])[idx]);
+        }
+        return 0;
+    };
     // Channel-specific logic
     if (TString(Decaymode).Contains("dimuon")) {
         // For dimuon channel, check all electrons
@@ -2242,7 +2923,7 @@ void Analysis::SelectVetoElectrons() {
                 !elecSCBId(elecsveto_scbId->At(iel), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) < 1.566) ||
-                !elecCharge((*intVectors["Electron_tightCharge"])[iel]) ||
+                !elecCharge(getElectronTightCharge(iel)) ||
                 !(*boolVectors["Electron_convVeto"])[iel]
                 ) {
                 continue;
@@ -2250,7 +2931,7 @@ void Analysis::SelectVetoElectrons() {
                  /*std::cout << "In Veto Elec. elecsveto_scbId : " << elecsveto_scbId->At(iel) 
                           << " elevetoid_scbcut : " << elevetoid_scbcut 
                           << " elecs_pt->At(i) : " << elecs_pt->At(iel) 
-                          << " elecCharge : " << (*intVectors["Electron_tightCharge"])[iel] 
+                         << " elecCharge : " << static_cast<int>((*ucharVectors["Electron_tightCharge"])[iel]) 
                           << " Electron_convVeto : " << (*boolVectors["Electron_convVeto"])[iel]
                           << std::endl;*/
             
@@ -2272,7 +2953,7 @@ void Analysis::SelectVetoElectrons() {
                 !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
-                !elecCharge((*intVectors["Electron_tightCharge"])[i]) ||
+                !elecCharge(getElectronTightCharge(i)) ||
                 !(*boolVectors["Electron_convVeto"])[i]
                 ) {
                 continue;
@@ -2297,7 +2978,7 @@ void Analysis::SelectVetoElectrons() {
                 !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
-                !elecCharge((*intVectors["Electron_tightCharge"])[i]) ||
+                !elecCharge(getElectronTightCharge(i)) ||
                 !(*boolVectors["Electron_convVeto"])[i]) {
                 continue;
             }
@@ -2405,6 +3086,13 @@ void Analysis::bJetSelector() {
         }
     }
 
+    // Sort b-jet indices by pT (descending): leading/sub-leading b-jets
+    // are then defined by b-jet pT ordering.
+    std::sort(v_bjet_idx.begin(), v_bjet_idx.end(),
+              [this](int idx1, int idx2) {
+                  return jets[idx1].Pt() > jets[idx2].Pt();
+              });
+
     // Debug output
     //std::cout << "Selected " << nbtagged << " b-tagged jets out of " << v_jet_idx.size() << " jets" << std::endl;
 }
@@ -2484,7 +3172,7 @@ void Analysis::SetUpKINObs()
    for (int i = 0; i < v_jet_idx.size(); ++i)
    {
       int idx_jet = v_jet_idx[i];
-      v_jets_VLV.push_back(common::TLVtoLV(jets[i]));
+     v_jets_VLV.push_back(common::TLVtoLV(jets[i]));
       v_jetidx_KIN.push_back(i);  // Use sequential indices
       jets_btag_vec.push_back(static_cast<double>((*jets_btag)[idx_jet]));
       jet_idx_map[idx_jet] = i;  // Map original index to new index
@@ -2643,7 +3331,7 @@ bool Analysis::PassPileupID(float pt, int puId, const std::string& wp) const {
     if (pt > 50.0) return true;
 
     // For Run3 (2022, 2023) - no PUID branch exists for PUPPI jets
-    if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) {
+    if (RunPeriod.Contains("2022") || RunPeriod.Contains("2022PostEE") || RunPeriod.Contains("2023") || RunPeriod.Contains("2023BPix") || RunPeriod.Contains("2024")) {
         return true;  // No PUID needed for PUPPI jets
     }
 
@@ -2683,6 +3371,22 @@ void Analysis::BTaggingSFApply() {
     if (isData) {
         return;
     }
+
+    // Apply b-tagging SF only for years with available SF JSON files.
+    // Currently: Run2 (2016, 2017, 2018) and 2024.
+    // Skip: 2022, 2022PostEE, 2023, 2023BPix (SF JSON not yet available).
+    bool hasBtagSF = RunPeriod.Contains("2016") || RunPeriod.Contains("2017") || 
+                     RunPeriod.Contains("2018") || RunPeriod.Contains("2024");
+    if (!hasBtagSF) {
+        static bool btag_skip_msg_printed = false;
+        if (!btag_skip_msg_printed) {
+            std::cout << "[INFO] BTaggingSFApply: skip b-tag SF for " << RunPeriod
+                      << " (SF JSON not available for this year)." << std::endl;
+            btag_skip_msg_printed = true;
+        }
+        FillHisto(h_bTagEvtWeight, btag_sf_weight_);
+        return;
+    }
     
     // Check if jets and btag info are available
     if (v_jet_idx.empty() || jets_btag == nullptr) {
@@ -2701,9 +3405,9 @@ void Analysis::BTaggingSFApply() {
     jet_isTagged.reserve(v_jet_idx.size());
     
     // Check if hadron flavor branch exists (MC only)
-    bool hasHadronFlavour = (intVectors.count("Jet_hadronFlavour") && 
-                             intVectors["Jet_hadronFlavour"] && 
-                             intVectors["Jet_hadronFlavour"]->GetSize() > 0);
+    bool hasHadronFlavour = (ucharVectors.count("Jet_hadronFlavour") &&
+                             ucharVectors["Jet_hadronFlavour"] &&
+                             ucharVectors["Jet_hadronFlavour"]->GetSize() > 0);
     
     if (!hasHadronFlavour) {
         std::cout << "WARNING: Jet_hadronFlavour branch not available - using flavor=0 for all jets" << std::endl;
@@ -2718,8 +3422,8 @@ void Analysis::BTaggingSFApply() {
         
         // Get jet flavor (MC only)
         int flavor = 0; // Default to light flavor
-        if (hasHadronFlavour && jet_idx < intVectors["Jet_hadronFlavour"]->GetSize()) {
-            flavor = intVectors["Jet_hadronFlavour"]->At(jet_idx);
+        if (hasHadronFlavour && jet_idx < ucharVectors["Jet_hadronFlavour"]->GetSize()) {
+            flavor = static_cast<int>(ucharVectors["Jet_hadronFlavour"]->At(jet_idx));
         }
         
         bool isTagged = (jets_btag->At(jet_idx) > bdisccut);
@@ -2842,7 +3546,7 @@ void Analysis::CollectPUIDCandidates() {
         if (jetPt > puid_pt_threshold_) continue;
         
         // Skip Run3 PUPPI jets (no PUID needed)
-        if (RunPeriod.Contains("2022") || RunPeriod.Contains("2023")) continue;
+        if (RunPeriod.Contains("2022") || RunPeriod.Contains("2022PostEE") || RunPeriod.Contains("2023") || RunPeriod.Contains("2023BPix") || RunPeriod.Contains("2024")) continue;
         
         // Must pass basic jet cuts to be PUID candidate
         if (!passBasicJetCuts(i, jetPt, jetEta)) continue;

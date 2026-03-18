@@ -1,0 +1,134 @@
+000 (842546.014.000) 2026-03-14 10:57:17 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (842546.014.000) 2026-03-14 10:58:36 Started transferring input files
+	Transferring to host: <155.230.21.95:9618?addrs=155.230.21.95-9618+[2407-c000-c025--21-95]-9618&alias=cluster295.knu.ac.kr&noUDP&sock=slot1_4_1535_4bd7_6479>
+...
+040 (842546.014.000) 2026-03-14 10:58:36 Finished transferring input files
+...
+001 (842546.014.000) 2026-03-14 10:58:37 Job executing on host: <155.230.21.95:9618?addrs=155.230.21.95-9618+[2407-c000-c025--21-95]-9618&alias=cluster295.knu.ac.kr&noUDP&sock=startd_1084_1cc0>
+	SlotName: slot1_4@cluster295.knu.ac.kr
+	CondorScratchDir = "/home/condor/dir_2308427"
+	Cpus = 1
+	Disk = 2815
+	GPUs = 0
+	Memory = 1100
+...
+006 (842546.014.000) 2026-03-14 10:58:45 Image size of job updated: 85336
+	84  -  MemoryUsage of job (MB)
+	85336  -  ResidentSetSize of job (KB)
+...
+006 (842546.014.000) 2026-03-14 11:03:45 Image size of job updated: 168280
+	165  -  MemoryUsage of job (MB)
+	168280  -  ResidentSetSize of job (KB)
+...
+006 (842546.014.000) 2026-03-14 11:08:46 Image size of job updated: 175968
+	172  -  MemoryUsage of job (MB)
+	175968  -  ResidentSetSize of job (KB)
+...
+006 (842546.014.000) 2026-03-14 11:23:47 Image size of job updated: 178336
+	175  -  MemoryUsage of job (MB)
+	178336  -  ResidentSetSize of job (KB)
+...
+040 (842546.014.000) 2026-03-14 12:12:51 Started transferring output files
+...
+040 (842546.014.000) 2026-03-14 12:12:51 Finished transferring output files
+...
+005 (842546.014.000) 2026-03-14 12:12:51 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:58:21, Sys 0 00:08:34  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:58:21, Sys 0 00:08:34  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	32987  -  Run Bytes Sent By Job
+	788  -  Run Bytes Received By Job
+	32987  -  Total Bytes Sent By Job
+	788  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :     0.94        1         1 
+	   Disk (KB)            :    93           1      2815 
+	   GPUs                 :                           0 
+	   Memory (MB)          :   175        1024      1100 
+	   TimeExecute (s)      :  4454                       
+	   TimeSlotBusy (s)     :  4455                       
+
+	Job terminated of its own accord at 2026-03-14T03:12:51Z with exit-code 0.
+...
+000 (845921.014.000) 2026-03-16 11:09:38 Job submitted from host: <155.230.23.72:9618?addrs=155.230.23.72-9618+[2407-c000-c024-0-20c-29ff-fe6a-c74b]-9618&alias=cms02.knu.ac.kr&noUDP&sock=schedd_1497_655d>
+...
+040 (845921.014.000) 2026-03-16 11:12:08 Started transferring input files
+	Transferring to host: <155.230.21.106:9618?addrs=155.230.21.106-9618+[2407-c000-c025--21-106]-9618&alias=cluster306.knu.ac.kr&noUDP&sock=slot1_15_1861_fe25_3722>
+...
+040 (845921.014.000) 2026-03-16 11:12:08 Finished transferring input files
+...
+001 (845921.014.000) 2026-03-16 11:12:09 Job executing on host: <155.230.21.106:9618?addrs=155.230.21.106-9618+[2407-c000-c025--21-106]-9618&alias=cluster306.knu.ac.kr&noUDP&sock=startd_1495_062d>
+	SlotName: slot1_15@cluster306.knu.ac.kr
+	CondorScratchDir = "/home/condor/dir_3880593"
+	Cpus = 1
+	Disk = 2833
+	GPUs = 0
+	Memory = 1100
+...
+006 (845921.014.000) 2026-03-16 11:12:18 Image size of job updated: 112436
+	110  -  MemoryUsage of job (MB)
+	112436  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:17:19 Image size of job updated: 151768
+	149  -  MemoryUsage of job (MB)
+	151768  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:22:19 Image size of job updated: 152248
+	149  -  MemoryUsage of job (MB)
+	152248  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:27:19 Image size of job updated: 152404
+	149  -  MemoryUsage of job (MB)
+	152404  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:32:20 Image size of job updated: 170556
+	167  -  MemoryUsage of job (MB)
+	170556  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:37:20 Image size of job updated: 170584
+	167  -  MemoryUsage of job (MB)
+	170584  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:47:21 Image size of job updated: 170596
+	167  -  MemoryUsage of job (MB)
+	170596  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:52:21 Image size of job updated: 173560
+	170  -  MemoryUsage of job (MB)
+	173560  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 11:57:22 Image size of job updated: 178272
+	175  -  MemoryUsage of job (MB)
+	178272  -  ResidentSetSize of job (KB)
+...
+006 (845921.014.000) 2026-03-16 12:32:25 Image size of job updated: 179420
+	176  -  MemoryUsage of job (MB)
+	179420  -  ResidentSetSize of job (KB)
+...
+040 (845921.014.000) 2026-03-16 13:00:11 Started transferring output files
+...
+040 (845921.014.000) 2026-03-16 13:00:11 Finished transferring output files
+...
+005 (845921.014.000) 2026-03-16 13:00:11 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 01:13:05, Sys 0 00:09:55  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 01:13:05, Sys 0 00:09:55  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	33610  -  Run Bytes Sent By Job
+	788  -  Run Bytes Received By Job
+	33610  -  Total Bytes Sent By Job
+	788  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :     0.66        1         1 
+	   Disk (KB)            :    55           1      2833 
+	   GPUs                 :                           0 
+	   Memory (MB)          :   176        1024      1100 
+	   TimeExecute (s)      :  6482                       
+	   TimeSlotBusy (s)     :  6483                       
+
+	Job terminated of its own accord at 2026-03-16T04:00:11Z with exit-code 0.
+...

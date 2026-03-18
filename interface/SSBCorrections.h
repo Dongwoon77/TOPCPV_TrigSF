@@ -44,7 +44,7 @@ public:
     double GetJEC(double eta, double pt, double rho) const;
 
     // Jet Energy Resolution (JER) sigma
-    double GetJER(double eta, double pt) const;
+    double GetJER(double eta, double pt, double rho) const;
 
     // Smear JER for a MC jet using hybrid method (with optional JER systematic variation)
     double SmearJER(double reco_pt, double gen_pt, double eta, double rho, const std::string& jer_tag = "nominal") const;
@@ -66,14 +66,15 @@ public:
         double raw_met_pt,
         double raw_met_phi,
         const std::vector<TLorentzVector>& genJets,
-        const std::vector<int>& genJetIndices
+        const std::vector<int>& genJetIndices,
+        unsigned int runnb
     ) const;
 
     double GetMuonRecoSF(double pt, double eta) const;
     double GetMuonIDSF(double pt, double eta, const std::string& tag = "nominal") const;
     double GetMuonIsoSF(double pt, double eta, const std::string& tag = "nominal") const;
     double DoubleMuon_IDIsoEff(TLorentzVector lep1, TLorentzVector lep2, TString muidsys, TString muisosys, TString tracksys) const;
-    float GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst = "sf") const;
+    float GetElectronSF(const std::string& sf_type, float eta, float pt, const std::string& syst = "sf", float phi = 0.0f) const;
     double DoubleElec_Eff(
         const TLorentzVector& lep1, const TLorentzVector& lep2,
         double ele1sueta, double ele2sueta,
@@ -100,8 +101,8 @@ public:
                                 const std::vector<TLorentzVector>& rawJets,
                                 const std::vector<TLorentzVector>& corrJets) const;
 
-    double GetCorrectedJetPt(double raw_pt, double eta, double area, double rho) const;
-    double GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area, double rho) const;
+    double GetCorrectedJetPt(double raw_pt, double eta, double area, double rho, double phi, unsigned int runnb, bool isData) const;
+    double GetCorrectedJetMass(double raw_mass, double raw_pt, double eta, double area, double rho, double phi, unsigned int runnb, bool isData) const;
     TLorentzVector GetCorrectedJet(const TLorentzVector& raw_jet,
                                 float rawFactor, float eta, float area, float rho,
                                 int jet_index, int seed, bool isData,
@@ -119,6 +120,11 @@ public:
     float GetPUJetIDSFAndEff(float pt, float eta, bool passPU, bool genMatched, const std::string& wp, const std::string& syst, bool getEff = false) const;
     double RochesterCorrectionData(TString year, int Q, double pt, double eta, double phi, int s,int m) const;
     double RochesterCorrectionMC(TString year, int Q, double pt, double eta,double phi,int genID,double genPt,int nl, int s,int m) const;
+    bool HasJetIDCorrection(bool use_tightlepveto) const;
+    bool PassJetIDFromJSON(float eta,
+                           float chHEF, float neHEF, float chEmEF, float neEmEF, float muEF,
+                           int chMultiplicity, int neMultiplicity, int multiplicity,
+                           bool use_tightlepveto) const;
     bool ShouldVetoJet(const TLorentzVector& jet) const;
     std::string GetJetVetoType() const;
     void InitBtagSFCorrection(const std::string& json_path, const std::string& tagger_name);
@@ -156,14 +162,18 @@ private:
     std::shared_ptr<const correction::Correction> muon_iso_;
     std::shared_ptr<const correction::Correction> ele_sf_;
     std::shared_ptr<const correction::Correction> ele_reco_sf_;
+    std::string ele_reco_sf_year_;  // year for Reco SF eval when in separate file (e.g. "2024Prompt")
     std::shared_ptr<const correction::Correction> jetvetomap_;
     std::shared_ptr<const correction::CompoundCorrection> jec_;
     std::shared_ptr<const correction::Correction> jer_; 
     std::shared_ptr<const correction::Correction> jer_sf_; // JER Scale factor
+    std::shared_ptr<const correction::Correction> jetid_tight_; // JetID from JME/jetid.json.gz
+    std::shared_ptr<const correction::Correction> jetid_tightlepveto_; // JetID (with lepton veto)
     std::shared_ptr<const correction::Correction> pujetid_sf_; // PU JetID SF
 
     // B-tagging corrections map
     std::map<std::string, std::shared_ptr<const correction::Correction>> btag_corrections_;
+    bool btag_sf_available_ = false;  // Flag to check if b-tagging SF is available
 
     // Helper function to get appropriate correction name
     std::string getBtagCorrectionName(int flavor) const;
