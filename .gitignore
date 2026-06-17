@@ -4,3 +4,7 @@ output/
 input/
 CondorJobs/condorLog/
 CondorJobs/condorSubmit/
+Batch/*_RUN3/
+Batch/**/*.log
+Batch/**/*.err
+Batch/**/*.out

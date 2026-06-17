@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <numeric>
 
 // Constructor: initialize TTreeReader with TChain and branch list file
 Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirName, std::string outputName, const std::string &branchListFile, const std::string &configFile, int NumEvt= -1)
@@ -27,17 +28,17 @@ Analysis::Analysis(TChain *inputChain, std::string inputName, std::string seDirN
     SSBCPVCal = new SSBCPVCalc();
     // Initialize branches based on branch list file
     InitBranches(branchListFile);
-    cutflowName[0] = "Step_0";
-    cutflowName[1] = "Step_1" ;
-    cutflowName[2] = "Step_2";
-    cutflowName[3] = "Step_3";
-    cutflowName[4] = "Step_4";
-    cutflowName[5] = "bTagged Jet >= 1";
-    cutflowName[6] = "bTagged Jet >= 2";
-    cutflowName[7] = "bTagged Jet == 2";
-    cutflowName[8] = "Top-Recon.";
-    cutflowName[9] = "Top-Pt-Rewight";
-    cutflowName[10] = "Step_10";
+    cutflowName[0] = "Object selection + MET filter";
+    cutflowName[1] = "Num of lepton >= 2" ;
+    cutflowName[2] = "Third lepton veto";
+    cutflowName[3] = "Leading & subleading lepton pT cut";
+    cutflowName[4] = "Dilepton Mass cut & Lepton Scale factor";
+    cutflowName[5] = "MET cut";
+    cutflowName[6] = "Number of Jets cut";
+    cutflowName[7] = "Number of bjet cut";
+    cutflowName[8] = "none";
+    cutflowName[9] = "none";
+    cutflowName[10] = "none";
  
     pi = TMath::Pi();
     Start();
@@ -76,6 +77,7 @@ Analysis::~Analysis() {
         SSBCPVCal = nullptr;
         std::cout << "SSBCPVCal successfully deleted." << std::endl;
     }
+
     // Add other cleanup as needed for dynamically allocated objects
     std::cout << "Analysis destructor completed." << std::endl;
 }
@@ -123,6 +125,8 @@ void Analysis::InitBranches(const std::string &branchListFile) {
                 intSingles[branchName] = std::make_unique<TTreeReaderValue<Int_t>>(fReader, branchName.c_str());
             } else if (dataType == "UInt_t" && varType == "single") {
                 uintSingles[branchName] = std::make_unique<TTreeReaderValue<UInt_t>>(fReader, branchName.c_str());
+            } else if (dataType == "ULong64_t" && varType == "single") {
+                ulong64Singles[branchName] = std::make_unique<TTreeReaderValue<ULong64_t>>(fReader, branchName.c_str());
             } else if (dataType == "Float_t" && varType == "single") {
                 floatSingles[branchName] = std::make_unique<TTreeReaderValue<Float_t>>(fReader, branchName.c_str());
             } else if (dataType == "UChar_t" && varType == "single") { // New case for UChar_t single value
@@ -150,8 +154,6 @@ void Analysis::InitBranches(const std::string &branchListFile) {
     }
 }
 
-
-
 void Analysis::SetVariables() {
     std::cout << "Set varibles " << std::endl;
 
@@ -164,6 +166,7 @@ void Analysis::SetVariables() {
     /// Set Trigger List ///
     num_dleptrig = SSBConfReader->Size( "dileptrigger" );
     num_sleptrig = SSBConfReader->Size( "singleleptrigger" );
+    num_jetmettrig = SSBConfReader->Check("JetMETtrigger") ? SSBConfReader->Size("JetMETtrigger") : 0;
 
     ///
 
@@ -181,6 +184,14 @@ void Analysis::SetVariables() {
         std::string tmptrg = SSBConfReader->GetText("singleleptrigger",i+1);
         SLtrigName.push_back( removeSubstring(tmptrg,"_v") );
         trigName.push_back( removeSubstring(tmptrg,"_v") );
+    }
+
+    for (int i = 0; i < num_jetmettrig; ++i)
+    {
+        std::cout << SSBConfReader->GetText("JetMETtrigger", i+1) << std::endl;
+        std::string tmptrg = SSBConfReader->GetText("JetMETtrigger", i+1);
+        JetMETtrigName.push_back(removeSubstring(tmptrg, "_v"));
+        trigName.push_back(removeSubstring(tmptrg, "_v"));
     }
 
     for (int i = 0; i < trigName.size(); ++i){
@@ -292,6 +303,7 @@ void Analysis::SetVariables() {
     std::cout << "  apply MET XY correction: " << applyMETXY << std::endl;
 
     applyRochester = SSBConfReader->GetText("applyRochester");
+
     if (applyRochester == "DUMMY") {
             applyRochester = "False";
             std::cout << "[WARNING] applyRochester COULD NOT FIND CONFIGRUATION!! DEFALT IS False!!  " << applyRochester << std::endl;
@@ -376,10 +388,21 @@ void Analysis::SetObjectVariable() {
 
     /// Electron iso type
 
-    /// Electron ID
-    elecs_scbId = ucharVectors["Electron_cutBased"].get();
+    /// Electron ID (UL branch_list uses Int_t for Electron_cutBased in 2018; Run3 lists use UChar_t)
+    elecs_scbId_int = nullptr;
+    elecs_scbId = nullptr;
+    if (RunPeriod.Contains("2018")) {
+        elecs_scbId_int = intVectors["Electron_cutBased"].get();
+        if (!elecs_scbId_int) {
+            std::cerr << "Error: Electron_cutBased (Int_t) not bound for 2018 — check branch_list." << std::endl;
+        }
+    } else {
+        elecs_scbId = ucharVectors["Electron_cutBased"].get();
+        if (!elecs_scbId) {
+            std::cerr << "Error: Electron_cutBased (UChar_t) is nullptr!" << std::endl;
+        }
+    }
     if (TString(ElecId).Contains("SCBLoose")) {
-        //elecIdVariant = intVectors["Electron_cutBased"].get();
         eleid_scbcut = 2;
     } else if (TString(ElecId).Contains("SCBMedium")) {
         eleid_scbcut = 3;
@@ -464,9 +487,17 @@ void Analysis::SetObjectVariable() {
     ////////////////////////////
     /// Electron information ///
     ////////////////////////////
-    elecsveto_scbId = ucharVectors["Electron_cutBased"].get();
-    if (!ucharVectors["Electron_cutBased"].get()) {std::cerr <<"Error:  Electron_cutBased !! is nullptr! ub Electron information" <<std::endl;}
-    if (!elecsveto_scbId) std::cerr << "Error: elecsveto_scbId is nullptr! ub Electron information " << std::endl;
+    if (RunPeriod.Contains("2018")) {
+        elecsveto_scbId = nullptr;
+        if (!elecs_scbId_int) {
+            std::cerr << "Error: Electron_cutBased Int_t missing for veto electrons (2018)." << std::endl;
+        }
+    } else {
+        elecsveto_scbId = ucharVectors["Electron_cutBased"].get();
+        if (!elecsveto_scbId) {
+            std::cerr << "Error: elecsveto_scbId is nullptr! ub Electron information " << std::endl;
+        }
+    }
 
     if (TString(veto_elecid).Contains("SCBLoose")) {
         //elecIdVariant = intVectors["Electron_cutBased"].get();
@@ -796,6 +827,70 @@ void Analysis::SetObjectVariable() {
     //std::cout << "End of SetObjectVariable !" << std::endl;
 }
 
+int Analysis::electronCutBasedAt(int idx) const {
+    if (elecs_scbId_int) {
+        return elecs_scbId_int->At(idx);
+    }
+    if (elecs_scbId) {
+        return static_cast<int>(elecs_scbId->At(idx));
+    }
+    return -1;
+}
+
+int Analysis::pvNpvsGoodValue() const {
+    if (RunPeriod.Contains("2018")) {
+        auto it = intSingles.find("PV_npvsGood");
+        if (it != intSingles.end() && it->second) {
+            return **it->second;
+        }
+        return -1;
+    }
+    auto itC = ucharSingles.find("PV_npvsGood");
+    if (itC != ucharSingles.end() && itC->second) {
+        return static_cast<int>(**itC->second);
+    }
+    return -1;
+}
+
+int Analysis::electronTightChargeAt(int idx) const {
+    if (RunPeriod.Contains("2018")) {
+        auto it = intVectors.find("Electron_tightCharge");
+        if (it != intVectors.end() && it->second && idx < it->second->GetSize()) {
+            return it->second->At(idx);
+        }
+        return 0;
+    }
+    auto it = ucharVectors.find("Electron_tightCharge");
+    if (it != ucharVectors.end() && it->second && idx < it->second->GetSize()) {
+        return static_cast<int>((*it->second)[idx]);
+    }
+    return 0;
+}
+
+bool Analysis::jetHadronFlavourAvailable() const {
+    if (RunPeriod.Contains("2018")) {
+        auto it = intVectors.find("Jet_hadronFlavour");
+        return it != intVectors.end() && it->second && it->second->GetSize() > 0;
+    }
+    auto it = ucharVectors.find("Jet_hadronFlavour");
+    return it != ucharVectors.end() && it->second && it->second->GetSize() > 0;
+}
+
+int Analysis::jetHadronFlavourAt(int jet_idx) const {
+    if (RunPeriod.Contains("2018")) {
+        auto it = intVectors.find("Jet_hadronFlavour");
+        if (it == intVectors.end() || !it->second || jet_idx < 0 || jet_idx >= it->second->GetSize()) {
+            return 0;
+        }
+        return it->second->At(jet_idx);
+    }
+    auto it = ucharVectors.find("Jet_hadronFlavour");
+    if (it == ucharVectors.end() || !it->second || jet_idx < 0 || jet_idx >= it->second->GetSize()) {
+        return 0;
+    }
+    return static_cast<int>(it->second->At(jet_idx));
+}
+
 int number_pos_EventWeight = 0;
 int number_neg_EventWeight = 0;
 
@@ -827,11 +922,11 @@ void Analysis::Loop() {
         
 
         evt_weight_ = 1.;
-        MCSFApply();
+        //MCSFApply();
         
         //std::cout << "event weight_MCSF : " << evt_weight_ << std::endl;
 
-        GenWeightApply();
+        //GenWeightApply();
 
         //std::cout << "event weight_GenWeight : " << evt_weight_ << std::endl;
 
@@ -842,6 +937,7 @@ void Analysis::Loop() {
         //L1PreFireApply();
 
         SetObjectVariable(); //
+
         // Generator weight +/- count: must be before any channel-specific selection (LeptonSelector)
         if ( Gen_EventWeight < 0 ) {
             FillHisto(h_test_minus, Gen_EventWeight);
@@ -872,7 +968,7 @@ void Analysis::Loop() {
         }
 
         //PUIDSFApply();  // Apply PUID event weight using collected information
- 
+        
         JetOrder(); 
         bJetSelector(); 
         METDefiner();
@@ -885,14 +981,20 @@ void Analysis::Loop() {
         // Noise (MET) Filter //
         if ( METFilterAPP() == false ) {continue;}
         // Trigger Requirement //
-        if ( Trigger() == false ) {continue;}
-  
-        // Good Primary Vertex Selection //
-        if (ucharSingles["PV_npvsGood"] && **ucharSingles["PV_npvsGood"] < 1) {
-            continue;
-        }
+        //if ( Trigger() == false ) {continue;}
 
-        num_pv =  **ucharSingles["PV_npvsGood"]; 
+        auto FillMuElStepHistos = [&](int idx) {
+            if (!TString(Decaymode).Contains("muel")) return;
+            if (muons.empty() || elecs.empty()) return;
+            FillHisto( h_MuPt[idx],  muons[0].Pt(),  evt_weight_ );
+            FillHisto( h_MuEta[idx], muons[0].Eta(), evt_weight_ );
+            FillHisto( h_MuPhi[idx], muons[0].Phi(), evt_weight_ );
+            FillHisto( h_ElPt[idx],  elecs[0].Pt(),  evt_weight_ );
+            FillHisto( h_ElEta[idx], elecs[0].Eta(), evt_weight_ );
+            FillHisto( h_ElPhi[idx], elecs[0].Phi(), evt_weight_ );
+        };
+
+        num_pv = pvNpvsGoodValue();
 
         FillHisto( h_DiLepMass[0], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[0],     num_pv, evt_weight_ );
@@ -902,35 +1004,13 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[0] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[0],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[0],    (Lep2).Phi() , evt_weight_ );
+        FillMuElStepHistos(0);
         FillHisto( h_METpt[0]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[0]  ,   Met.Phi()  , evt_weight_ );
         FillHisto( h_Num_Jets[0]  , v_jet_idx.size(), evt_weight_ );
         FillHisto( h_Num_bJets[0], v_bjet_idx.size(), evt_weight_ ); 
 
-        //std::cout << "**ucharSingles[PV_npvsGood] : " << **ucharSingles["PV_npvsGood"] <<std::endl;
-        //std::cout << "evt_weight_ : " << evt_weight_ << std::endl;
-        //FillHisto( h_Num_PV[0]    , **ucharSingles["PV_npvsGood"] );
-
         if ( NumIsoLeptons(2) == false ) {continue;}
-
-        if (ThirdLeptonVeto() == false ) {continue;}
-
-        //std::cout << "after ThirdLeptons : " << std::endl;
-        if (LeptonsPtAddtional() == false ) {continue;}
-
-        if (DiLeptonMassCut() == false) {continue;}
-
-        //LeptonSFApply();
-
-        //std::cout << "event weight_LeptonSF : " << evt_weight_ << std::endl;
-
-        //TriggerSFApply();
-
-        //std::cout << "event weight_TriggerSF : " << evt_weight_ << std::endl;
-
-        /// Step 1 ///
-        //std::cout << "evt_weight :" << evt_weight_ << std::endl;
-        //num_pv =  **ucharSingles["PV_npvsGood"]; 
 
         FillHisto( h_DiLepMass[1], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[1],     num_pv, evt_weight_ );
@@ -940,6 +1020,7 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[1] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[1],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[1],    (Lep2).Phi() , evt_weight_ );
+        FillMuElStepHistos(1);
         FillHisto( h_METpt[1]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[1]  ,   Met.Phi()  , evt_weight_ );
         FillHisto( h_Num_Jets[1]  , v_jet_idx.size(), evt_weight_ );
@@ -965,7 +1046,7 @@ void Analysis::Loop() {
             FillHisto( h_bJet2phi[1], bjet2.Phi() , evt_weight_ );
         }
 
-        if (ZVetoCut() == false) {continue;}
+        //if (ThirdLeptonVeto() == false ) {continue;}
 
         FillHisto( h_DiLepMass[2], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[2],     num_pv, evt_weight_ );
@@ -975,10 +1056,11 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[2] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[2],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[2],    (Lep2).Phi() , evt_weight_ );
+        FillMuElStepHistos(2);
         FillHisto( h_METpt[2]   ,   Met.Pt()  , evt_weight_ );
         FillHisto( h_METphi[2]  ,   Met.Phi()  , evt_weight_ );
         FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );
-        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ );   
+        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ );
         FillHisto( h_Jet1pt[2] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[2],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[2],    (Jet1).Phi() , evt_weight_ );
@@ -986,7 +1068,7 @@ void Analysis::Loop() {
         FillHisto( h_Jet2eta[2],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[2],    (Jet2).Phi() , evt_weight_ );
         FillHisto( h_Num_Jets[2]  , v_jet_idx.size(), evt_weight_ );
-        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ );     
+        FillHisto( h_Num_bJets[2], v_bjet_idx.size(), evt_weight_ ); 
         if (!v_bjet_idx.empty()) {
             const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
             FillHisto( h_bJet1pt[2] , bjet1.Pt()  , evt_weight_ );
@@ -999,8 +1081,9 @@ void Analysis::Loop() {
             FillHisto( h_bJet2eta[2], bjet2.Eta() , evt_weight_ );
             FillHisto( h_bJet2phi[2], bjet2.Phi() , evt_weight_ );
         }
-        
-        if (NumJetCut(v_jet_idx) == false) {continue;}
+
+        //std::cout << "after ThirdLeptons : " << std::endl;
+        if (LeptonsPtAddtional() == false ) {continue;}
 
         FillHisto( h_DiLepMass[3], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[3],     num_pv, evt_weight_ );
@@ -1010,8 +1093,11 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[3] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[3],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[3],    (Lep2).Phi() , evt_weight_ );
-
-        //if ((Jet2).Pt() < 30.) printf("jet2pt %lf eta %lf \n",Jet2.Pt(), Jet2.Eta());//std::cout << "Wrong! " << Jet2.Pt() << std::endl;
+        FillMuElStepHistos(3);
+        FillHisto( h_METpt[3]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[3]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[3]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[3], v_bjet_idx.size(), evt_weight_ );
         FillHisto( h_Jet1pt[3] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[3],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[3],    (Jet1).Phi() , evt_weight_ );
@@ -1019,7 +1105,7 @@ void Analysis::Loop() {
         FillHisto( h_Jet2eta[3],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[3],    (Jet2).Phi() , evt_weight_ );
         FillHisto( h_Num_Jets[3]  , v_jet_idx.size(), evt_weight_ );
-        FillHisto( h_Num_bJets[3], v_bjet_idx.size(), evt_weight_ );       
+        FillHisto( h_Num_bJets[3], v_bjet_idx.size(), evt_weight_ ); 
         if (!v_bjet_idx.empty()) {
             const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
             FillHisto( h_bJet1pt[3] , bjet1.Pt()  , evt_weight_ );
@@ -1033,10 +1119,9 @@ void Analysis::Loop() {
             FillHisto( h_bJet2phi[3], bjet2.Phi() , evt_weight_ );
         }
 
-        FillHisto( h_METpt[3]   ,   Met.Pt()  , evt_weight_ );
-        FillHisto( h_METphi[3]  ,   Met.Phi()  , evt_weight_ );
+        if (DiLeptonMassCut() == false) {continue;}
 
-        if (METCut(Met) == false) {continue;}
+        LeptonSFApply();
 
         FillHisto( h_DiLepMass[4], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[4],     num_pv, evt_weight_ );
@@ -1046,7 +1131,11 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[4] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[4],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[4],    (Lep2).Phi() , evt_weight_ );
-
+        FillMuElStepHistos(4);
+        FillHisto( h_METpt[4]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[4]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[4]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[4], v_bjet_idx.size(), evt_weight_ );
         FillHisto( h_Jet1pt[4] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[4],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[4],    (Jet1).Phi() , evt_weight_ );
@@ -1054,7 +1143,7 @@ void Analysis::Loop() {
         FillHisto( h_Jet2eta[4],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[4],    (Jet2).Phi() , evt_weight_ );
         FillHisto( h_Num_Jets[4]  , v_jet_idx.size(), evt_weight_ );
-        FillHisto( h_Num_bJets[4], v_bjet_idx.size(), evt_weight_ );      
+        FillHisto( h_Num_bJets[4], v_bjet_idx.size(), evt_weight_ ); 
         if (!v_bjet_idx.empty()) {
             const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
             FillHisto( h_bJet1pt[4] , bjet1.Pt()  , evt_weight_ );
@@ -1068,14 +1157,7 @@ void Analysis::Loop() {
             FillHisto( h_bJet2phi[4], bjet2.Phi() , evt_weight_ );
         }
 
-        FillHisto( h_METpt[4]   ,   Met.Pt()  , evt_weight_ );
-        FillHisto( h_METphi[4]  ,   Met.Phi()  , evt_weight_ );
-        
-        //BTaggingSFApply();
-
-        //std::cout << "event weight_BTaggingSF : " << evt_weight_ << std::endl;
-
-        if (NumbJetCut(v_bjet_idx) == false) {continue;}
+        if (METCut(Met) == false) {continue;}
 
         FillHisto( h_DiLepMass[5], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
         FillHisto( h_Num_PV[5],     num_pv, evt_weight_ );
@@ -1085,15 +1167,19 @@ void Analysis::Loop() {
         FillHisto( h_Lep2pt[5] ,    (Lep2).Pt()  , evt_weight_ );
         FillHisto( h_Lep2eta[5],    (Lep2).Eta() , evt_weight_ );
         FillHisto( h_Lep2phi[5],    (Lep2).Phi() , evt_weight_ );
-
+        FillMuElStepHistos(5);
+        FillHisto( h_METpt[5]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[5]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[5], v_bjet_idx.size(), evt_weight_ );
         FillHisto( h_Jet1pt[5] ,    (Jet1).Pt()  , evt_weight_ );
         FillHisto( h_Jet1eta[5],    (Jet1).Eta() , evt_weight_ );
         FillHisto( h_Jet1phi[5],    (Jet1).Phi() , evt_weight_ );
         FillHisto( h_Jet2pt[5] ,    (Jet2).Pt()  , evt_weight_ );
         FillHisto( h_Jet2eta[5],    (Jet2).Eta() , evt_weight_ );
         FillHisto( h_Jet2phi[5],    (Jet2).Phi() , evt_weight_ );
-        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ ); 
-        FillHisto( h_Num_bJets[5], v_bjet_idx.size(), evt_weight_ );      
+        FillHisto( h_Num_Jets[5]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[5], v_bjet_idx.size(), evt_weight_ ); 
         if (!v_bjet_idx.empty()) {
             const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
             FillHisto( h_bJet1pt[5] , bjet1.Pt()  , evt_weight_ );
@@ -1107,93 +1193,159 @@ void Analysis::Loop() {
             FillHisto( h_bJet2phi[5], bjet2.Phi() , evt_weight_ );
         }
 
-        FillHisto( h_METpt[5]   ,   Met.Pt()  , evt_weight_ );
-        FillHisto( h_METphi[5]  ,   Met.Phi()  , evt_weight_ );
-        SetUpKINObs();
-        if (isKinSol)
-        {
-            FillHisto( h_Lep1pt[8] , Lep1.Pt() , evt_weight_ );
-            FillHisto( h_Lep2pt[8] , Lep2.Pt() , evt_weight_ );
-            FillHisto( h_Lep1eta[8], Lep1.Eta(), evt_weight_ );
-            FillHisto( h_Lep2eta[8], Lep2.Eta(), evt_weight_ );
-            FillHisto( h_Lep1phi[8], Lep1.Phi(), evt_weight_ );
-            FillHisto( h_Lep2phi[8], Lep2.Phi(), evt_weight_ );
+        //if (NumJetCut(v_jet_idx) == false) {continue;}
 
-            FillHisto( h_Jet1pt[8] , Jet1.Pt() , evt_weight_ );
-            FillHisto( h_Jet2pt[8] , Jet2.Pt() , evt_weight_ );
-            FillHisto( h_Jet1eta[8], Jet1.Eta(), evt_weight_ );
-            FillHisto( h_Jet2eta[8], Jet2.Eta(), evt_weight_ );
-            FillHisto( h_Jet1phi[8], Jet1.Phi(), evt_weight_ );
-            FillHisto( h_Jet2phi[8], Jet2.Phi(), evt_weight_ );
-            FillHisto( h_METpt[8]  , Met.Pt()  , evt_weight_ );
-            FillHisto( h_METphi[8] , Met.Phi() , evt_weight_ );
-            //FillHisto( h_HT[8]     , AllJetpt   , evt_weight_);
-            
-            FillHisto( h_DiLepMass[8], ( Lep1+Lep2 ).M(), evt_weight_ );
-            
-            FillHisto( h_Num_PV[8]   , num_pv          ,  evt_weight_ );
-            FillHisto( h_Num_Jets[8] , v_jet_idx.size(),  evt_weight_ );
-            FillHisto( h_Num_bJets[8], v_bjet_idx.size(), evt_weight_ );
-            if ( Top.Pt() > AnTop.Pt() ) { Top1 = Top; Top2 = AnTop; }
-            else { Top1 = AnTop; Top2 = Top; }
-            
-            FillHisto( h_TopMass      , Top.M()         , evt_weight_ );
-            FillHisto( h_Toppt        , Top.Pt()        , evt_weight_ );
-            FillHisto( h_Topphi       , Top.Phi()       , evt_weight_ );
-            FillHisto( h_TopRapidity  , Top.Rapidity()  , evt_weight_ );
-            FillHisto( h_TopEnergy    , Top.Energy()    , evt_weight_ );
-            FillHisto( h_AnTopMass    , AnTop.M()       , evt_weight_ );
-            FillHisto( h_AnToppt      , AnTop.Pt()      , evt_weight_ );
-            FillHisto( h_AnTopphi     , AnTop.Phi()     , evt_weight_ );
-            FillHisto( h_AnTopRapidity, AnTop.Rapidity(), evt_weight_ );
-            FillHisto( h_AnTopEnergy  , AnTop.Energy()  , evt_weight_ );
-            
-            FillHisto( h_W1Mass , W1.M()  , evt_weight_ );
-            FillHisto( h_W2Mass , W2.M()  , evt_weight_ );
-            
-            FillHisto( h_W1Mt , W1.Mt()  , evt_weight_ );
-            FillHisto( h_W2Mt , W2.Mt()  , evt_weight_ );
-            
-            //FillHisto( h_bJet1Energy , bJet1.Energy()  , evt_weight_ );
-            //FillHisto( h_bJet2Energy , bJet2.Energy()  , evt_weight_ );
-            
-            FillHisto( h_bJetEnergy   , bJet.Energy()   , evt_weight_ );
-            FillHisto( h_AnbJetEnergy , AnbJet.Energy() , evt_weight_ );
-            FillHisto( h_bJetPt       , bJet.Pt()   , evt_weight_ );
-            FillHisto( h_AnbJetPt     , AnbJet.Pt() , evt_weight_ );
-            FillHisto( h_LepEnergy    , Lep.Energy()    , evt_weight_ );
-            FillHisto( h_AnLepEnergy  , AnLep.Energy()  , evt_weight_ );
-            FillHisto( h_NuEnergy     , Nu.Energy()     , evt_weight_ );
-            FillHisto( h_AnNuEnergy   , AnNu.Energy()   , evt_weight_ );
-
-            std::vector<double> v_recocp_O;
-            v_recocp_O.push_back( SSBCPVCal->getO1Vari( Top, AnTop, AnLep, Lep )  );
-            v_recocp_O.push_back( SSBCPVCal->getO2Vari( Top, AnTop, bJet, AnbJet ) );
-            v_recocp_O.push_back( SSBCPVCal->getO3Vari( bJet, AnbJet, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO4Vari( AnbJet, bJet, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO5Vari( bJet , AnbJet, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO6Vari( bJet , AnbJet, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO7Vari( Top , AnTop, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO8Vari( Top, AnTop, bJet , AnbJet, AnLep, Lep ) );
-            v_recocp_O.push_back( SSBCPVCal->getO9Vari( bJet , AnbJet, AnLep, Lep )  );
-            v_recocp_O.push_back( SSBCPVCal->getO10Vari( bJet , AnbJet, AnLep, Lep )  );
-            v_recocp_O.push_back( SSBCPVCal->getO11Vari( bJet , AnbJet, AnLep, Lep )  );
-            v_recocp_O.push_back( SSBCPVCal->getO12Vari( bJet , AnbJet, AnLep, Lep )  );
-            v_recocp_O.push_back( SSBCPVCal->getO13Vari( bJet , AnbJet, AnLep, Lep )  );
-
-            for (int i = 0; i < v_recocp_O.size(); ++ i)
-            {
-               FillHisto( h_Reco_CPO_[i], v_recocp_O[i] , evt_weight_ );
-               FillHisto( h_Reco_CPO_ReRange_[i], v_recocp_O[i] , evt_weight_ );
-            } 
-
-                  
- 
+        FillHisto( h_DiLepMass[6], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[6],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[6] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[6],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[6],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[6] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[6],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[6],    (Lep2).Phi() , evt_weight_ );
+        FillMuElStepHistos(6);
+        FillHisto( h_METpt[6]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[6]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[6]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[6], v_bjet_idx.size(), evt_weight_ );
+        FillHisto( h_Jet1pt[6] ,    (Jet1).Pt()  , evt_weight_ );
+        FillHisto( h_Jet1eta[6],    (Jet1).Eta() , evt_weight_ );
+        FillHisto( h_Jet1phi[6],    (Jet1).Phi() , evt_weight_ );
+        FillHisto( h_Jet2pt[6] ,    (Jet2).Pt()  , evt_weight_ );
+        FillHisto( h_Jet2eta[6],    (Jet2).Eta() , evt_weight_ );
+        FillHisto( h_Jet2phi[6],    (Jet2).Phi() , evt_weight_ );
+        FillHisto( h_Num_Jets[6]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[6], v_bjet_idx.size(), evt_weight_ ); 
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[6] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[6], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[6], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[6] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[6], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[6], bjet2.Phi() , evt_weight_ );
         }
 
+        if (NumbJetCut(v_bjet_idx) == false) {continue;}
+
+        FillHisto( h_DiLepMass[7], ( (Lep1)+(Lep2) ).M(), evt_weight_ );
+        FillHisto( h_Num_PV[7],     num_pv, evt_weight_ );
+        FillHisto( h_Lep1pt[7] ,    (Lep1).Pt()  , evt_weight_ );
+        FillHisto( h_Lep1eta[7],    (Lep1).Eta() , evt_weight_ );
+        FillHisto( h_Lep1phi[7],    (Lep1).Phi() , evt_weight_ );
+        FillHisto( h_Lep2pt[7] ,    (Lep2).Pt()  , evt_weight_ );
+        FillHisto( h_Lep2eta[7],    (Lep2).Eta() , evt_weight_ );
+        FillHisto( h_Lep2phi[7],    (Lep2).Phi() , evt_weight_ );
+        FillMuElStepHistos(7);
+        FillHisto( h_METpt[7]   ,   Met.Pt()  , evt_weight_ );
+        FillHisto( h_METphi[7]  ,   Met.Phi()  , evt_weight_ );
+        FillHisto( h_Num_Jets[7]  , v_jet_idx.size(), evt_weight_ );
+        FillHisto( h_Num_bJets[7], v_bjet_idx.size(), evt_weight_ ); 
+        if (!v_bjet_idx.empty()) {
+            const TLorentzVector& bjet1 = jets[v_bjet_idx[0]];
+            FillHisto( h_bJet1pt[7] , bjet1.Pt()  , evt_weight_ );
+            FillHisto( h_bJet1eta[7], bjet1.Eta() , evt_weight_ );
+            FillHisto( h_bJet1phi[7], bjet1.Phi() , evt_weight_ );
+        }
+        if (v_bjet_idx.size() > 1) {
+            const TLorentzVector& bjet2 = jets[v_bjet_idx[1]];
+            FillHisto( h_bJet2pt[7] , bjet2.Pt()  , evt_weight_ );
+            FillHisto( h_bJet2eta[7], bjet2.Eta() , evt_weight_ );
+            FillHisto( h_bJet2phi[7], bjet2.Phi() , evt_weight_ );
+        }
+
+        // --- Trigger Efficiency Calculation (after full selection) ---
+        bool pass_jetmet_trig = SelTrigger(JetMETtrigName);
+        bool pass_lep_trig    = SelTrigger(DLtrigName) || SelTrigger(SLtrigName);
+        const bool isJetLT3   = (v_jet_idx.size() < 3);
+        const bool isJetGE3   = !isJetLT3;
+        const bool isPVLT30   = (num_pv < 30);
+        const bool isPVGE30   = !isPVLT30;
+
+        auto FillTrigEffHistos = [&](int idx) {
+            FillHisto( h2_TrigEff_Lep1ptLep2pt[idx], Lep1.Pt(), Lep2.Pt(), evt_weight_ );
+            FillHisto( h_TrigEff_Lep1pt[idx],    Lep1.Pt(),  evt_weight_ );
+            FillHisto( h_TrigEff_Lep2pt[idx],    Lep2.Pt(),  evt_weight_ );
+            FillHisto( h_TrigEff_Lep1eta[idx],   Lep1.Eta(), evt_weight_ );
+            FillHisto( h_TrigEff_Lep2eta[idx],   Lep2.Eta(), evt_weight_ );
+            FillHisto( h_TrigEff_Lep1phi[idx],   Lep1.Phi(), evt_weight_ );
+            FillHisto( h_TrigEff_Lep2phi[idx],   Lep2.Phi(), evt_weight_ );
+            if (TString(Decaymode).Contains("muel") && muons.size() > 0 && elecs.size() > 0) {
+                FillHisto( h2_TrigEff_ElPtMuPt[idx],   elecs[0].Pt(),  muons[0].Pt(),  evt_weight_ );
+                FillHisto( h2_TrigEff_ElEtaMuEta[idx], elecs[0].Eta(), muons[0].Eta(), evt_weight_ );
+                FillHisto( h2_TrigEff_ElPhiMuPhi[idx], elecs[0].Phi(), muons[0].Phi(), evt_weight_ );
+                FillHisto( h_TrigEff_MuPt[idx],   muons[0].Pt(),  evt_weight_ );
+                FillHisto( h_TrigEff_ElPt[idx],   elecs[0].Pt(),  evt_weight_ );
+                FillHisto( h_TrigEff_MuEta[idx],  muons[0].Eta(), evt_weight_ );
+                FillHisto( h_TrigEff_ElEta[idx],  elecs[0].Eta(), evt_weight_ );
+                FillHisto( h_TrigEff_MuPhi[idx],  muons[0].Phi(), evt_weight_ );
+                FillHisto( h_TrigEff_ElPhi[idx],  elecs[0].Phi(), evt_weight_ );
+            }
+            FillHisto( h_TrigEff_Jet1pt[idx],    Jet1.Pt(),  evt_weight_ );
+            FillHisto( h_TrigEff_Jet2pt[idx],    Jet2.Pt(),  evt_weight_ );
+            FillHisto( h_TrigEff_Jet1eta[idx],   Jet1.Eta(), evt_weight_ );
+            FillHisto( h_TrigEff_Jet2eta[idx],   Jet2.Eta(), evt_weight_ );
+            FillHisto( h_TrigEff_Jet1phi[idx],   Jet1.Phi(), evt_weight_ );
+            FillHisto( h_TrigEff_Jet2phi[idx],   Jet2.Phi(), evt_weight_ );
+            if (!v_bjet_idx.empty()) {
+                const TLorentzVector& bj1 = jets[v_bjet_idx[0]];
+                FillHisto( h_TrigEff_bJet1pt[idx],  bj1.Pt(),  evt_weight_ );
+                FillHisto( h_TrigEff_bJet1eta[idx], bj1.Eta(), evt_weight_ );
+                FillHisto( h_TrigEff_bJet1phi[idx], bj1.Phi(), evt_weight_ );
+            }
+            if (v_bjet_idx.size() > 1) {
+                const TLorentzVector& bj2 = jets[v_bjet_idx[1]];
+                FillHisto( h_TrigEff_bJet2pt[idx],  bj2.Pt(),  evt_weight_ );
+                FillHisto( h_TrigEff_bJet2eta[idx], bj2.Eta(), evt_weight_ );
+                FillHisto( h_TrigEff_bJet2phi[idx], bj2.Phi(), evt_weight_ );
+            }
+            FillHisto( h_TrigEff_METpt[idx],      Met.Pt(),             evt_weight_ );
+            FillHisto( h_TrigEff_METphi[idx],     Met.Phi(),            evt_weight_ );
+            FillHisto( h_TrigEff_DiLepMass[idx],  (Lep1 + Lep2).M(),   evt_weight_ );
+            FillHisto( h_TrigEff_Num_PV[idx],     num_pv,               evt_weight_ );
+            FillHisto( h_TrigEff_Num_Jets[idx],   v_jet_idx.size(),     evt_weight_ );
+            FillHisto( h_TrigEff_Num_bJets[idx],  v_bjet_idx.size(),    evt_weight_ );
+        };
+
+        // [0] Denominator: JetMET trigger pass
+        if (pass_jetmet_trig) {
+            FillTrigEffHistos(0);
+            // [1] Numerator: Lepton trigger (Dilepton OR SingleLepton) pass
+            if (pass_lep_trig) {
+                FillTrigEffHistos(1);
+            }
+        }
+
+        if (pass_lep_trig) {
+            FillTrigEffHistos(2);
+        }
+
+        // Jet topology regions: <3 / >=3
+        if (isJetLT3 && pass_jetmet_trig) {
+            FillTrigEffHistos(3); // JetLT3_Den_JetMET
+            if (pass_lep_trig) FillTrigEffHistos(4); // JetLT3_Num_LepTrig
+        }
+        if (isJetGE3 && pass_jetmet_trig) {
+            FillTrigEffHistos(5); // JetGE3_Den_JetMET
+            if (pass_lep_trig) FillTrigEffHistos(6); // JetGE3_Num_LepTrig
+        }
+
+        // PV topology regions: <30 / >=30
+        if (isPVLT30 && pass_jetmet_trig) {
+            FillTrigEffHistos(7); // PVLT30_Den_JetMET
+            if (pass_lep_trig) FillTrigEffHistos(8); // PVLT30_Num_LepTrig
+        }
+        if (isPVGE30 && pass_jetmet_trig) {
+            FillTrigEffHistos(9); // PVGE30_Den_JetMET
+            if (pass_lep_trig) FillTrigEffHistos(10); // PVGE30_Num_LepTrig
+        }
 
     }// end of event iteration //
     std::cout << "End Loop !!" << std::endl;
+    
 }
 
 
@@ -1281,8 +1433,6 @@ bool Analysis::Trigger()
         if (TString(FileName_).Contains("Muon0") || TString(FileName_).Contains("Muon1")) {
             bool pass_single = SelTrigger(SLtrigName);
             bool pass_double = SelTrigger(DLtrigName);
-            //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
-            //trigpass = pass_single || pass_double;
             trigpass = pass_single || pass_double;
             return trigpass;
          } else {
@@ -1454,8 +1604,9 @@ bool Analysis::Trigger()
         if (TString(FileName_).Contains("Muon") && !TString(FileName_).Contains("MuonEG")) {
             bool pass_single = SelTrigger(SLtrigName);
             bool pass_double = SelTrigger(DLtrigName);
+            bool pass_jetmet = SelTrigger(JetMETtrigName);
             //trigpass = (pass_single && !pass_double) || (!pass_single && pass_double);
-            trigpass = pass_single || pass_double;
+            trigpass = pass_single || pass_double || pass_jetmet;
             return trigpass;
          } else {
             std::cout << "[Trigger] Check FileName_ for dimuon in 2023 : FileName_ : " << FileName_ << std::endl;
@@ -1872,12 +2023,29 @@ void Analysis::LeptonSelector() {
     auto elecCharge = [](int id) {
       return id > 0; // Electron_tightCharge check
     };
-    auto getElectronTightCharge = [&](int idx) {
-      if (ucharVectors.count("Electron_tightCharge") && ucharVectors["Electron_tightCharge"] &&
-          idx < ucharVectors["Electron_tightCharge"]->GetSize()) {
-        return static_cast<int>((*ucharVectors["Electron_tightCharge"])[idx]);
+    auto getElectronTightCharge = [&](int idx) { return electronTightChargeAt(idx); };
+
+    // Helper: sort muons (and v_muon_idx) by corrected pT (descending) in
+    // lockstep so that the parallel-array invariant
+    // (muons[k] <-> v_muon_idx[k]) is preserved.
+    auto sortMuonsByPt = [&]() {
+      if (muons.size() != v_muon_idx.size() || muons.size() <= 1) return;
+
+      std::vector<size_t> order(muons.size());
+      std::iota(order.begin(), order.end(), 0);
+      std::sort(order.begin(), order.end(),
+                [&](size_t a, size_t b) { return muons[a].Pt() > muons[b].Pt(); });
+
+      std::vector<TLorentzVector> sorted_muons;
+      std::vector<int> sorted_v_muon_idx;
+      sorted_muons.reserve(muons.size());
+      sorted_v_muon_idx.reserve(v_muon_idx.size());
+      for (size_t k : order) {
+          sorted_muons.push_back(muons[k]);
+          sorted_v_muon_idx.push_back(v_muon_idx[k]);
       }
-      return 0;
+      muons = std::move(sorted_muons);
+      v_muon_idx = std::move(sorted_v_muon_idx);
     };
 
     // Dimuon channel
@@ -1914,7 +2082,7 @@ void Analysis::LeptonSelector() {
         for (int i = 0; i < nel; ++i) {
             // Skip electrons that don't pass selection criteria
             if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
-                !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
+                !elecSCBId(electronCutBasedAt(i), eleid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
                 !(elecCharge(getElectronTightCharge(i)))) {
@@ -1958,6 +2126,11 @@ void Analysis::LeptonSelector() {
             muons.push_back(pre_muons.at(i));
         }
 
+        // Sort muons by corrected pT (descending) BEFORE electron filtering
+        // so that the opposite-sign requirement below uses the leading-pT
+        // muon's charge instead of the first NANOAOD-ordered muon.
+        sortMuonsByPt();
+
         // Process electrons
         Int_t nel = elecs_pt->GetSize();
         v_electron_idx.clear();
@@ -1967,7 +2140,7 @@ void Analysis::LeptonSelector() {
             for (int i = 0; i < nel; ++i) {
                 // Skip electrons that don't pass selection criteria
                 if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
-                    !elecSCBId(elecs_scbId->At(i), eleid_scbcut) ||
+                    !elecSCBId(electronCutBasedAt(i), eleid_scbcut) ||
                    (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                    fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
                   !(elecCharge(getElectronTightCharge(i))) ||
@@ -1975,7 +2148,7 @@ void Analysis::LeptonSelector() {
                     continue;
                 }
         
-                // Only select electrons with charge opposite to the first selected muon
+                // Only select electrons with charge opposite to the leading-pT muon
                 if ((*intVectors["Muon_charge"])[v_muon_idx[0]] != (*intVectors["Electron_charge"])[i]) {
                     // Add selected electron
                     v_electron_idx.push_back(i);
@@ -1987,6 +2160,31 @@ void Analysis::LeptonSelector() {
     }
     else {
         std::cerr << "Lepton Selection error" << std::endl;
+    }
+
+    // Sort selected muons by corrected pT so that muons[0] is the leading muon.
+    // For dimuon this is the only sort; for muel this is a no-op (already
+    // sorted before electron filtering above).
+    sortMuonsByPt();
+
+    // Sort selected electrons by pT (descending) in lockstep with v_electron_idx
+    // for the same reason as muons above.
+    if (elecs.size() == v_electron_idx.size() && elecs.size() > 1) {
+        std::vector<size_t> order(elecs.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(),
+                  [&](size_t a, size_t b) { return elecs[a].Pt() > elecs[b].Pt(); });
+
+        std::vector<TLorentzVector> sorted_elecs;
+        std::vector<int> sorted_v_electron_idx;
+        sorted_elecs.reserve(elecs.size());
+        sorted_v_electron_idx.reserve(v_electron_idx.size());
+        for (size_t k : order) {
+            sorted_elecs.push_back(elecs[k]);
+            sorted_v_electron_idx.push_back(v_electron_idx[k]);
+        }
+        elecs = std::move(sorted_elecs);
+        v_electron_idx = std::move(sorted_v_electron_idx);
     }
 
     // Select veto leptons for jet cleaning & third lepton veto
@@ -2172,23 +2370,64 @@ void Analysis::MakeMuonCollection() {
                                                         muon.Pt(), muon.Eta(), muon.Phi(), 0, 0);
             }
             else {
-                // MC correction - check all required branches exist
-                auto Muon_genId = shortVectors["Muon_genPartIdx"].get();
+                // MC Rochester: UL2018 branch_list uses Int_t for Muon_genPartIdx / Muon_nTrackerLayers
+                // (intVectors). Older code used shortVectors / ucharVectors → nullptr on UL2018.
                 auto GenPts = floatVectors["GenPart_pt"].get();
-                auto numberOfLayers = ucharVectors["Muon_nTrackerLayers"].get();
+                TTreeReaderArray<Int_t>* muon_gen_idx_i = nullptr;
+                TTreeReaderArray<Short_t>* muon_gen_idx_s = nullptr;
+                TTreeReaderArray<Int_t>* muon_nlayers_i = nullptr;
+                TTreeReaderArray<UChar_t>* muon_nlayers_uc = nullptr;
 
-                if (!Muon_genId || !GenPts || !numberOfLayers) {
+                if (RunPeriod.Contains("2018")) {
+                    auto gi = intVectors.find("Muon_genPartIdx");
+                    if (gi != intVectors.end() && gi->second) {
+                        muon_gen_idx_i = gi->second.get();
+                    }
+                    auto nl = intVectors.find("Muon_nTrackerLayers");
+                    if (nl != intVectors.end() && nl->second) {
+                        muon_nlayers_i = nl->second.get();
+                    }
+                } else {
+                    auto gs = shortVectors.find("Muon_genPartIdx");
+                    if (gs != shortVectors.end() && gs->second) {
+                        muon_gen_idx_s = gs->second.get();
+                    }
+                    if (!muon_gen_idx_s) {
+                        auto gi = intVectors.find("Muon_genPartIdx");
+                        if (gi != intVectors.end() && gi->second) {
+                            muon_gen_idx_i = gi->second.get();
+                        }
+                    }
+                    auto nuc = ucharVectors.find("Muon_nTrackerLayers");
+                    if (nuc != ucharVectors.end() && nuc->second) {
+                        muon_nlayers_uc = nuc->second.get();
+                    }
+                    if (!muon_nlayers_uc) {
+                        auto nli = intVectors.find("Muon_nTrackerLayers");
+                        if (nli != intVectors.end() && nli->second) {
+                            muon_nlayers_i = nli->second.get();
+                        }
+                    }
+                }
+
+                const bool have_gen = (muon_gen_idx_i != nullptr) || (muon_gen_idx_s != nullptr);
+                const bool have_layers = (muon_nlayers_i != nullptr) || (muon_nlayers_uc != nullptr);
+
+                if (!have_gen || !GenPts || !have_layers) {
                     std::cerr << "ERROR: Required MC branches for Rochester correction not available!" << std::endl;
-                    std::cerr << "Muon_genPartIdx: " << (Muon_genId ? "OK" : "NULL") << std::endl;
+                    std::cerr << "Muon_genPartIdx: "
+                              << (have_gen ? "OK" : "NULL") << std::endl;
                     std::cerr << "GenPart_pt: " << (GenPts ? "OK" : "NULL") << std::endl;
-                    std::cerr << "Muon_nTrackerLayers: " << (numberOfLayers ? "OK" : "NULL") << std::endl;
+                    std::cerr << "Muon_nTrackerLayers: " << (have_layers ? "OK" : "NULL") << std::endl;
                     pre_muons.push_back(muon);
                     continue;
                 }
 
-                int GenID = Muon_genId->At(imu);
+                int GenID = muon_gen_idx_i ? muon_gen_idx_i->At(imu)
+                                          : static_cast<int>(muon_gen_idx_s->At(imu));
                 double GenPt = (GenID >= 0) ? GenPts->At(GenID) : 0.0;
-                int nLayers = numberOfLayers->At(imu);
+                int nLayers = muon_nlayers_i ? muon_nlayers_i->At(imu)
+                                             : static_cast<int>(muon_nlayers_uc->At(imu));
 
                 RoccoR = SSBCorr->RochesterCorrectionMC(RunPeriod, muon_charge,
                                                       muon.Pt(), muon.Eta(), muon.Phi(),
@@ -2343,7 +2582,12 @@ void Analysis::MakeJetCollection() {
     bool isMC = !isData; bool isUL = true; bool isPuppi = METtype == "Puppi";
 
 
-    if (applyMETXY == "True") Met = SSBCorr->METXYCorrection(Met, **uintSingles["run"], yearForm, isMC, **ucharSingles["PV_npvsGood"], isUL, isPuppi);
+    if (applyMETXY == "True") {
+        const int npvg = pvNpvsGoodValue();
+        if (npvg >= 0) {
+            Met = SSBCorr->METXYCorrection(Met, **uintSingles["run"], yearForm, isMC, npvg, isUL, isPuppi);
+        }
+    }
 
     // ============================================================================
     // VERIFICATION: Check final size consistency
@@ -2554,6 +2798,28 @@ void Analysis::JetSelector() {
         jets.push_back(pre_jets[i]);
     }
 
+    // Sort selected jets by pT (descending) so jets[0] is the leading jet
+    // and jets[1] is the sub-leading jet. v_jet_idx is reordered in lockstep
+    // to preserve the parallel-array invariant (jets[k] <-> v_jet_idx[k]),
+    // which downstream code (e.g. bJetSelector and KinReco) relies on.
+    if (jets.size() == v_jet_idx.size() && jets.size() > 1) {
+        std::vector<size_t> order(jets.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(),
+                  [&](size_t a, size_t b) { return jets[a].Pt() > jets[b].Pt(); });
+
+        std::vector<TLorentzVector> sorted_jets;
+        std::vector<int> sorted_v_jet_idx;
+        sorted_jets.reserve(jets.size());
+        sorted_v_jet_idx.reserve(v_jet_idx.size());
+        for (size_t k : order) {
+            sorted_jets.push_back(jets[k]);
+            sorted_v_jet_idx.push_back(v_jet_idx[k]);
+        }
+        jets = std::move(sorted_jets);
+        v_jet_idx = std::move(sorted_v_jet_idx);
+    }
+
     // ============================================================================
     // Step 4: Clean completion - No PUID weight application here
     // ============================================================================
@@ -2625,8 +2891,10 @@ bool Analysis::LeptonsPtAddtional()//YOU SHOULD REQUIRE THIS FUNCTION AFTER NumI
 {     
     bool lepptadd = false;                                                                                                               
     if ( TString(Decaymode).Contains( "dimuon" ) ||
-         TString(Decaymode).Contains( "dielec" ) ||                                                                                      
-         TString(Decaymode).Contains( "muel" )      ){  if ( Lep1.Pt() > 25 && Lep2.Pt() > 20 ) {lepptadd=true;} } //Pt of Leading Lepton should be over than 25 GeV and Second Leading Lepton Pt should be over thand 20 GeV.
+         TString(Decaymode).Contains( "dielec" ) ||
+         TString(Decaymode).Contains( "muel" ) ) {
+        if ( Lep1.Pt() > 25 && Lep2.Pt() > 15 ) { lepptadd = true; }
+    }
        
     else if ( TString(Decaymode).Contains( "muonJet" ) ){if( v_lepton_idx.size() == 1){lepptadd=true;} }
     else { std::cerr << "?? something wrong " << std::endl; }                                                                                      
@@ -2636,8 +2904,13 @@ void Analysis::Start()
 {
    //fout = new TFile(Form("output/%s",outfile),"RECREATE");
    if (strcmp(outdir.c_str(), "None") != 0 ) {
-      fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr/%s/%s", outdir.c_str(), outfile.c_str()), "RECREATE");
-
+      if (!outdir.empty() && outdir[0] == '/') {
+         // Absolute path: local SE directory (e.g. /u/user/dwkim/SE_UserHome/TOP_CPV_output)
+         fout = new TFile(Form("%s/%s", outdir.c_str(), outfile.c_str()), "RECREATE");
+      } else {
+         // gsidcap path (legacy remote SE)
+         fout = new TFile(Form("gsidcap://cluster142.knu.ac.kr/%s/%s", outdir.c_str(), outfile.c_str()), "RECREATE");
+      }
    }
    else {
       //fout = new TFile(Form("output/%s",outfile),"RECREATE");
@@ -2663,6 +2936,12 @@ void Analysis::DeclareHistos()
       h_Lep2eta[i] = new TH1D(Form("h_Lep2eta_%d",i), Form("Second Leading Lepton Eta %s",cutflowName[i].Data()), 50, -2.5, 2.5); h_Lep2eta[i]->Sumw2();
       h_Lep1phi[i] = new TH1D(Form("h_Lep1phi_%d",i), Form("Leading Lepton Phi %s"       ,cutflowName[i].Data()), 24, -1*pi, pi); h_Lep1phi[i]->Sumw2();
       h_Lep2phi[i] = new TH1D(Form("h_Lep2phi_%d",i), Form("Second Leading Lepton Phi %s",cutflowName[i].Data()), 24, -1*pi, pi); h_Lep2phi[i]->Sumw2();
+      h_MuPt[i]    = new TH1D(Form("h_MuPt_%d"   ,i), Form("Muon pT %s"                  ,cutflowName[i].Data()), 250, 0.0, 250); h_MuPt[i]->Sumw2();
+      h_ElPt[i]    = new TH1D(Form("h_ElPt_%d"   ,i), Form("Electron pT %s"              ,cutflowName[i].Data()), 250, 0.0, 250); h_ElPt[i]->Sumw2();
+      h_MuEta[i]   = new TH1D(Form("h_MuEta_%d"  ,i), Form("Muon Eta %s"                 ,cutflowName[i].Data()), 50, -2.5, 2.5); h_MuEta[i]->Sumw2();
+      h_ElEta[i]   = new TH1D(Form("h_ElEta_%d"  ,i), Form("Electron Eta %s"             ,cutflowName[i].Data()), 50, -2.5, 2.5); h_ElEta[i]->Sumw2();
+      h_MuPhi[i]   = new TH1D(Form("h_MuPhi_%d"  ,i), Form("Muon Phi %s"                 ,cutflowName[i].Data()), 24, -1*pi, pi); h_MuPhi[i]->Sumw2();
+      h_ElPhi[i]   = new TH1D(Form("h_ElPhi_%d"  ,i), Form("Electron Phi %s"             ,cutflowName[i].Data()), 24, -1*pi, pi); h_ElPhi[i]->Sumw2();
    
       h_Jet1pt[i]  = new TH1D(Form("h_Jet1pt_%d", i), Form("Leading Jet pT %s"        ,cutflowName[i].Data()), 250, 0.0, 250); h_Jet1pt[i]->Sumw2();
       h_Jet2pt[i]  = new TH1D(Form("h_Jet2pt_%d", i), Form("Second Leading Jet pT %s" ,cutflowName[i].Data()), 250, 0.0, 250); h_Jet2pt[i]->Sumw2();
@@ -2747,6 +3026,84 @@ void Analysis::DeclareHistos()
     h_test_minus = new TH1D(Form("h_test_minus"), Form("Event Weight -"), 200, 0.0, 2.0); h_test_minus->Sumw2();
     h_genWeight_plus = new TH1D(Form("h_genWeight_plus"), Form("genWeight +"), 200, 0.0, 2.0); h_genWeight_plus->Sumw2();
     h_genWeight_minus = new TH1D(Form("h_genWeight_minus"), Form("genWeight -"), 200, 0.0, 2.0); h_genWeight_minus->Sumw2();
+
+    // Trigger Efficiency histograms
+    // 0: Den_JetMET
+    // 1: Num_LepTrig
+    // 2: Num_LepTrigOnly
+    // 3-4: JetLT3 (Den/Num), 5-6: JetGE3 (Den/Num)
+    // 7-8: PVLT30 (Den/Num), 9-10: PVGE30 (Den/Num)
+    const char* trigEffLabel[11] = {
+        "Den_JetMET", "Num_LepTrig", "Num_LepTrigOnly",
+        "JetLT3_Den_JetMET", "JetLT3_Num_LepTrig",
+        "JetGE3_Den_JetMET", "JetGE3_Num_LepTrig",
+        "PVLT30_Den_JetMET", "PVLT30_Num_LepTrig",
+        "PVGE30_Den_JetMET", "PVGE30_Num_LepTrig"
+    };
+    const double lep1PtBins[] = {0.0, 40.0, 60.0, 80.0, 100.0, 150.0, 200.0, 500.0};
+    const int nLep1PtBins = sizeof(lep1PtBins) / sizeof(double) - 1;
+    const double lep2PtBins[] = {0.0, 30.0, 45.0, 60.0, 80.0, 100.0, 150.0, 200.0, 500.0};
+    const int nLep2PtBins = sizeof(lep2PtBins) / sizeof(double) - 1;
+    const double elPtBins[] = {0.0, 30.0, 45.0, 60.0, 80.0, 100.0, 150.0, 200.0, 500.0};
+    const int nElPtBins = sizeof(elPtBins) / sizeof(double) - 1;
+    const double muPtBins[] = {0.0, 30.0, 45.0, 60.0, 80.0, 100.0, 150.0, 200.0, 500.0};
+    const int nMuPtBins = sizeof(muPtBins) / sizeof(double) - 1;
+    for (int i = 0; i < 11; ++i) {
+        h2_TrigEff_Lep1ptLep2pt[i] = new TH2D(
+            Form("h2_TrigEff_Lep1ptLep2pt_%s", trigEffLabel[i]),
+            Form("Leading vs Sub-leading Lepton pT %s", trigEffLabel[i]),
+            nLep1PtBins, lep1PtBins, nLep2PtBins, lep2PtBins
+        );
+        h2_TrigEff_Lep1ptLep2pt[i]->Sumw2();
+        h2_TrigEff_ElPtMuPt[i] = new TH2D(
+            Form("h2_TrigEff_ElPtMuPt_%s", trigEffLabel[i]),
+            Form("Electron vs Muon pT %s", trigEffLabel[i]),
+            nElPtBins, elPtBins, nMuPtBins, muPtBins
+        );
+        h2_TrigEff_ElPtMuPt[i]->Sumw2();
+        h2_TrigEff_ElEtaMuEta[i] = new TH2D(
+            Form("h2_TrigEff_ElEtaMuEta_%s", trigEffLabel[i]),
+            Form("Electron vs Muon Eta %s", trigEffLabel[i]),
+            50, -2.5, 2.5, 50, -2.5, 2.5
+        );
+        h2_TrigEff_ElEtaMuEta[i]->Sumw2();
+        h2_TrigEff_ElPhiMuPhi[i] = new TH2D(
+            Form("h2_TrigEff_ElPhiMuPhi_%s", trigEffLabel[i]),
+            Form("Electron vs Muon Phi %s", trigEffLabel[i]),
+            24, -1*pi, pi, 24, -1*pi, pi
+        );
+        h2_TrigEff_ElPhiMuPhi[i]->Sumw2();
+        h_TrigEff_Lep1pt[i]     = new TH1D(Form("h_TrigEff_Lep1pt_%s",    trigEffLabel[i]), Form("Leading Lepton pT %s",          trigEffLabel[i]), 500, 0.0, 500); h_TrigEff_Lep1pt[i]->Sumw2();
+        h_TrigEff_Lep2pt[i]     = new TH1D(Form("h_TrigEff_Lep2pt_%s",    trigEffLabel[i]), Form("Subleading Lepton pT %s",       trigEffLabel[i]), 500, 0.0, 500); h_TrigEff_Lep2pt[i]->Sumw2();
+        h_TrigEff_Lep1eta[i]    = new TH1D(Form("h_TrigEff_Lep1eta_%s",   trigEffLabel[i]), Form("Leading Lepton Eta %s",         trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_Lep1eta[i]->Sumw2();
+        h_TrigEff_Lep2eta[i]    = new TH1D(Form("h_TrigEff_Lep2eta_%s",   trigEffLabel[i]), Form("Subleading Lepton Eta %s",      trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_Lep2eta[i]->Sumw2();
+        h_TrigEff_Lep1phi[i]    = new TH1D(Form("h_TrigEff_Lep1phi_%s",   trigEffLabel[i]), Form("Leading Lepton Phi %s",         trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_Lep1phi[i]->Sumw2();
+        h_TrigEff_Lep2phi[i]    = new TH1D(Form("h_TrigEff_Lep2phi_%s",   trigEffLabel[i]), Form("Subleading Lepton Phi %s",      trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_Lep2phi[i]->Sumw2();
+        h_TrigEff_MuPt[i]       = new TH1D(Form("h_TrigEff_MuPt_%s",      trigEffLabel[i]), Form("Muon pT %s",                     trigEffLabel[i]), 500, 0.0, 500); h_TrigEff_MuPt[i]->Sumw2();
+        h_TrigEff_ElPt[i]       = new TH1D(Form("h_TrigEff_ElPt_%s",      trigEffLabel[i]), Form("Electron pT %s",                 trigEffLabel[i]), 500, 0.0, 500); h_TrigEff_ElPt[i]->Sumw2();
+        h_TrigEff_MuEta[i]      = new TH1D(Form("h_TrigEff_MuEta_%s",     trigEffLabel[i]), Form("Muon Eta %s",                    trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_MuEta[i]->Sumw2();
+        h_TrigEff_ElEta[i]      = new TH1D(Form("h_TrigEff_ElEta_%s",     trigEffLabel[i]), Form("Electron Eta %s",                trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_ElEta[i]->Sumw2();
+        h_TrigEff_MuPhi[i]      = new TH1D(Form("h_TrigEff_MuPhi_%s",     trigEffLabel[i]), Form("Muon Phi %s",                    trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_MuPhi[i]->Sumw2();
+        h_TrigEff_ElPhi[i]      = new TH1D(Form("h_TrigEff_ElPhi_%s",     trigEffLabel[i]), Form("Electron Phi %s",                trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_ElPhi[i]->Sumw2();
+        h_TrigEff_Jet1pt[i]     = new TH1D(Form("h_TrigEff_Jet1pt_%s",    trigEffLabel[i]), Form("Leading Jet pT %s",             trigEffLabel[i]), 250, 0.0, 250); h_TrigEff_Jet1pt[i]->Sumw2();
+        h_TrigEff_Jet2pt[i]     = new TH1D(Form("h_TrigEff_Jet2pt_%s",    trigEffLabel[i]), Form("Subleading Jet pT %s",          trigEffLabel[i]), 250, 0.0, 250); h_TrigEff_Jet2pt[i]->Sumw2();
+        h_TrigEff_Jet1eta[i]    = new TH1D(Form("h_TrigEff_Jet1eta_%s",   trigEffLabel[i]), Form("Leading Jet Eta %s",            trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_Jet1eta[i]->Sumw2();
+        h_TrigEff_Jet2eta[i]    = new TH1D(Form("h_TrigEff_Jet2eta_%s",   trigEffLabel[i]), Form("Subleading Jet Eta %s",         trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_Jet2eta[i]->Sumw2();
+        h_TrigEff_Jet1phi[i]    = new TH1D(Form("h_TrigEff_Jet1phi_%s",   trigEffLabel[i]), Form("Leading Jet Phi %s",            trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_Jet1phi[i]->Sumw2();
+        h_TrigEff_Jet2phi[i]    = new TH1D(Form("h_TrigEff_Jet2phi_%s",   trigEffLabel[i]), Form("Subleading Jet Phi %s",         trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_Jet2phi[i]->Sumw2();
+        h_TrigEff_bJet1pt[i]    = new TH1D(Form("h_TrigEff_bJet1pt_%s",   trigEffLabel[i]), Form("Leading bJet pT %s",            trigEffLabel[i]), 250, 0.0, 250); h_TrigEff_bJet1pt[i]->Sumw2();
+        h_TrigEff_bJet2pt[i]    = new TH1D(Form("h_TrigEff_bJet2pt_%s",   trigEffLabel[i]), Form("Subleading bJet pT %s",         trigEffLabel[i]), 250, 0.0, 250); h_TrigEff_bJet2pt[i]->Sumw2();
+        h_TrigEff_bJet1eta[i]   = new TH1D(Form("h_TrigEff_bJet1eta_%s",  trigEffLabel[i]), Form("Leading bJet Eta %s",           trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_bJet1eta[i]->Sumw2();
+        h_TrigEff_bJet2eta[i]   = new TH1D(Form("h_TrigEff_bJet2eta_%s",  trigEffLabel[i]), Form("Subleading bJet Eta %s",        trigEffLabel[i]),  50, -2.5, 2.5); h_TrigEff_bJet2eta[i]->Sumw2();
+        h_TrigEff_bJet1phi[i]   = new TH1D(Form("h_TrigEff_bJet1phi_%s",  trigEffLabel[i]), Form("Leading bJet Phi %s",           trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_bJet1phi[i]->Sumw2();
+        h_TrigEff_bJet2phi[i]   = new TH1D(Form("h_TrigEff_bJet2phi_%s",  trigEffLabel[i]), Form("Subleading bJet Phi %s",        trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_bJet2phi[i]->Sumw2();
+        h_TrigEff_METpt[i]      = new TH1D(Form("h_TrigEff_METpt_%s",     trigEffLabel[i]), Form("MET pT %s",                     trigEffLabel[i]), 200, 0.0, 200); h_TrigEff_METpt[i]->Sumw2();
+        h_TrigEff_METphi[i]     = new TH1D(Form("h_TrigEff_METphi_%s",    trigEffLabel[i]), Form("MET Phi %s",                    trigEffLabel[i]),  24, -1*pi, pi); h_TrigEff_METphi[i]->Sumw2();
+        h_TrigEff_DiLepMass[i]  = new TH1D(Form("h_TrigEff_DiLepMass_%s", trigEffLabel[i]), Form("Di-Lepton Invariant Mass %s",   trigEffLabel[i]), 300, 0.0, 300); h_TrigEff_DiLepMass[i]->Sumw2();
+        h_TrigEff_Num_PV[i]     = new TH1D(Form("h_TrigEff_Num_PV_%s",    trigEffLabel[i]), Form("Num of Primary Vertex %s",      trigEffLabel[i]), 100, 0.0, 100); h_TrigEff_Num_PV[i]->Sumw2();
+        h_TrigEff_Num_Jets[i]   = new TH1D(Form("h_TrigEff_Num_Jets_%s",  trigEffLabel[i]), Form("Num. of Jets %s",               trigEffLabel[i]),  20, 0.0,  20); h_TrigEff_Num_Jets[i]->Sumw2();
+        h_TrigEff_Num_bJets[i]  = new TH1D(Form("h_TrigEff_Num_bJets_%s", trigEffLabel[i]), Form("Num. of b Jets %s",             trigEffLabel[i]),  20, 0.0,  20); h_TrigEff_Num_bJets[i]->Sumw2();
+    }
 
 }
 
@@ -2904,13 +3261,7 @@ void Analysis::SelectVetoElectrons() {
     auto elecCharge = [](int id) {
         return id > 0;
     };
-    auto getElectronTightCharge = [&](int idx) {
-        if (ucharVectors.count("Electron_tightCharge") && ucharVectors["Electron_tightCharge"] &&
-            idx < ucharVectors["Electron_tightCharge"]->GetSize()) {
-            return static_cast<int>((*ucharVectors["Electron_tightCharge"])[idx]);
-        }
-        return 0;
-    };
+    auto getElectronTightCharge = [&](int idx) { return electronTightChargeAt(idx); };
     // Channel-specific logic
     if (TString(Decaymode).Contains("dimuon")) {
         // For dimuon channel, check all electrons
@@ -2920,7 +3271,7 @@ void Analysis::SelectVetoElectrons() {
         for (int iel = 0; iel < nel; ++iel) {
             // Apply cuts
             if (!passKinematicCuts(elecs_pt->At(iel), elecs_eta->At(iel), elec_pt, elec_eta) ||
-                !elecSCBId(elecsveto_scbId->At(iel), elevetoid_scbcut) ||
+                !elecSCBId(electronCutBasedAt(iel), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[iel] + elecs_eta->At(iel)) < 1.566) ||
                 !elecCharge(getElectronTightCharge(iel)) ||
@@ -2931,7 +3282,7 @@ void Analysis::SelectVetoElectrons() {
                  /*std::cout << "In Veto Elec. elecsveto_scbId : " << elecsveto_scbId->At(iel) 
                           << " elevetoid_scbcut : " << elevetoid_scbcut 
                           << " elecs_pt->At(i) : " << elecs_pt->At(iel) 
-                         << " elecCharge : " << static_cast<int>((*ucharVectors["Electron_tightCharge"])[iel]) 
+                         << " elecCharge : " << electronTightChargeAt(iel) 
                           << " Electron_convVeto : " << (*boolVectors["Electron_convVeto"])[iel]
                           << std::endl;*/
             
@@ -2950,7 +3301,7 @@ void Analysis::SelectVetoElectrons() {
             
             // Apply cuts (same logic as in LeptonSelector)
             if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
-                !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
+                !elecSCBId(electronCutBasedAt(i), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
                 !elecCharge(getElectronTightCharge(i)) ||
@@ -2975,7 +3326,7 @@ void Analysis::SelectVetoElectrons() {
             
             // Apply cuts (same logic as in LeptonSelector)
             if (!passKinematicCuts(elecs_pt->At(i), elecs_eta->At(i), elec_pt, elec_eta) ||
-                !elecSCBId(elecsveto_scbId->At(i), elevetoid_scbcut) ||
+                !elecSCBId(electronCutBasedAt(i), elevetoid_scbcut) ||
                 (fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) > 1.4442 &&
                  fabs((*floatVectors["Electron_deltaEtaSC"])[i] + elecs_eta->At(i)) < 1.566) ||
                 !elecCharge(getElectronTightCharge(i)) ||
@@ -3071,26 +3422,34 @@ void Analysis::bJetSelector() {
     int nbtagged = 0;
             
     // Simple lambda function to determine if a jet is b-tagged
-    auto isBTagged = [this](int jetIdx) -> bool {
+    // (takes a NANOAOD jet index because Jet_btagDeepFlav etc. are
+    // indexed by NANOAOD position).
+    auto isBTagged = [this](int nanoIdx) -> bool {
         if (jets_btag != nullptr) {
-            return (*jets_btag)[jetIdx] > bdisccut;
+            return (*jets_btag)[nanoIdx] > bdisccut;
         }
         return false;
     };      
                 
-    // Loop over selected jets to find b-tagged ones
-    for (const auto& jetIdx : v_jet_idx) {
-        if (isBTagged(jetIdx)) {
-            v_bjet_idx.push_back(jetIdx);
+    // Loop over selected jets. We store the POSITION in jets[] (i.e. the
+    // selected-jet index 0..jets.size()-1), NOT the NANOAOD index, so that
+    // jets[v_bjet_idx[k]] correctly returns the k-th b-tagged jet.
+    // The NANOAOD index can still be retrieved via v_jet_idx[v_bjet_idx[k]]
+    // when needed (e.g. to access NANOAOD-indexed branches like jets_btag).
+    for (size_t pos = 0; pos < v_jet_idx.size(); ++pos) {
+        int nanoIdx = v_jet_idx[pos];
+        if (isBTagged(nanoIdx)) {
+            v_bjet_idx.push_back(static_cast<int>(pos));
             nbtagged++;
         }
     }
 
-    // Sort b-jet indices by pT (descending): leading/sub-leading b-jets
-    // are then defined by b-jet pT ordering.
+    // Sort positions so jets[v_bjet_idx[0]] is the leading-pT b-jet.
+    // (Since JetSelector() now sorts jets by pT, positions are already
+    // in pT order; this is kept as a safety net.)
     std::sort(v_bjet_idx.begin(), v_bjet_idx.end(),
-              [this](int idx1, int idx2) {
-                  return jets[idx1].Pt() > jets[idx2].Pt();
+              [this](int pos1, int pos2) {
+                  return jets[pos1].Pt() > jets[pos2].Pt();
               });
 
     // Debug output
@@ -3117,7 +3476,7 @@ bool Analysis::NumJetCut(std::vector<int> v_jets)
 {           
    bool numjetcut = false;
    //if ( v_jets.size() == 2 ){ numjetcut = true; }
-   if ( v_jets.size() >= 2 ){ numjetcut = true; }
+   if ( v_jets.size() >= 1 ){ numjetcut = true; }
    return numjetcut;
 }
 
@@ -3125,11 +3484,10 @@ bool Analysis::NumJetCut(std::vector<int> v_jets)
 bool Analysis::METCut(TLorentzVector met)        
 {           
    bool metcut = false;
-   if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) )
+   if ( TString(Decaymode).Contains( "dimuon" ) || TString(Decaymode).Contains( "dielec" ) || TString(Decaymode).Contains( "muel" ) )
    {        
-      if (met.Pt() > 40) { metcut =true; }
+      if (met.Pt() > 100) { metcut =true; }
    }        
-   else if ( TString(Decaymode).Contains( "muel" ) ){ metcut =true; }
    else {std::cerr << "METCut Error !!" << std::endl;}
    return metcut;
 }
@@ -3166,23 +3524,22 @@ void Analysis::SetUpKINObs()
    const LV met_LV = common::TLVtoLV(Met);
    //std::cout << "v_jet_idx.size() : " << v_jet_idx.size() << std::endl;
    
-   // Create a map to translate from original jet indices to new indices in v_jets_VLV
-   std::map<int, int> jet_idx_map;
-   
+   // Build per-event jet collections used by KinReco.
+   // v_jetidx_KIN is the sequential 0..n-1 index into v_jets_VLV.
    for (int i = 0; i < v_jet_idx.size(); ++i)
    {
       int idx_jet = v_jet_idx[i];
-     v_jets_VLV.push_back(common::TLVtoLV(jets[i]));
+      v_jets_VLV.push_back(common::TLVtoLV(jets[i]));
       v_jetidx_KIN.push_back(i);  // Use sequential indices
       jets_btag_vec.push_back(static_cast<double>((*jets_btag)[idx_jet]));
-      jet_idx_map[idx_jet] = i;  // Map original index to new index
    }
 
-   // Translate b-jet indices to the new index system
-   for (auto orig_idx : v_bjet_idx) {
-      // Check if the original index exists in our jets vector
-      if (jet_idx_map.find(orig_idx) != jet_idx_map.end()) {
-         v_bjetidx_KIN.push_back(jet_idx_map[orig_idx]);
+   // v_bjet_idx now stores positions into jets[] (i.e. valid 0..n-1
+   // indices that match the sequential indices pushed above), so we can
+   // forward them directly without going through a NANOAOD-index map.
+   for (auto pos : v_bjet_idx) {
+      if (pos >= 0 && pos < static_cast<int>(v_jets_VLV.size())) {
+         v_bjetidx_KIN.push_back(pos);
       }
    }
    
@@ -3404,10 +3761,8 @@ void Analysis::BTaggingSFApply() {
     jet_flavors.reserve(v_jet_idx.size());
     jet_isTagged.reserve(v_jet_idx.size());
     
-    // Check if hadron flavor branch exists (MC only)
-    bool hasHadronFlavour = (ucharVectors.count("Jet_hadronFlavour") &&
-                             ucharVectors["Jet_hadronFlavour"] &&
-                             ucharVectors["Jet_hadronFlavour"]->GetSize() > 0);
+    // Check if hadron flavor branch exists (MC only); UL2018 uses Int_t, Run3 uses UChar_t in branch_list.
+    bool hasHadronFlavour = jetHadronFlavourAvailable();
     
     if (!hasHadronFlavour) {
         std::cout << "WARNING: Jet_hadronFlavour branch not available - using flavor=0 for all jets" << std::endl;
@@ -3422,8 +3777,8 @@ void Analysis::BTaggingSFApply() {
         
         // Get jet flavor (MC only)
         int flavor = 0; // Default to light flavor
-        if (hasHadronFlavour && jet_idx < ucharVectors["Jet_hadronFlavour"]->GetSize()) {
-            flavor = static_cast<int>(ucharVectors["Jet_hadronFlavour"]->At(jet_idx));
+        if (hasHadronFlavour) {
+            flavor = jetHadronFlavourAt(jet_idx);
         }
         
         bool isTagged = (jets_btag->At(jet_idx) > bdisccut);

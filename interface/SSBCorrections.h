@@ -162,6 +162,7 @@ private:
     std::shared_ptr<const correction::Correction> muon_iso_;
     std::shared_ptr<const correction::Correction> ele_sf_;
     std::shared_ptr<const correction::Correction> ele_reco_sf_;
+    std::string ele_id_sf_year_;   // year key for ele_sf_ evaluate (e.g. "2022Re-recoBCD", "2022Re-recoE+PromptFG")
     std::string ele_reco_sf_year_;  // year for Reco SF eval when in separate file (e.g. "2024Prompt")
     std::shared_ptr<const correction::Correction> jetvetomap_;
     std::shared_ptr<const correction::CompoundCorrection> jec_;

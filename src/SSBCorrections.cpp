@@ -348,8 +348,12 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
         btag_year_prefix = "2024";
         summer_version = "Summer24";
         btag_filename = "btagging_preliminary.json.gz";  // 2024 uses preliminary version
+    } else if (year_ == "2018") {
+        btag_year_prefix = "2018";
+        summer_version = "UL";
+        btag_filename = "btagging.json.gz";
     } else {
-        // Fallback for older years
+        // Fallback for older years (2016/2017 UL paths should be added similarly if needed)
         btag_year_prefix = year_;
         summer_version = "Summer24";
         btag_filename = "btagging.json.gz";
@@ -401,6 +405,12 @@ SSBCorrections::SSBCorrections(TextReader* reader, const std::string inputfileNa
 
     auto cset = correction::CorrectionSet::from_file(jsonDir + elec_path);
     ele_sf_ = cset->at(ele_sf_name_);
+
+    ele_id_sf_year_.clear();
+    if (reader->Check("ElecIDSFYear")) {
+        ele_id_sf_year_ = reader->GetText("ElecIDSFYear", false);
+        std::cout << "[INFO] Electron ID/Reco SF year key (ElecIDSFYear): " << ele_id_sf_year_ << std::endl;
+    }
 
     // Optional: Reco SF in separate file (e.g. 2024 electron_v1.json with Reco20to75/RecoAbove75)
     ele_reco_sf_ = nullptr;
@@ -925,13 +935,25 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
     // Map working point names from config to JSON format
     std::string working_point = sf_type;
     if (sf_type == "Reco") {
-        // When ElecRecoSFPath is set: uses Reco20to75, RecoAbove75 (e.g. 2024 electron_v1.json)
+        // Reco SF binning depends on era:
+        // Run2 (2016-2018): RecoBelow20 / RecoAbove20
+        // Run3 (2022+): RecoBelow20 / Reco20to75 / RecoAbove75
         if (ele_reco_sf_) {
-            if (pt < 20.0f) return 1.0f;  // pt < 20: RecoBelow20 may not exist in separate Reco file
+            // Separate Reco file (e.g. 2024 electron_v1.json): no RecoBelow20
+            if (pt < 20.0f) return 1.0f;
             working_point = (pt >= 75.0f) ? "RecoAbove75" : "Reco20to75";
+        } else if (pt < 20.0f) {
+            working_point = "RecoBelow20";
         } else {
-            // 2022, 2023, Run2: RecoAbove20, RecoBelow20
-            working_point = (pt >= 20.0f) ? "RecoAbove20" : "RecoBelow20";
+            bool run3_reco_bins = (year_.find("2022") != std::string::npos ||
+                                   year_.find("2023") != std::string::npos ||
+                                   year_.find("2024") != std::string::npos ||
+                                   !ele_id_sf_year_.empty());
+            if (run3_reco_bins) {
+                working_point = (pt >= 75.0f) ? "RecoAbove75" : "Reco20to75";
+            } else {
+                working_point = "RecoAbove20";
+            }
         }
     } else if (sf_type.find("SCB") == 0) {
         // Convert SCB (Scale factor Cut-Based) format to JSON format
@@ -976,16 +998,17 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
         // 2024 Reco: use ele_reco_sf_ from electron_v1.json, year="2024Prompt"
         // 2022, 2022PostEE, 2024 ID: {year, ValType, WorkingPoint, eta, pt} - 5 inputs
         // 2023, 2023BPix: {year, ValType, WorkingPoint, eta, pt, phi} - 6 inputs
+        const std::string& ele_sf_year = ele_id_sf_year_.empty() ? year_ : ele_id_sf_year_;
         float result;
         if (sf_type == "Reco" && ele_reco_sf_ && !ele_reco_sf_year_.empty()) {
             result = ele_reco_sf_->evaluate({ele_reco_sf_year_, valtype, working_point, eta, pt});
         } else {
-            bool needsPhi = (year_.find("2023") != std::string::npos && 
-                             year_.find("2024") == std::string::npos);
+            bool needsPhi = (ele_sf_year.find("2023") != std::string::npos &&
+                             ele_sf_year.find("2024") == std::string::npos);
             if (needsPhi) {
-                result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt, phi});
+                result = ele_sf_->evaluate({ele_sf_year, valtype, working_point, eta, pt, phi});
             } else {
-                result = ele_sf_->evaluate({year_, valtype, working_point, eta, pt});
+                result = ele_sf_->evaluate({ele_sf_year, valtype, working_point, eta, pt});
             }
         }
 
@@ -999,7 +1022,8 @@ float SSBCorrections::GetElectronSF(const std::string& sf_type, float eta, float
 
     } catch (const std::exception& e) {
         std::cerr << "[GetElectronSF] Evaluation failed: " << e.what() << std::endl;
-        std::cerr << "  Parameters: year='" << year_ << "', valtype='" << valtype
+        const std::string& ele_sf_year_err = ele_id_sf_year_.empty() ? year_ : ele_id_sf_year_;
+        std::cerr << "  Parameters: year='" << ele_sf_year_err << "', valtype='" << valtype
                   << "', working_point='" << working_point << "', eta=" << eta << ", pt=" << pt 
                   << ", phi=" << phi << std::endl;
         return 1.0;
@@ -1590,7 +1614,11 @@ std::string SSBCorrections::ExpandJECName(const std::string& base_jec_name, cons
 
     std::string prefix = base_jec_name.substr(0, pos);             // "Summer19UL16"
     std::string version = base_jec_name.substr(pos + 2);           // "7"
+    // Run2 UL NanoAOD AK4 jets are PF CHS; Run3 uses Puppi.
     std::string suffix = "_L1L2L3Res_AK4PFPuppi";
+    if (runPeriod.find("2018") != std::string::npos) {
+        suffix = "_L1L2L3Res_AK4PFchs";
+    }
 
     std::string expanded = prefix;  // prefix
 

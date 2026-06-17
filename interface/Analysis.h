@@ -7,6 +7,7 @@
 #include <TTreeReaderArray.h>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <memory>
 
@@ -14,6 +15,7 @@
 #include <TMath.h>
 #include <TVector2.h>
 #include <TH1D.h>
+#include <TH2D.h>
 #include <TFile.h>
 
 // Top reconstruction //TOP-17-014
@@ -82,7 +84,6 @@ private:
 
     int num_pv;
 
-
     // PUID related state variables
     bool jets_selected_ = false;
     bool jet_puid_weight_applied_ = false;
@@ -121,12 +122,11 @@ private:
     void CollectPUIDCandidates();
     bool IsHardScatterJet(int jet_idx) const;
 
-
-
     // Maps for dynamic branch storage
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Bool_t>>> boolSingles;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Int_t>>> intSingles;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<UInt_t>>> uintSingles; // Add uintSingles for UInt_t types
+    std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<ULong64_t>>> ulong64Singles; // For event branch (ULong64_t)
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<UChar_t>>> ucharSingles; // Add uintSingles for UInt_t types
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderValue<Float_t>>> floatSingles;
     std::unordered_map<std::string, std::unique_ptr<TTreeReaderArray<Float_t>>> floatVectors;
@@ -148,6 +148,16 @@ private:
     //TString SetInputFileName( char *inname );
     TString SetInputFileName( std::string inname );
     void SetObjectVariable();
+    /** 2018: Electron_cutBased from Int_t reader; other RunPeriod: UChar_t (e.g. Run3 / other UL setups). */
+    int electronCutBasedAt(int idx) const;
+    /** UL2018: PV_npvsGood from Int_t single; other RunPeriod: UChar_t (e.g. Run3). Returns -1 if unbound. */
+    int pvNpvsGoodValue() const;
+    /** UL2018: Electron_tightCharge Int_t; other RunPeriod: UChar_t. Returns 0 if unbound/out of range. */
+    int electronTightChargeAt(int idx) const;
+    /** True if Jet_hadronFlavour reader exists for this RunPeriod (Int_t in 2018, UChar_t Run3). */
+    bool jetHadronFlavourAvailable() const;
+    /** Jet_hadronFlavour value; 0 if unavailable or out of range. */
+    int jetHadronFlavourAt(int jet_idx) const;
     void MCSF();
     void MCSFApply();
     void GenWeightApply();
@@ -251,6 +261,7 @@ private:
     TTreeReaderArray<float>*   elecs_iso;
     TTreeReaderArray<float>*   elecsveto_iso;
     TTreeReaderArray<UChar_t>*   elecs_scbId;
+    TTreeReaderArray<Int_t>*     elecs_scbId_int = nullptr;
     TTreeReaderArray<Bool_t>*  elecs_mvaId;
     TTreeReaderArray<UChar_t>*   elecsveto_scbId;
     TTreeReaderArray<Bool_t>*  elecsveto_mvaId;
@@ -303,8 +314,8 @@ private:
     std::vector<int> v_vetomuon_idx; // Indecies of veto muon
     std::vector<int> v_electron_idx; // Indecies of electron
     std::vector<int> v_vetoelectron_idx; // Indecies of veto muon
-    std::vector<int> v_jet_idx;  // Indecies of jet
-    std::vector<int> v_bjet_idx;  // Indecies of jet
+    std::vector<int> v_jet_idx;   // NANOAOD indices of selected jets, parallel to jets[] (both sorted by pT desc)
+    std::vector<int> v_bjet_idx;  // Positions into jets[] of b-tagged jets, sorted by pT desc; jets[v_bjet_idx[k]] is the k-th b-jet
 
     //JetCleanning information from config.
     TString veto_muoniso_type;
@@ -317,8 +328,10 @@ private:
     //to get trigger information from config.
     int num_dleptrig;
     int num_sleptrig;
+    int num_jetmettrig;
     std::vector<std::string> DLtrigName; // trigger 
     std::vector<std::string> SLtrigName; // trigger 
+    std::vector<std::string> JetMETtrigName; // trigger
     std::vector<std::string> trigName; // trigger 
 
     // lepton variables
@@ -441,6 +454,13 @@ private:
     TH1D *h_Lep2eta[11];
     TH1D *h_Lep1phi[11];
     TH1D *h_Lep2phi[11];
+    // Flavor-separated leptons for muel channel (cutflow steps)
+    TH1D *h_MuPt[11];
+    TH1D *h_ElPt[11];
+    TH1D *h_MuEta[11];
+    TH1D *h_ElEta[11];
+    TH1D *h_MuPhi[11];
+    TH1D *h_ElPhi[11];
     TH1D *h_Lep1Mass[11];
     TH1D *h_Lep2Mass[11];
     TH1D *h_Jet1pt[11];
@@ -517,6 +537,49 @@ private:
     TH1D* h_test_minus;
     TH1D* h_genWeight_plus;
     TH1D* h_genWeight_minus;
+    TH1D* h_luminosityBlock;
+
+    // Trigger Efficiency histograms
+    // 0: Den_JetMET
+    // 1: Num_LepTrig
+    // 2: Num_LepTrigOnly
+    // 3-4: JetLT3 (Den/Num), 5-6: JetGE3 (Den/Num)
+    // 7-8: PVLT30 (Den/Num), 9-10: PVGE30 (Den/Num)
+    TH1D *h_TrigEff_Lep1pt[11];
+    TH1D *h_TrigEff_Lep2pt[11];
+    TH1D *h_TrigEff_Lep1eta[11];
+    TH1D *h_TrigEff_Lep2eta[11];
+    TH1D *h_TrigEff_Lep1phi[11];
+    TH1D *h_TrigEff_Lep2phi[11];
+    // Flavor-separated lepton histograms for muel channel.
+    TH1D *h_TrigEff_MuPt[11];
+    TH1D *h_TrigEff_ElPt[11];
+    TH1D *h_TrigEff_MuEta[11];
+    TH1D *h_TrigEff_ElEta[11];
+    TH1D *h_TrigEff_MuPhi[11];
+    TH1D *h_TrigEff_ElPhi[11];
+    TH1D *h_TrigEff_Jet1pt[11];
+    TH1D *h_TrigEff_Jet2pt[11];
+    TH1D *h_TrigEff_Jet1eta[11];
+    TH1D *h_TrigEff_Jet2eta[11];
+    TH1D *h_TrigEff_Jet1phi[11];
+    TH1D *h_TrigEff_Jet2phi[11];
+    TH1D *h_TrigEff_bJet1pt[11];
+    TH1D *h_TrigEff_bJet2pt[11];
+    TH1D *h_TrigEff_bJet1eta[11];
+    TH1D *h_TrigEff_bJet2eta[11];
+    TH1D *h_TrigEff_bJet1phi[11];
+    TH1D *h_TrigEff_bJet2phi[11];
+    TH1D *h_TrigEff_METpt[11];
+    TH1D *h_TrigEff_METphi[11];
+    TH1D *h_TrigEff_DiLepMass[11];
+    TH1D *h_TrigEff_Num_PV[11];
+    TH1D *h_TrigEff_Num_Jets[11];
+    TH1D *h_TrigEff_Num_bJets[11];
+    TH2D *h2_TrigEff_Lep1ptLep2pt[11];
+    TH2D *h2_TrigEff_ElPtMuPt[11];
+    TH2D *h2_TrigEff_ElEtaMuEta[11];
+    TH2D *h2_TrigEff_ElPhiMuPhi[11];
 
 };
 

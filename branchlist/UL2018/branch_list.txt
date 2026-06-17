@@ -13,6 +13,16 @@ HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ, trigger, Bool_t, single
 HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL, trigger, Bool_t, single
 HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ, trigger, Bool_t, single
 HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL, trigger, Bool_t, single
+HLT_PFMET200_HBHECleaned, trigger, Bool_t, single
+HLT_PFMET200_HBHE_BeamHaloCleaned, trigger, Bool_t, single
+HLT_PFMETTypeOne200_HBHE_BeamHaloCleaned, trigger, Bool_t, single
+HLT_PFMETNoMu120_PFMHTNoMu120_IDTight, trigger, Bool_t, single
+HLT_PFMET120_PFMHT120_IDTight, trigger, Bool_t, single
+HLT_PFMET120_PFMHT120_IDTight_PFHT60, trigger, Bool_t, single
+HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60, trigger, Bool_t, single
+HLT_PFHT500_PFMET100_PFMHT100_IDTight, trigger, Bool_t, single
+HLT_PFHT700_PFMET85_PFMHT85_IDTight, trigger, Bool_t, single
+HLT_PFHT800_PFMET75_PFMHT75_IDTight, trigger, Bool_t, single
 nMuon, muon, UInt_t, single
 Muon_pfRelIso03_all, muon, Float_t, vector
 Muon_pfRelIso03_chg, muon, Float_t, vector

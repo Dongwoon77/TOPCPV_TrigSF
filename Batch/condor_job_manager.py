@@ -75,20 +75,20 @@ class CondorJobManager:
         """특정 job의 log 파일들을 찾음"""
         # job_id는 "682688.0" 형태
         cluster_id = job_id.split('.')[0]
+        cluster_pattern = re.compile(r'\(' + re.escape(cluster_id) + r'\.\d+\.\d+\)')
         
-        # 모든 로그 파일을 검색
+        log_dir = os.path.abspath(self.log_dir)
+        if not os.path.isdir(log_dir):
+            return []
+        
         log_files = []
-        for root, dirs, files in os.walk(self.log_dir):
+        for root, dirs, files in os.walk(log_dir):
             for file in files:
                 if file.endswith('.log'):
                     log_path = os.path.join(root, file)
                     try:
-                        # 로그 파일의 첫 몇 줄을 읽어서 job ID 확인
                         with open(log_path, 'r') as f:
-                            first_line = f.readline().strip()
-                            # condor log format: 000 (682688.000.000) 2025-07-24 01:47:11
-                            match = re.search(r'\((\d+)\.\d+\.\d+\)', first_line)
-                            if match and match.group(1) == cluster_id:
+                            if cluster_pattern.search(f.read()):
                                 log_files.append(log_path)
                     except Exception:
                         continue
@@ -428,7 +428,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Comprehensive condor job manager')
-    parser.add_argument('--log-dir', default=None, help='Directory containing log files')
+    parser.add_argument('--log-dir', default=None, help='Directory containing log files (default: Batch dir of this script)')
     parser.add_argument('--threshold', type=int, default=30, help='Stuck threshold in minutes (default: 30)')
     parser.add_argument('--auto-resubmit', action='store_true', help='Automatically kill and resubmit stuck jobs')
     parser.add_argument('--continuous', action='store_true', help='Monitor continuously every 5 minutes')
@@ -436,7 +436,12 @@ def main():
     
     args = parser.parse_args()
     
-    manager = CondorJobManager(args.log_dir)
+    # log_dir 미지정 시: 이 스크립트가 있는 Batch 디렉터리 사용
+    log_dir = args.log_dir
+    if log_dir is None:
+        log_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    manager = CondorJobManager(log_dir)
     manager.stuck_threshold_minutes = args.threshold
     
     if args.history:
