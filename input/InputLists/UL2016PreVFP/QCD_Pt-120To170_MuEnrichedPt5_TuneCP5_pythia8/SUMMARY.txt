@@ -1,0 +1,8 @@
+Sample: QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8
+Original name: QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8/250129_104743
+Total root files: 32
+Files per list: 1
+List files: 32
+Full list file: QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8.list (32 root files)
+Created: 2025-06-02 10:50:50

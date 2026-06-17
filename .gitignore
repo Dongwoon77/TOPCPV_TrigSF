@@ -1,7 +1,9 @@
 *.o
 ssb_analysis
 output/
-input/
+input/*
+!input/InputLists/
+!input/InputLists/**
 CondorJobs/condorLog/
 CondorJobs/condorSubmit/
 Batch/*_RUN3/

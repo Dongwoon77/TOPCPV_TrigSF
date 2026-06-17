@@ -1,0 +1,8 @@
+Sample: TTZToLLNuNu
+Original name: TTZToLLNuNu
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630
+Total root files: 15
+Files per list: 1
+List files: 15
+Full list file: TTZToLLNuNu.list (15 root files)
+Created: 2025-06-02 10:50:44

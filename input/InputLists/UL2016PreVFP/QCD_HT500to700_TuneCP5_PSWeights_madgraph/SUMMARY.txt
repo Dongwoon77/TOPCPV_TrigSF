@@ -1,0 +1,8 @@
+Sample: QCD_HT500to700_TuneCP5_PSWeights_madgraph
+Original name: QCD_HT500to700_TuneCP5_PSWeights_madgraph
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8/QCD_HT500to700_TuneCP5_PSWeights_madgraph/250129_110020
+Total root files: 34
+Files per list: 1
+List files: 34
+Full list file: QCD_HT500to700_TuneCP5_PSWeights_madgraph.list (34 root files)
+Created: 2025-06-02 10:50:49

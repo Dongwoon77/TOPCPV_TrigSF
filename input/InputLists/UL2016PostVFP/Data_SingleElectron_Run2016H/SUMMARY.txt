@@ -1,0 +1,8 @@
+Sample: Data_SingleElectron_Run2016H
+Original name: Data_SingleElectron_Run2016H
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/Data/SingleElectron/SingleElectron_Run2016H/250421_020408/
+Total root files: 4747
+Files per list: 10
+List files: 475
+Full list file: Data_SingleElectron_Run2016H.list (4747 root files)
+Created: 2025-06-11 16:13:27

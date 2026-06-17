@@ -1,0 +1,8 @@
+Sample: TTZToQQ_13TeV_amcatlno
+Original name: TTZToQQ_TuneCP5_13TeV_amcatnlo
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/TTZToQQ_TuneCP5_13TeV_amcatnlo-pythia8/TTZToQQ_TuneCP5_13TeV_amcatnlo/250127_163635
+Total root files: 359
+Files per list: 1
+List files: 359
+Full list file: TTZToQQ_13TeV_amcatlno.list (359 root files)
+Created: 2025-05-20 13:24:33

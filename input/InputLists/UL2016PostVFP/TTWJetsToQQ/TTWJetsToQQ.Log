@@ -1,0 +1,25 @@
+=== TTWJetsToQQ Sample Processing Summary ===
+Timestamp: 2025-06-11 16:08:12
+Total root files: 8
+Files per list: 1
+List files created: 8
+
+=== Root files distribution ===
+List file 1: 1 root files
+List file 2: 1 root files
+List file 3: 1 root files
+List file 4: 1 root files
+List file 5: 1 root files
+List file 6: 1 root files
+List file 7: 1 root files
+List file 8: 1 root files
+
+=== All root files ===
+   1. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_1.root
+   2. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_2.root
+   3. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_3.root
+   4. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_4.root
+   5. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_5.root
+   6. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_6.root
+   7. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_7.root
+   8. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250125_174820/0000/tree_8.root

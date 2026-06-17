@@ -1,0 +1,8 @@
+Sample: TTbar_Signal
+Original name: TTbar_Signal
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/TTTo2L2Nu_TuneCP5_powheg/250125_174657
+Total root files: 49
+Files per list: 1
+List files: 49
+Full list file: TTbar_Signal.list (49 root files)
+Created: 2025-06-11 16:08:11

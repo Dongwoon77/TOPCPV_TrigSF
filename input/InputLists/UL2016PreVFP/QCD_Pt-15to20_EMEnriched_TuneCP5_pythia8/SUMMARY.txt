@@ -1,0 +1,8 @@
+Sample: QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8
+Original name: QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_Pt-15to20_EMEnriched_TuneCP5_13TeV-pythia8/QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8/250129_105152
+Total root files: 42
+Files per list: 1
+List files: 42
+Full list file: QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8.list (42 root files)
+Created: 2025-06-02 10:50:51

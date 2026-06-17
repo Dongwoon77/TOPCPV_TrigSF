@@ -1,0 +1,8 @@
+Sample: DYJetsToLL_M_50_madgraphMLM
+Original name: DYJetsToLL_M-50_TuneCP5_madgraphMLM
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/DYJetsToLL_M-50_TuneCP5_madgraphMLM/250129_104108
+Total root files: 66
+Files per list: 1
+List files: 66
+Full list file: DYJetsToLL_M_50_madgraphMLM.list (66 root files)
+Created: 2025-06-02 10:50:39

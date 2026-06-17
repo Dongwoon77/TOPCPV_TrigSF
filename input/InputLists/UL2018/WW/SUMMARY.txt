@@ -1,0 +1,8 @@
+Sample: WW
+Original name: WW_TuneCP5_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/WW_TuneCP5_13TeV-pythia8/WW_TuneCP5_pythia8/250124_133542
+Total root files: 31
+Files per list: 1
+List files: 31
+Full list file: WW.list (31 root files)
+Created: 2025-06-06 11:59:36

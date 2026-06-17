@@ -1,0 +1,8 @@
+Sample: ST_t-channel_top_4f_InclusiveDecays
+Original name: ST_t-channel_top_4f_InclusiveDecays_TuneCP5_powheg
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_powheg-madspin/250125_174741
+Total root files: 86
+Files per list: 1
+List files: 86
+Full list file: ST_t-channel_top_4f_InclusiveDecays.list (86 root files)
+Created: 2025-06-11 16:08:09

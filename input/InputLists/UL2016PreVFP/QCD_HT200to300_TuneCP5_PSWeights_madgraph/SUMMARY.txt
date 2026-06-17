@@ -1,0 +1,8 @@
+Sample: QCD_HT200to300_TuneCP5_PSWeights_madgraph
+Original name: QCD_HT200to300_TuneCP5_PSWeights_madgraph
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8/QCD_HT200to300_TuneCP5_PSWeights_madgraph/250129_105944
+Total root files: 47
+Files per list: 1
+List files: 47
+Full list file: QCD_HT200to300_TuneCP5_PSWeights_madgraph.list (47 root files)
+Created: 2025-06-02 10:50:49

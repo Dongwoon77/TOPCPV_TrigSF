@@ -1,0 +1,8 @@
+Sample: ZZ
+Original name: ZZ_TuneCP5_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/ZZ_TuneCP5_13TeV-pythia8/ZZ_TuneCP5_pythia8/250125_174802
+Total root files: 17
+Files per list: 1
+List files: 17
+Full list file: ZZ.list (17 root files)
+Created: 2025-06-11 16:08:17

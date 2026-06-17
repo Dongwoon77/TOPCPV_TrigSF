@@ -1,0 +1,66 @@
+=== Global Processing Summary ===
+Start time: 2025-06-02 10:50:38
+Sample file: filelist_MC.txt
+Default files per list: 1
+Create full list: True
+Total samples: 51
+
+Sample Name               List Name                 Files/List List Files Root Files
+-------------------------------------------------------------------------------------
+DYJetsToLL_M-10to50_TuneCP5_amcatnloFXFX DYJetsToLL_M_10To50       1          23         23        
+DYJetsToLL_M-10to50_TuneCP5_madgraphMLM DYJetsToLL_M_10To50_madgraphMLM 1          19         19        
+DYJetsToLL_M-50_TuneCP5_amcatnloFXFX DYJetsToLL_M_50           1          62         62        
+DYJetsToLL_M-50_TuneCP5_madgraphMLM DYJetsToLL_M_50_madgraphMLM 1          66         66        
+ST_s-channel_4f_leptonDecays_TuneCP5_amcatnlo ST_s-channel_4f_leptonDecays 1          12         12        
+ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_powheg-madspin ST_t-channel_antitop_4f_InclusiveDecays 1          46         46        
+ST_t-channel_top_4f_InclusiveDecays_TuneCP5_powheg ST_t-channel_top_4f_InclusiveDecays 1          49         49        
+ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_powheg ST_tW_antitop_5f_NoFullyHadronicDecays 1          12         12        
+ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5_powheg ST_tW_top_5f_NoFullyHadronicDecays 1          4          4         
+TTJets_TuneCP5_amcatnloFXFX TTJets_TuneCP5_amcatnloFXFX 1          95         95        
+TTJets_TuneCP5_madgraphMLM TTJets_TuneCP5_madgraphMLM 1          27         27        
+TTbar_Signal              TTbar_Signal              1          33         33        
+TTbar_AllHadronic         TTbar_AllHadronic         1          79         79        
+TTbar_SemiLeptonic        TTbar_SemiLeptonic        1          117        117       
+TTWJetsToLNu              TTWJetsToLNu              1          26         26        
+TTWJetsToQQ               TTWJetsToQQ               1          7          7         
+TTZToLLNuNu               TTZToLLNuNu               1          15         15        
+TTZToQQ_TuneCP5_13TeV_amcatnlo TTZToQQ                   1          293        293       
+WJetsToLNu_TuneCP5_amcatnloFXFX WJetsToLNu                1          59         59        
+WJetsToLNu_TuneCP5_madgraphMLM WJetsToLNu_madgraphMLM    1          512        512       
+WW_TuneCP5_pythia8        WW                        1          22         22        
+WZ_TuneCP5_pythia8        WZ                        1          13         13        
+ZZ_TuneCP5_pythia8        ZZ                        1          8          8         
+QCD_HT1000to1500_TuneCP5_PSWeights_madgraph QCD_HT1000to1500_TuneCP5_PSWeights_madgraph 1          11         11        
+QCD_HT100to200_TuneCP5_PSWeights_madgraph QCD_HT100to200_TuneCP5_PSWeights_madgraph 1          87         87        
+QCD_HT2000toInf_TuneCP5_PSWeights_madgraph QCD_HT2000toInf_TuneCP5_PSWeights_madgraph 1          37         37        
+QCD_HT2000toInf_TuneCP5_PSWeights_madgraph QCD_HT2000toInf_TuneCP5_PSWeights_madgraph 1          10         10        
+QCD_HT200to300_TuneCP5_PSWeights_madgraph QCD_HT200to300_TuneCP5_PSWeights_madgraph 1          47         47        
+QCD_HT300to500_TuneCP5_PSWeights_madgraph QCD_HT300to500_TuneCP5_PSWeights_madgraph 1          89         89        
+QCD_HT500to700_TuneCP5_PSWeights_madgraph QCD_HT500to700_TuneCP5_PSWeights_madgraph 1          34         34        
+QCD_HT700to1000_TuneCP5_PSWeights_madgraph QCD_HT700to1000_TuneCP5_PSWeights_madgraph 1          20         20        
+QCD_Pt-1000_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-1000_MuEnrichedPt5_TuneCP5_pythia8 1          42         42        
+QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8 QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8 1          19         19        
+QCD_Pt-120to170_EMEnriched_TuneCP5_pythia8 QCD_Pt-120to170_EMEnriched_TuneCP5_pythia8 1          13         13        
+QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_pythia8 1          32         32        
+QCD_Pt_120to170_TuneCP5_13TeV_pythia8 QCD_Pt_120to170_TuneCP5_13TeV_pythia8 1          26         26        
+QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8 QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8 1          20         20        
+QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8 QCD_Pt-15to20_EMEnriched_TuneCP5_pythia8 1          42         42        
+QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_pythia8 1          28         28        
+QCD_Pt_15to30_TuneCP5_13TeV_pythia8 QCD_Pt_15to30_TuneCP5_13TeV_pythia8 1          15         15        
+QCD_Pt-170to300_EMEnriched_TuneCP5_pythia8 QCD_Pt-170to300_EMEnriched_TuneCP5_pythia8 1          7          7         
+QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_pythia8 1          63         63        
+QCD_Pt_170to300_TuneCP5_13TeV_pythia8 QCD_Pt_170to300_TuneCP5_13TeV_pythia8 1          25         25        
+QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8 QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8 1          10         10        
+QCD_Pt-20_MuEnrichedPt15_TuneCP5_pythia8 QCD_Pt-20_MuEnrichedPt15_TuneCP5_pythia8 1          11         11        
+QCD_Pt-20to30_EMEnriched_TuneCP5_pythia8 QCD_Pt-20to30_EMEnriched_TuneCP5_pythia8 1          9          9         
+QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_pythia8 1          50         50        
+QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_pythia8 QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_pythia8 1          46         46        
+QCD_Pt-300toInf_EMEnriched_TuneCP5_pythia8 QCD_Pt-300toInf_EMEnriched_TuneCP5_pythia8 1          14         14        
+QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8 QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8 1          69         69        
+QCD_Pt-30to40_DoubleEMEnriched_MGG-80toInf_TuneCP5_pythia8 QCD_Pt-30to40_DoubleEMEnriched_MGG-80toInf_TuneCP5_pythia8 1          22         22        
+
+-------------------------------------------------------------------------------------
+Total root files: 2497
+Total list files: 2497 (+ 51 full lists)
+End time: 2025-06-02 10:50:53
+Total processing time: 0:00:15.677189

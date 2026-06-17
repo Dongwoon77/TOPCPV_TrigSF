@@ -1,0 +1,8 @@
+Sample: QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8
+Original name: QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/250129_105622
+Total root files: 10
+Files per list: 1
+List files: 10
+Full list file: QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8.list (10 root files)
+Created: 2025-06-02 10:50:52

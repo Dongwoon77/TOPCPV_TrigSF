@@ -1,0 +1,8 @@
+Sample: Data_DoubleMuon_Run2016B
+Original name: Data_DoubleMuon_Run2016B
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/Data/DoubleMuon/DoubleMuon_Run2016B-ver2/250129_102504
+Total root files: 5269
+Files per list: 10
+List files: 527
+Full list file: Data_DoubleMuon_Run2016B.list (5269 root files)
+Created: 2025-06-02 17:52:30

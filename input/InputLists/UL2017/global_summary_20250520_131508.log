@@ -1,0 +1,40 @@
+=== Global Processing Summary ===
+Start time: 2025-05-20 13:15:08
+Sample file: filelist_Data.txt
+Default files per list: 1
+Create full list: True
+Total samples: 25
+
+Sample Name               List Name                 Files/List List Files Root Files
+-------------------------------------------------------------------------------------
+Data_DoubleEG_Run2017B    Data_DoubleEG_Run2017B    10         243        2428      
+Data_DoubleEG_Run2017C    Data_DoubleEG_Run2017C    10         517        5161      
+Data_DoubleEG_Run2017D    Data_DoubleEG_Run2017D    10         271        2705      
+Data_DoubleEG_Run2017E    Data_DoubleEG_Run2017E    10         429        4285      
+Data_DoubleEG_Run2017F    Data_DoubleEG_Run2017F    10         585        5845      
+Data_DoubleMuon_Run2017B  Data_DoubleMuon_Run2017B  10         243        2429      
+Data_DoubleMuon_Run2017C  Data_DoubleMuon_Run2017C  10         516        5159      
+Data_DoubleMuon_Run2017D  Data_DoubleMuon_Run2017D  10         271        2706      
+Data_DoubleMuon_Run2017E  Data_DoubleMuon_Run2017E  10         428        4279      
+Data_DoubleMuon_Run2017F  Data_DoubleMuon_Run2017F  10         585        5849      
+Data_MuonEG_Run2017B      Data_MuonEG_Run2017B      10         243        2429      
+Data_MuonEG_Run2017C      Data_MuonEG_Run2017C      10         516        5160      
+Data_MuonEG_Run2017D      Data_MuonEG_Run2017D      10         271        2707      
+Data_MuonEG_Run2017E      Data_MuonEG_Run2017E      10         429        4285      
+Data_MuonEG_Run2017F      Data_MuonEG_Run2017F      10         586        5851      
+Data_SingleElectron_Run2017B Data_SingleElectron_Run2017B 10         243        2430      
+Data_SingleElectron_Run2017C Data_SingleElectron_Run2017C 10         516        5158      
+Data_SingleElectron_Run2017D Data_SingleElectron_Run2017D 10         271        2709      
+Data_SingleElectron_Run2017E Data_SingleElectron_Run2017E 10         429        4286      
+Data_SingleElectron_Run2017F Data_SingleElectron_Run2017F 10         585        5849      
+Data_SingleMuon_Run2017B  Data_SingleMuon_Run2017B  10         243        2429      
+Data_SingleMuon_Run2017C  Data_SingleMuon_Run2017C  10         516        5159      
+Data_SingleMuon_Run2017D  Data_SingleMuon_Run2017D  10         271        2707      
+Data_SingleMuon_Run2017E  Data_SingleMuon_Run2017E  10         429        4286      
+Data_SingleMuon_Run2017F  Data_SingleMuon_Run2017F  10         585        5850      
+
+-------------------------------------------------------------------------------------
+Total root files: 102141
+Total list files: 10221 (+ 25 full lists)
+End time: 2025-05-20 13:17:07
+Total processing time: 0:01:58.927817

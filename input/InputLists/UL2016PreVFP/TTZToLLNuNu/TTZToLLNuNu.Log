@@ -1,0 +1,39 @@
+=== TTZToLLNuNu Sample Processing Summary ===
+Timestamp: 2025-06-02 10:50:43
+Total root files: 15
+Files per list: 1
+List files created: 15
+
+=== Root files distribution ===
+List file 1: 1 root files
+List file 2: 1 root files
+List file 3: 1 root files
+List file 4: 1 root files
+List file 5: 1 root files
+List file 6: 1 root files
+List file 7: 1 root files
+List file 8: 1 root files
+List file 9: 1 root files
+List file 10: 1 root files
+List file 11: 1 root files
+List file 12: 1 root files
+List file 13: 1 root files
+List file 14: 1 root files
+List file 15: 1 root files
+
+=== All root files ===
+   1. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_10.root
+   2. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_11.root
+   3. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_12.root
+   4. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_13.root
+   5. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_14.root
+   6. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_15.root
+   7. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_1.root
+   8. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_2.root
+   9. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_3.root
+  10. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_4.root
+  11. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_5.root
+  12. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_6.root
+  13. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_7.root
+  14. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_8.root
+  15. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250129_104630/0000/tree_9.root

@@ -1,0 +1,8 @@
+Sample: Data_SingleElectron_Run2018D
+Original name: Data_SingleElectron_Run2018D
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_Data/EGamma/EGamma_Run2018D/250129_233907
+Total root files: 6295
+Files per list: 10
+List files: 630
+Full list file: Data_SingleElectron_Run2018D.list (6295 root files)
+Created: 2025-06-06 12:00:51

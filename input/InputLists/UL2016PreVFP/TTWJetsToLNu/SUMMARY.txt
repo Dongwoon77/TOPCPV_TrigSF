@@ -1,0 +1,8 @@
+Sample: TTWJetsToLNu
+Original name: TTWJetsToLNu
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToLNu_TuneCP5_amcatnloFXFX-madspin/250129_104648
+Total root files: 26
+Files per list: 1
+List files: 26
+Full list file: TTWJetsToLNu.list (26 root files)
+Created: 2025-06-02 10:50:43

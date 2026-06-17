@@ -1,0 +1,8 @@
+Sample: Data_DoubleMuon_Run2018B
+Original name: Data_DoubleMuon_Run2018B
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_Data/DoubleMuon/DoubleMuon_Run2018B/250127_154144
+Total root files: 2615
+Files per list: 10
+List files: 262
+Full list file: Data_DoubleMuon_Run2018B.list (2615 root files)
+Created: 2025-06-06 12:00:35

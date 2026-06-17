@@ -1,0 +1,8 @@
+Sample: TTJets_TuneCP5_amcatnloFXFX
+Original name: TTJets_TuneCP5_amcatnloFXFX
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/TTJets_TuneCP5_amcatnloFXFX/250125_174711
+Total root files: 109
+Files per list: 1
+List files: 109
+Full list file: TTJets_TuneCP5_amcatnloFXFX.list (109 root files)
+Created: 2025-06-11 16:08:10

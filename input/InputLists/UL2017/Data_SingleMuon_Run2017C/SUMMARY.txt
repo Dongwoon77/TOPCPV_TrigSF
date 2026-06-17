@@ -1,0 +1,8 @@
+Sample: Data_SingleMuon_Run2017C
+Original name: Data_SingleMuon_Run2017C
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017Data/2017/Data/SingleMuon/SingleMuon_Run2017C/250127_172849
+Total root files: 5159
+Files per list: 10
+List files: 516
+Full list file: Data_SingleMuon_Run2017C.list (5159 root files)
+Created: 2025-05-20 13:16:51

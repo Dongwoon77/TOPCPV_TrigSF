@@ -1,0 +1,8 @@
+Sample: TTZToLLNuNu_M-10
+Original name: TTZToLLNuNu_M-10_TuneCP5_amcatnlo
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8/TTZToLLNuNu_M-10_TuneCP5_amcatnlo/250127_163639
+Total root files: 19
+Files per list: 1
+List files: 19
+Full list file: TTZToLLNuNu_M-10.list (19 root files)
+Created: 2025-05-20 13:24:31

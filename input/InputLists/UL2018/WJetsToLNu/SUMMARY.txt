@@ -1,0 +1,8 @@
+Sample: WJetsToLNu
+Original name: WJetsToLNu_TuneCP5_amcatnloFXFX
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8/WJetsToLNu_TuneCP5_amcatnloFXFX/250124_125215
+Total root files: 54
+Files per list: 1
+List files: 54
+Full list file: WJetsToLNu.list (54 root files)
+Created: 2025-06-06 11:59:34

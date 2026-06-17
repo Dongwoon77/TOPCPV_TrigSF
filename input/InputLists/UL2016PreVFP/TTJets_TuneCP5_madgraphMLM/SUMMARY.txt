@@ -1,0 +1,8 @@
+Sample: TTJets_TuneCP5_madgraphMLM
+Original name: TTJets_TuneCP5_madgraphMLM
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/TTJets_TuneCP5_13TeV-madgraphMLM-pythia8/TTJets_TuneCP5_madgraphMLM/250129_104313
+Total root files: 27
+Files per list: 1
+List files: 27
+Full list file: TTJets_TuneCP5_madgraphMLM.list (27 root files)
+Created: 2025-06-02 10:50:42

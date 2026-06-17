@@ -1,0 +1,8 @@
+Sample: Data_SingleMuon_Run2018A
+Original name: Data_SingleMuon_Run2018A
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_Data/SingleMuon/SingleMuon_Run2018A/250127_152913
+Total root files: 5531
+Files per list: 10
+List files: 554
+Full list file: Data_SingleMuon_Run2018A.list (5531 root files)
+Created: 2025-06-06 12:00:54

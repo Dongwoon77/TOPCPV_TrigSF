@@ -1,0 +1,8 @@
+Sample: ST_s-channel_4f_leptonDecays
+Original name: ST_s-channel_4f_leptonDecays_TuneCP5_amcatnlo
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/ST_s-channel_4f_leptonDecays_TuneCP5_amcatnlo/250124_132615
+Total root files: 19
+Files per list: 1
+List files: 19
+Full list file: ST_s-channel_4f_leptonDecays.list (19 root files)
+Created: 2025-06-06 11:59:24

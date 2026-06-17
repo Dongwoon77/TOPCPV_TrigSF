@@ -1,0 +1,8 @@
+Sample: TTbar_AllHadronic
+Original name: TTToHadronic_TuneCP5_powheg
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/TTToHadronic_TuneCP5_powheg/250127_163527
+Total root files: 199
+Files per list: 1
+List files: 199
+Full list file: TTbar_AllHadronic.list (199 root files)
+Created: 2025-05-20 13:24:30

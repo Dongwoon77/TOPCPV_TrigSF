@@ -1,0 +1,8 @@
+Sample: WZ
+Original name: WZ_TuneCP5_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/WZ_TuneCP5_13TeV-pythia8/WZ_TuneCP5_pythia8/250127_163619
+Total root files: 20
+Files per list: 1
+List files: 20
+Full list file: WZ.list (20 root files)
+Created: 2025-05-20 13:24:36

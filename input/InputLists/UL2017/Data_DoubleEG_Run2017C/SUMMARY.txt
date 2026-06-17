@@ -1,0 +1,8 @@
+Sample: Data_DoubleEG_Run2017C
+Original name: Data_DoubleEG_Run2017C
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017Data/2017/Data/DoubleEG/DoubleEG_Run2017C/250127_173005
+Total root files: 5161
+Files per list: 10
+List files: 517
+Full list file: Data_DoubleEG_Run2017C.list (5161 root files)
+Created: 2025-05-20 13:15:16

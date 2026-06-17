@@ -1,0 +1,8 @@
+Sample: DYJetsToLL_M_50
+Original name: DYJetsToLL_M-50_TuneCP5_amcatnloFXFX
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/DYJetsToLL_M-50_TuneCP5_amcatnloFXFX/250124_125708
+Total root files: 204
+Files per list: 1
+List files: 204
+Full list file: DYJetsToLL_M_50.list (204 root files)
+Created: 2025-06-06 11:59:23

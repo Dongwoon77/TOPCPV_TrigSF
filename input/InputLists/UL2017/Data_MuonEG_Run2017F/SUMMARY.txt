@@ -1,0 +1,8 @@
+Sample: Data_MuonEG_Run2017F
+Original name: Data_MuonEG_Run2017F
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017Data/2017/Data/MuonEG/MuonEG_Run2017F/250127_173048
+Total root files: 5851
+Files per list: 10
+List files: 586
+Full list file: Data_MuonEG_Run2017F.list (5851 root files)
+Created: 2025-05-20 13:16:18

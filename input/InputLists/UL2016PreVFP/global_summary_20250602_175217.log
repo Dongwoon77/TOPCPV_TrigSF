@@ -1,0 +1,39 @@
+=== Global Processing Summary ===
+Start time: 2025-06-02 17:52:17
+Sample file: filelist_data.txt
+Default files per list: 1
+Create full list: True
+Total samples: 24
+
+Sample Name               List Name                 Files/List List Files Root Files
+-------------------------------------------------------------------------------------
+Data_DoubleEG_Run2016B    Data_DoubleEG_Run2016B    10         528        5275      
+Data_DoubleEG_Run2016C    Data_DoubleEG_Run2016C    10         175        1744      
+Data_DoubleEG_Run2016D    Data_DoubleEG_Run2016D    10         293        2925      
+Data_DoubleEG_Run2016E    Data_DoubleEG_Run2016E    10         248        2479      
+Data_DoubleEG_Run2016F-HIPM Data_DoubleEG_Run2016F-HIPM 10         157        1569      
+Data_DoubleMuon_Run2016B  Data_DoubleMuon_Run2016B  10         527        5269      
+Data_DoubleMuon_Run2016C  Data_DoubleMuon_Run2016C  10         175        1742      
+Data_DoubleMuon_Run2016D  Data_DoubleMuon_Run2016D  10         292        2919      
+Data_DoubleMuon_Run2016E  Data_DoubleMuon_Run2016E  10         248        2479      
+Data_DoubleMuon_Run2016F-HIPM Data_DoubleMuon_Run2016F-HIPM 10         157        1562      
+Data_MuonEG_Run2016B      Data_MuonEG_Run2016B      10         527        5267      
+Data_MuonEG_Run2016C      Data_MuonEG_Run2016C      10         175        1742      
+Data_MuonEG_Run2016D      Data_MuonEG_Run2016D      10         292        2917      
+Data_MuonEG_Run2016E      Data_MuonEG_Run2016E      10         248        2478      
+Data_MuonEG_Run2016F-HIPM Data_MuonEG_Run2016F-HIPM 10         157        1567      
+Data_SingleElectron_Run2016B Data_SingleElectron_Run2016B 10         528        5275      
+Data_SingleElectron_Run2016D Data_SingleElectron_Run2016D 10         292        2917      
+Data_SingleElectron_Run2016E Data_SingleElectron_Run2016E 10         249        2483      
+Data_SingleElectron_Run2016F-HIPM Data_SingleElectron_Run2016F-HIPM 10         157        1566      
+Data_SingleMuon_Run2016B  Data_SingleMuon_Run2016B  10         527        5268      
+Data_SingleMuon_Run2016C  Data_SingleMuon_Run2016C  10         175        1741      
+Data_SingleMuon_Run2016D  Data_SingleMuon_Run2016D  10         292        2916      
+Data_SingleMuon_Run2016E  Data_SingleMuon_Run2016E  10         249        2482      
+Data_SingleMuon_Run2016F-HIPM Data_SingleMuon_Run2016F-HIPM 10         157        1569      
+
+-------------------------------------------------------------------------------------
+Total root files: 68151
+Total list files: 6825 (+ 24 full lists)
+End time: 2025-06-02 17:52:51
+Total processing time: 0:00:34.134137

@@ -1,0 +1,39 @@
+=== Global Processing Summary ===
+Start time: 2025-05-20 13:24:24
+Sample file: filelist_MC_cleaned.txt
+Default files per list: 1
+Create full list: True
+Total samples: 24
+
+Sample Name               List Name                 Files/List List Files Root Files
+-------------------------------------------------------------------------------------
+DYJetsToLL_M-10to50_TuneCP5_amcatnloFXFX DYJetsToLL_M_10to50       1          41         41        
+DYJetsToLL_M-10to50_TuneCP5_madgraphMLM DYJetsToLL_M_10to50_MadMLM 1          77         77        
+DYJetsToLL_M_50_TuneCP5_madgraphMLM DYJetsToLL_M_50_MadMLM    1          113        113       
+DYJetsToLL_M-50_TuneCP5_amcatnloFXFX DYJetsToLL_M_50           1          153        153       
+ST_s-channel_4f_leptonDecays_TuneCP5_amcatnlo ST_s-channel_4f_leptonDecays 1          16         16        
+ST_t-channel_top_4f_InclusiveDecays_TuneCP5_powheg-madspin ST_t-channel_top_4f_InclusiveDecays 1          197        197       
+ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_powheg-madspin ST_t-channel_antitop_4f_InclusiveDecays 1          60         60        
+ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_powheg ST_tW_antitop_5f_NoFullyHadronicDecays 1          9          9         
+ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5_powheg ST_tW_top_5f_NoFullyHadronicDecays 1          20         20        
+TTJets_TuneCP5_amcatnloFXFX TTJets_amcatnlo           1          209        209       
+TTJets_TuneCP5_madgraphMLM TTJets_madgraphMLM        1          32         32        
+TTTo2L2Nu_TuneCP5_powheg  TTbar_Signal              1          99         99        
+TTToHadronic_TuneCP5_powheg TTbar_AllHadronic         1          199        199       
+TTToSemiLeptonic_TuneCP5_powheg TTbar_SemiLeptonic        1          297        297       
+TTWJetsToLNu_TuneCP5_amcatnloFXFX-madspin TTWJetsToLNu              1          9          9         
+TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin TTWJetsToQQ               1          10         10        
+TTZToLLNuNu_M-10_TuneCP5_amcatnlo TTZToLLNuNu_M-10          1          19         19        
+TTZToQQ_TuneCP5_13TeV_amcatnlo TTZToQQ_13TeV_amcatlno    1          359        359       
+TTZToQQ_TuneCP5_amcatnlo  TTZToQQ_amcatnlo          1          35         35        
+WJetsToLNu_TuneCP5_amcatnloFXFX WJetsToLNu                1          45         45        
+WJetsToLNu_TuneCP5_madgraphMLM WJetsToLNu_madgraphMLM    1          549        549       
+WW_TuneCP5_pythia8        WW                        1          16         16        
+WZ_TuneCP5_pythia8        WZ                        1          20         20        
+ZZ_TuneCP5_pythia8        ZZ                        1          2          2         
+
+-------------------------------------------------------------------------------------
+Total root files: 2586
+Total list files: 2586 (+ 24 full lists)
+End time: 2025-05-20 13:24:36
+Total processing time: 0:00:11.906894

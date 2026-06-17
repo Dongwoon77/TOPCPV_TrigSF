@@ -1,0 +1,8 @@
+Sample: Data_SingleMuon_Run2016C
+Original name: Data_SingleMuon_Run2016C
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/Data/SingleMuon/SingleMuon_Run2016C/250129_102325
+Total root files: 1741
+Files per list: 10
+List files: 175
+Full list file: Data_SingleMuon_Run2016C.list (1741 root files)
+Created: 2025-06-02 17:52:48

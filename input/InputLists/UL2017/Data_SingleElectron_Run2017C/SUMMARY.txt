@@ -1,0 +1,8 @@
+Sample: Data_SingleElectron_Run2017C
+Original name: Data_SingleElectron_Run2017C
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017Data/2017/Data/SingleElectron/SingleElectron_Run2017C/250127_172819
+Total root files: 5158
+Files per list: 10
+List files: 516
+Full list file: Data_SingleElectron_Run2017C.list (5158 root files)
+Created: 2025-05-20 13:16:27

@@ -1,0 +1,13 @@
+=== ZZ Sample Processing Summary ===
+Timestamp: 2025-05-20 13:24:36
+Total root files: 2
+Files per list: 1
+List files created: 2
+
+=== Root files distribution ===
+List file 1: 1 root files
+List file 2: 1 root files
+
+=== All root files ===
+   1. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/ZZ_TuneCP5_13TeV-pythia8/ZZ_TuneCP5_pythia8/250127_163624/0000/tree_1.root
+   2. dcap://cluster142.knu.ac.kr//pnfs/knu.ac.kr/data/cms/store/user/junghyun/CPV/UL20NanoAOD/generate2017MC/2017/MC/ZZ_TuneCP5_13TeV-pythia8/ZZ_TuneCP5_pythia8/250127_163624/0000/tree_2.root

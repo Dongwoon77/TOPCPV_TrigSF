@@ -1,0 +1,8 @@
+Sample: WJetsToLNu_madgraphMLM
+Original name: WJetsToLNu_TuneCP5_madgraphMLM
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/dongwoon/UL20NanoAOD/2016PostVFP/2016PostVFP/MC/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/WJetsToLNu_TuneCP5_madgraphMLM/250125_174632
+Total root files: 796
+Files per list: 1
+List files: 796
+Full list file: WJetsToLNu_madgraphMLM.list (796 root files)
+Created: 2025-06-11 16:08:17

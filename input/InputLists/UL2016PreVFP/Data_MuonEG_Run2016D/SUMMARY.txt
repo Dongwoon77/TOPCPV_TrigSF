@@ -1,0 +1,8 @@
+Sample: Data_MuonEG_Run2016D
+Original name: Data_MuonEG_Run2016D
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/Data/MuonEG/MuonEG_Run2016D-HIPM/250129_102939
+Total root files: 2917
+Files per list: 10
+List files: 292
+Full list file: Data_MuonEG_Run2016D.list (2917 root files)
+Created: 2025-06-02 17:52:38

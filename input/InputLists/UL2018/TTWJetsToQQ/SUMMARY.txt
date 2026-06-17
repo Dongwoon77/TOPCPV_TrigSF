@@ -1,0 +1,8 @@
+Sample: TTWJetsToQQ
+Original name: TTWJetsToQQ
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8/TTWJetsToQQ_TuneCP5_amcatnloFXFX-madspin/250124_135504
+Total root files: 3
+Files per list: 1
+List files: 3
+Full list file: TTWJetsToQQ.list (3 root files)
+Created: 2025-06-06 11:59:31

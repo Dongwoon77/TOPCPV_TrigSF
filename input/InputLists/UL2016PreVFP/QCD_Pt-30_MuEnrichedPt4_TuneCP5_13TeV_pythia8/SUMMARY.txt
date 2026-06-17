@@ -1,0 +1,8 @@
+Sample: QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8
+Original name: QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/sha/UL20NanoAOD/NanoAODSSB_v1/2016PreVFP/MC/QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8/QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8/250129_104948
+Total root files: 69
+Files per list: 1
+List files: 69
+Full list file: QCD_Pt-30_MuEnrichedPt4_TuneCP5_13TeV_pythia8.list (69 root files)
+Created: 2025-06-02 10:50:53

@@ -1,0 +1,8 @@
+Sample: TTbar_SemiLeptonic
+Original name: TTbar_SemiLeptonic
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/TTToSemiLeptonic_TuneCP5_powheg/250124_131152
+Total root files: 391
+Files per list: 1
+List files: 391
+Full list file: TTbar_SemiLeptonic.list (391 root files)
+Created: 2025-06-06 11:59:31

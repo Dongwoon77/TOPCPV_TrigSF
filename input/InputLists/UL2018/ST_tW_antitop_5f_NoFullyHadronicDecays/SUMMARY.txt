@@ -1,0 +1,8 @@
+Sample: ST_tW_antitop_5f_NoFullyHadronicDecays
+Original name: ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_powheg
+Directories: /pnfs/knu.ac.kr/data/cms/store/user/gcho/CPV_ntuple/NanoAOD/UL2018_MC/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_13TeV-powheg-pythia8/ST_tW_antitop_5f_NoFullyHadronicDecays_TuneCP5_powheg/250124_132121
+Total root files: 16
+Files per list: 1
+List files: 16
+Full list file: ST_tW_antitop_5f_NoFullyHadronicDecays.list (16 root files)
+Created: 2025-06-06 11:59:26

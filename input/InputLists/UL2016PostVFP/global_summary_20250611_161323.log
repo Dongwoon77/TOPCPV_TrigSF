@@ -1,0 +1,30 @@
+=== Global Processing Summary ===
+Start time: 2025-06-11 16:13:23
+Sample file: filelist_Data.txt
+Default files per list: 1
+Create full list: True
+Total samples: 15
+
+Sample Name               List Name                 Files/List List Files Root Files
+-------------------------------------------------------------------------------------
+Data_SingleElectron_Run2016F Data_SingleElectron_Run2016F 10         25         248       
+Data_SingleElectron_Run2016G Data_SingleElectron_Run2016G 10         427        4270      
+Data_SingleElectron_Run2016H Data_SingleElectron_Run2016H 10         475        4747      
+Data_SingleMuon_Run2016F  Data_SingleMuon_Run2016F  10         25         248       
+Data_SingleMuon_Run2016G  Data_SingleMuon_Run2016G  10         427        4270      
+Data_SingleMuon_Run2016H  Data_SingleMuon_Run2016H  10         475        4748      
+Data_DoubleMuon_Run2016F  Data_DoubleMuon_Run2016F  10         25         248       
+Data_DoubleMuon_Run2016G  Data_DoubleMuon_Run2016G  10         427        4269      
+Data_DoubleMuon_Run2016H  Data_DoubleMuon_Run2016H  10         475        4745      
+Data_DoubleEG_Run2016F    Data_DoubleEG_Run2016F    10         25         249       
+Data_DoubleEG_Run2016G    Data_DoubleEG_Run2016G    10         427        4269      
+Data_DoubleEG_Run2016H    Data_DoubleEG_Run2016H    10         476        4753      
+Data_MuonEG_Run2016F      Data_MuonEG_Run2016F      1          0          0         
+Data_MuonEG_Run2016G      Data_MuonEG_Run2016G      10         427        4269      
+Data_MuonEG_Run2016H      Data_MuonEG_Run2016H      10         475        4745      
+
+-------------------------------------------------------------------------------------
+Total root files: 46078
+Total list files: 4611 (+ 15 full lists)
+End time: 2025-06-11 16:13:42
+Total processing time: 0:00:19.799914
